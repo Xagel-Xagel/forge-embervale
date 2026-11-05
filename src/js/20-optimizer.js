@@ -15,7 +15,8 @@ function tgtBonus(o,en){let t=0;const p=[];
   if(en.f==='hollow'&&o.vs.hollow){t+=o.vs.hollow;p.push(SKI.boneToAsh.fr+' +'+o.vs.hollow+' %')}
   if(en.fly&&o.vs.flying){t+=o.vs.flying;p.push(SKI.eaglesBane.fr+' +'+o.vs.flying+' %')}
   return {t,p}}
-function vsEnemy(wc,o,en){const m=en.m[TI[wc.w.type]];const tb=tgtBonus(o,en);const k=m/100*(1+tb.t/100);return {m,tb,hit:wc.hit*k,avg:wc.avg*k}}
+/* Arme mixte : chaque part est multipliée par le multiplicateur de son type ; m = multiplicateur effectif (moyenne pondérée par les dégâts de chaque part) */
+function vsEnemy(wc,o,en){const tb=tgtBonus(o,en);const raw=wc.byType.reduce((a,[t,,h])=>a+h*en.m[TI[t]]/100,0);const m=wc.hit?raw/wc.hit*100:0;const k=wc.hit?raw/wc.hit*(1+tb.t/100):0;return {m,tb,hit:wc.hit*k,avg:wc.avg*k}}
 function effVs(b,slot,en){const o=compute(b);const wc=o.weapons[slot==='w1'?0:1];if(!wc)return null;return Object.assign({o,wc},vsEnemy(wc,o,en))}
 const clone=x=>JSON.parse(JSON.stringify(x));
 
@@ -81,16 +82,16 @@ function renderOptNow(){optT=null;
   // 1. faiblesses
   const order=DTYPES.map((d,i)=>[d,en.m[i]]);const top=Math.max(...en.m);const low=order.filter(x=>x[1]<100);
   const best=order.filter(x=>x[1]===top&&top>100).map(x=>x[0][1]);
-  const yours=wc?en.m[TI[wc.w.type]]:null;
+  const yours=wc?vsEnemy(wc,o,en).m:null;
   const cWeak=`<div class="ocard"><div class="oh"><h3>${esc(en.n)}</h3><span class="lbl">${FACTIONS[en.f]}${en.lv&&en.lv!=='—'?' · niv. '+en.lv:''}${en.boss?' · boss / élite':''}${en.fly?' · volant':''}</span></div>
     <div class="heat">${order.map(([d,v])=>`<div ${heat(v)} title="${d[1]} : ${v===0?'aucun dégât':v>100?'+'+(v-100)+' % de dégâts subis':v<100?'−'+(100-v)+' % de dégâts subis':'dégâts normaux'}"><span>${d[1]}</span><b>${xm(v)}</b></div>`).join('')}</div>
     <p class="verdict">${best.length?`<b class="d-up">Faiblesse :</b> ${best.join(', ')} (${xm(top)}).`:'<b>Aucune faiblesse marquée.</b>'}
     ${low.length?` <b class="d-dn">Résiste à :</b> ${low.map(x=>x[0][1]+' ('+xm(x[1])+')').join(', ')}.`:''}
-    ${wc?` Votre ${oSlot==='w1'?'arme 1':'arme 2'} frappe en <b>${WTYPE[wc.w.type]}</b> : <b class="${yours>100?'d-up':yours<100?'d-dn':''}">${xm(yours)}</b>.`:''}</p>
+    ${wc?` Votre ${oSlot==='w1'?'arme 1':'arme 2'} frappe en <b>${wtypeTxt(wc.w)}</b> : <b class="${yours>100?'d-up':yours<100?'d-dn':''}">${xm(yours)}</b>.`:''}</p>
     <div class="meta2">Source : ${en.src}${en.src==='PinDrop'?' (fichiers du jeu 1.0)':' (fichiers 1.0, désaccord possible avec PinDrop)'}</div></div>`;
   // 2. armes équipées
   const eq=o.weapons.map((w,i)=>{if(!w)return `<div class="wrow"><div class="wl">Arme ${i+1} : aucune</div></div>`;const v=vsEnemy(w,o,en);
-    return `<div class="wrow${('w'+(i+1))===oSlot?' sel':''}"><div><div class="wl">Arme ${i+1} · ${w.catName} · ${WTYPE[w.w.type]}</div><b>${esc(w.w.n)}</b></div>
+    return `<div class="wrow${('w'+(i+1))===oSlot?' sel':''}"><div><div class="wl">Arme ${i+1} · ${w.catName} · ${wtypeTxt(w.w)}</div><b>${esc(w.w.n)}</b></div>
       <div class="big"><div><b>${fmt(v.hit)}</b><span>${w.unit} / coup</span></div><div><b>${fmt(v.avg)}</b><span>moyenne avec critiques</span></div><div><b class="${v.m>100?'d-up':v.m<100?'d-dn':''}">${xm(v.m)}</b><span>type contre la cible</span></div></div>
       <div class="meta2">Hors cible : ${fmt(w.hit)} / coup${v.tb.p.length?' · '+v.tb.p.join(', '):''}</div></div>`}).join('');
   const cEq=`<div class="ocard"><div class="oh"><h3>Vos armes contre cette cible</h3></div>${eq}
@@ -100,7 +101,7 @@ function renderOptNow(){optT=null;
   const list=WEAPONS.map(x=>ITEMS[x[0]]).filter(w=>fam==='all'||famOf(w)===fam).map(w=>{const c=weaponCalc(w,o,o.raw,o.R,o.attr);return {w,c,v:vsEnemy(c,o,en)}}).sort((a,b)=>b.v.avg-a.v.avg);
   const ref=wc?vsEnemy(wc,o,en).avg:0;
   const rows=list.slice(0,12).map((x,i)=>{const same=wc&&x.w.id===wc.w.id;const dv=ref&&wc&&x.c.unit===wc.unit?x.v.avg/ref-1:null;
-    return `<tr${same?' class="cur"':''}><td class="n">${i+1}</td><td class="nm"><b>${esc(x.w.n)}</b><small>${x.c.catName} · ${WTYPE[x.w.type]} · niv. ${x.w.lv}</small></td>
+    return `<tr${same?' class="cur"':''}><td class="n">${i+1}</td><td class="nm"><b>${esc(x.w.n)}</b><small>${x.c.catName} · ${wtypeTxt(x.w)} · niv. ${x.w.lv}</small></td>
     <td><span ${heat(x.v.m)}>${xm(x.v.m)}</span></td><td>${fmt(x.v.avg)}<small>${x.c.unit==='Puissance'?' pui.':''}</small></td>
     <td class="${dv===null?'d-0':dv>0.001?'d-up':dv<-0.001?'d-dn':'d-0'}">${same?'équipée':dv===null?'—':(dv>0?'+':'')+fmt(dv*100,1)+' %'}</td>
     <td class="act">${same?'':`<button class="btn sm" data-eq="${x.w.id}" data-sl="w1">Arme 1</button><button class="btn sm" data-eq="${x.w.id}" data-sl="w2">Arme 2</button>`}</td></tr>`});
@@ -116,7 +117,7 @@ function renderOptNow(){optT=null;
       <td>${x.cost} pt${x.cost>1?'s':''}</td><td class="d-up">+${fmt(x.gain*100,1)} %</td><td>${fmt(x.per*100,2)} %</td>
       <td class="act"><button class="btn sm" data-inv="${i}">${x.cost>free?'Acheter (dépasse)':'Acheter'}</button></td></tr>`);
     cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3><span class="lbl">${free>=0?free+' pts libres':'budget dépassé de '+(-free)+' pts'}</span></div>
-      ${ir.length?optTable(ir,['#','Nœud','Coût','Gain','Gain / pt',''],'named'):vsEnemy(wc,o,en).m===0?`<p class="empty">${esc(en.n)} est immunisé aux dégâts ${WTYPE[wc.w.type]} : aucun point ne changera rien. Changez d'arme (voir le classement).</p>`:'<p class="empty">Aucun nœud accessible n\'augmente encore les dégâts de cette arme contre cette cible : vos bonus offensifs sont au maximum.</p>'}
+      ${ir.length?optTable(ir,['#','Nœud','Coût','Gain','Gain / pt',''],'named'):vsEnemy(wc,o,en).m===0?`<p class="empty">${esc(en.n)} est immunisé aux dégâts ${wtypeTxt(wc.w)} : aucun point ne changera rien. Changez d'arme (voir le classement).</p>`:'<p class="empty">Aucun nœud accessible n\'augmente encore les dégâts de cette arme contre cette cible : vos bonus offensifs sont au maximum.</p>'}
       <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis vos nœuds reliés à un point de départ.</div></div>`;
     root._inv=inv}
   // 5. défense
@@ -140,14 +141,14 @@ function renderOptNow(){optT=null;
   const cF=`<details class="ocard"><summary><h3>Formules utilisées et niveau de confiance</h3></summary><div class="formulas">
     <div><span class="tag ok">officiel</span><b>Armure.</b> Tutoriel en jeu : chaque point d'armure réduit les dégâts reçus de 1, jusqu'à 60 % de réduction au maximum.
       <code>subis = max(coup − armure, coup × (1 − 60 %))</code> L'armure physique couvre tranchant, perçant, contondant ; l'armure magique couvre feu, glace, foudre, Shroud. Le poison ignore l'armure.</div>
-    <div><span class="tag ok">fichiers du jeu</span><b>Faiblesses des ennemis.</b> Chaque ennemi a un multiplicateur caché par type de dégâts. Pour une arme à dégâts mixtes, chaque part est multipliée séparément puis additionnée.
+    <div><span class="tag ok">fichiers du jeu</span><b>Faiblesses des ennemis.</b> Chaque ennemi a un multiplicateur caché par type de dégâts. Pour une arme à dégâts mixtes, chaque part est multipliée séparément puis additionnée. <span class="tag ok">fichiers du jeu</span> Répartition : 16 armes de mêlée et dagues à 50/50 (ex. tranchant + glace), les autres à 100 %. <span class="tag hyp">hypothèse</span> Une compétence de type (Taillade, Pyromane…) ne joue que sur sa part.
       <code>dégâts sur la cible = Σ (part du type × multiplicateur du type)</code></div>
     <div><span class="tag est">communauté</span><b>Dégâts infligés.</b> <code>coup = base de l'arme × (1 + Σ bonus %) × multiplicateur du type × (1 + bonus contre la famille)</code>
       Bonus : +5 % par point de Force (mêlée), de Dextérité (arcs, dagues) ou d'Intelligence (magie), compétences de famille d'arme et de type de dégâts, statistiques d'équipement. Le simulateur additionne ces bonus ; le jeu en multiplie peut-être certains.</div>
     <div><span class="tag ok">fichiers du jeu</span><b>Arbre de compétences.</b> Positions et liaisons des 243 nœuds : fichiers 1.0 (relevé PinDrop). <span class="tag hyp">déduit</span> Une liaison marche dans les deux sens (9 nœuds n'ont aucun lien entrant) et chaque rang coûte le prix du nœud (un seul coût par nœud dans les fichiers).</div>
     <div><span class="tag est">communauté</span><b>Critiques.</b> <code>moyenne = coup × (1 + chance de critique × dégâts critiques)</code> Base : 10 % de chance, +80 % de dégâts.</div>
     <div><span class="tag hyp">hypothèse</span><b>Résistances en %.</b> Appliquées après l'armure, en multiplication : <code>subis × (1 − résistance)</code>. Idem pour Tour, Gardien et Aura de terre (−10 % chacun quand ils s'appliquent).</div>
-    <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Une arme est traitée comme infligeant 100 % de son type principal (la répartition exacte n'est pas publiée) ; les perks d'arme « feu magique », « dégâts perçants »… et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>
+    <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Arcs et bâtons : le type affiché est indicatif (la flèche ou le sort porte la répartition, absente des fichiers de l'arme) ; les perks d'arme « feu magique », « dégâts perçants »… et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>
   </div></details>`;
   root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>${cDef}${cMx}${cF}`;
   // événements

@@ -142,7 +142,14 @@ const WEAPONS = [
  ['w_deceiving','Deceiving Staff','staff',40,35,'ice',['spiritual','vicious','mIce']],
  ['w_mirage','Mirage','staff',40,35,'ice',['spiritual','vicious','mIce']]
 ];
-WEAPONS.forEach(([id,n,cat,lv,val,type,perks])=>{ITEMS[id]={id,n,cat,lv,val,type,wperks:perks,kind:'weapon',slot:'weapon'}});
+/* Répartition des dégâts par type (fichiers du jeu 1.0 via PinDrop, build serveur 1285601) : 100 % d'un type ou 50/50. Absente = 100 % du type de WEAPONS.
+   Arcs et bâtons : pas de répartition sur l'arme (la flèche ou le sort la porte) → type indicatif, signalé à l'écran (spl:false). */
+const WSPLIT = {w_aurora:[['cut',.5],['ice',.5]],w_darkwood:[['cut',.5],['ice',.5]],w_wailing:[['cut',.5],['fire',.5]],w_dragsw:[['cut',.5],['fire',.5]],w_lfaxe:[['cut',.5],['fire',.5]],w_jez:[['cut',.5],['fire',.5]],
+ w_apex:[['cut',.5],['shock',.5]],w_skull:[['cut',.5],['shock',.5]],w_thunderb:[['cut',.5],['shock',.5]],w_dimh:[['blunt',.5],['shock',.5]],w_chief:[['blunt',.5],['shock',.5]],
+ w_ram:[['blunt',.5],['ice',.5]],w_star:[['blunt',.5],['fire',.5]],w_rot:[['blunt',.5],['shroud',.5]],w_adorned:[['pierce',.5],['shock',.5]],w_oath:[['pierce',.5],['fire',.5]]};
+WEAPONS.forEach(([id,n,cat,lv,val,type,perks])=>{ITEMS[id]={id,n,cat,lv,val,type,wperks:perks,kind:'weapon',slot:'weapon',split:WSPLIT[id]||[[type,1]],spl:cat!=='bow'&&cat!=='staff'}});
+/* Libellé du type : « tranchant 50 % + glace 50 % » ; arcs et bâtons : « foudre (selon le sort) » */
+const wtypeTxt=w=>w.split.length>1?w.split.map(([t,p])=>WTYPE[t]+' '+Math.round(p*100)+' %').join(' + '):WTYPE[w.type]+(w.spl?'':w.cat==='bow'?' (selon la flèche)':' (selon le sort)');
 
 /* Compétences : [id, nom FR, nom EN, zone, coût par rang, rangs max, description, nouveau en 1.0] */
 const SK = [];

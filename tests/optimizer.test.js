@@ -10,8 +10,32 @@ test('multiplicateur ennemi appliqué au type de l\'arme', () => {
   const b = fromPreset(PRESETS[3]); // Barbare : marteau contondant
   const hound = ENEMIES.find(e => e.n === 'Hollow Hound');
   const v = effVs(b, 'w1', hound);
-  assert.equal(v.m, 150);
-  assert.ok(Math.abs(v.hit - v.wc.hit * 1.5 * (1 + v.tb.t / 100)) < 1e-9);
+  // Battering Ram Hammer : contondant 50 % (×1,5) + glace 50 % (×0,8), chaque part avec ses propres bonus
+  const [bl, ic] = v.wc.byType; assert.deepEqual([bl[0], bl[1], ic[0], ic[1]], ['blunt', .5, 'ice', .5]);
+  assert.ok(Math.abs(v.hit - (bl[2] * 1.5 + ic[2] * 0.8) * (1 + v.tb.t / 100)) < 1e-9);
+  assert.ok(v.m > 80 && v.m < 150, 'multiplicateur effectif entre les deux parts : ' + v.m);
+});
+test('dégâts mixtes : 16 armes 50/50 (fichiers 1.0), parts = 100 %, type principal inclus', () => {
+  const mixed = WEAPONS.filter(w => ITEMS[w[0]].split.length > 1).map(w => w[0]);
+  assert.equal(mixed.length, 16);
+  for (const w of WEAPONS) { const it = ITEMS[w[0]];
+    assert.ok(Math.abs(it.split.reduce((a, x) => a + x[1], 0) - 1) < 1e-9, w[0]);
+    assert.ok(it.split.some(x => x[0] === it.type), w[0] + ' : type principal absent de la répartition');
+    for (const [t] of it.split) assert.ok(TI[t] !== undefined, w[0] + ' : type ' + t); }
+});
+test('dégâts mixtes : un bonus de type ne compte que sur sa part', () => {
+  const b = blankBuild(); b.gear.w1 = 'w_aurora'; // tranchant 50 % + glace 50 %
+  const h0 = compute(b).weapons[0].hit;
+  normalize(Object.assign(b, {sk: {slasher: 3}})); // +30 % tranchant (Taillade), chemin acheté si besoin
+  const wc = compute(b).weapons[0]; const common = wc.parts.filter(p => !p[0].includes('(part ')).reduce((a, p) => a + p[1], 0);
+  assert.ok(Math.abs(wc.hit - 109 * (0.5 * (1 + (common + 30) / 100) + 0.5 * (1 + common / 100))) < 1e-9);
+  assert.ok(wc.hit > h0);
+  assert.ok(Math.abs(wc.bonus - (wc.hit / 109 - 1) * 100) < 1e-9, 'bonus affiché = bonus effectif');
+});
+test('dégâts mixtes : immunité partielle, la part non immunisée frappe toujours', () => {
+  const b = blankBuild(); b.gear.w1 = 'w_rot'; // contondant 50 % + Shroud 50 %, Fell immunisés au Shroud
+  const v = effVs(b, 'w1', ENEMIES.find(e => e.n === 'Lord Vorgoth'));
+  assert.ok(v.avg > 0 && v.m > 0 && v.m < 100, String(v.m));
 });
 test('immunité : 0 dégât et aucune recommandation', () => {
   const b = fromPreset(PRESETS[5]); // soigneur, bâton de Shroud
