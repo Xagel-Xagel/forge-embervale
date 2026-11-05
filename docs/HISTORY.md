@@ -26,6 +26,12 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - test du code b2 figé : **« choix conservés »** — valeurs figées intactes ; comme le build b2 ne peut plus être relié tel quel sur le vrai tracé (16 nœuds isolés, prouvé), le test vérifie que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés (la critique proposait de figer aussi la migration : non retenu) ;
     - format b3 : **« compact »** — places dans des tables figées d'identifiants du jeu, ~120 caractères (au lieu d'identifiants en clair, ~720).
 
+13. (Claude Code, 2026-11-05) « Revoir les 15 presets sur le tracé réel (moins de points perdus en liaisons), chaque choix sourcé ; QCM avant d'écrire » → 1.10.0. Mesure : la perte venait surtout de la CON des mages (zone Guerrier) ; un placement plus malin des attributs ne gagnait rien (280 contre 277). QCM de l'utilisateur :
+    - ampleur : **« Ajuster »** (garder chaque preset, retirer les nœuds lointains), pas de refonte d'après des builds communautaires ;
+    - CON des mages et soigneurs : **« garder 2 CON voisins »** (ceux qui touchent un départ, 1 point chacun) ;
+    - proposition complète (Rôdeur, Barbare, Assassin, Arcaniste, Prêtre ; Sadi inchangé) : **« Valider tout »**.
+    Source de chaque choix : coût de liaison mesuré sur le tracé (fichiers du jeu via PinDrop) et effet de la compétence (`SK`).
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

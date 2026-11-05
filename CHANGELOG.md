@@ -2,6 +2,12 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.10.0 — 2026-11-05 · Presets revus sur le tracé réel
+- Les 15 builds prédéfinis perdent beaucoup moins de points en nœuds de liaison : **277 → 155** au total (mesure : points dépensés après `normalize` − points choisis).
+- Mages et soigneurs : **2 CON** au lieu de 6 à 11 — les deux nœuds CON voisins d'un départ (1 point chacun) ; les autres imposaient de traverser la zone Guerrier (Voie du guerrier, Taillade, Plaques…).
+- Rôdeur archer : CON 11 → 2, sans *Peau épaisse* (24 → 11) ; Barbare : FOR 11 → 10, le 11ᵉ coûtait 4 liaisons (9 → 5) ; Assassin : DEX 7 → 6 (12 → 9) ; Arcaniste et Prêtre du feu : sans *Précision fatale* (zone Rôdeur, 5 liaisons chacun). Sadi Fourbe inchangé (build demandé par l'utilisateur).
+- Tests : plafond de points de liaison par preset, règle des 2 CON. Les codes `b3-` déjà partagés ne changent pas (ils enregistrent leurs propres nœuds).
+
 ## 1.9.0 — 2026-11-05 · Tracé réel de l'arbre de compétences
 - L'arbre reprend le **tracé du jeu 1.0** : 243 nœuds à leur position réelle et 312 liaisons, extraits des fichiers du serveur dédié par PinDrop (`src/js/01-tree-data.js`, régénéré par `scripts/tree-from-pindrop.mjs`). Les 12 groupes thématiques inventés disparaissent (la 1.0 n'a pas de sous-arbres).
 - Graphe : chaque nœud est ancré à sa vraie place (glisser = effet élastique, retour automatique), libellés GUERRIER / RÔDEUR / MAGE, noms sans chevauchement, la Flamme n'est plus dessinée (un vrai nœud occupe le centre). La règle devient « relié à un point de départ (Étincelle) ».
