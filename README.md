@@ -3,7 +3,7 @@
 Simulateur de stuff pour **Enshrouded 1.0**, en français, dans une seule page web.
 
 - Équipement de fin de jeu : 7 panoplies, anneaux, 53 armes, 29 gemmes, améliorations 0 à 5.
-- Arbre de compétences 1.0 (172 compétences, 212 points) en graphe façon Obsidian, avec la règle de liaison à la Flamme.
+- Arbre de compétences 1.0 au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian, avec la règle de liaison aux points de départ.
 - Fiche en direct, comparaison de deux builds A/B, 15 builds prédéfinis, sauvegarde locale et code de partage dans le lien.
 - Calculateur d'optimisation : faiblesses de 101 ennemis × 8 types de dégâts, classement des armes contre une cible, meilleurs points à investir, calcul des dégâts subis.
 

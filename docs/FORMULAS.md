@@ -60,5 +60,13 @@ Une formule `Armure / (Armure + 400)` circule (NKB Gaming) mais n'est pas vérif
 
 L'armure finale de chaque pièce n'est pas dans les données publiques 1.0 : l'utilisateur saisit celle de sa fiche en jeu. Plaques lourdes / brillantes (+4 % d'armure des objets par rang) sont affichées en % mais pas appliquées à cette saisie (la fiche en jeu les inclut déjà, **hypothèse**).
 
+## Arbre de compétences (fichiers / déduit)
+| Règle | Valeur | Confiance |
+|---|---|---|
+| Tracé : positions et liaisons des 243 nœuds (12 départs, 59 attributs +1, 172 compétences) | `01-tree-data.js` | fichiers (serveur dédié 1.0, relevé PinDrop) |
+| Achat : un nœud doit toucher un départ ou un nœud acquis relié à un départ | `canBuy` | fichiers + **déduit** : les liaisons sont stockées orientées, mais 9 nœuds n'ont aucun lien entrant, donc le jeu ne peut pas s'en servir comme prérequis (analyse PinDrop) |
+| Coût d'un rang | coût du nœud, identique à chaque rang | **hypothèse** : les fichiers ne donnent qu'un coût par nœud (même hypothèse que PinDrop) |
+| Flamme centrale | nœud logique reliant les 12 départs, non dessiné | représentation du simulateur |
+
 ## Optimiseur de points (`investments()`)
-Pour chaque compétence non au maximum : on simule +1 rang ; si les dégâts moyens sur la cible augmentent, on calcule le vrai coût (rang suivant, ou chemin le moins cher depuis la Flamme via `pathTo`, chemin compris), on applique, on mesure. Idem pour le prochain nœud d'attribut Force / Dextérité / Intelligence. Tri par gain par point. Le test `optimizer.test.js` vérifie que le gain annoncé est exactement celui obtenu après achat.
+Pour chaque compétence non au maximum : on simule +1 rang ; si les dégâts moyens sur la cible augmentent, on calcule le vrai coût (rang suivant, ou chemin le moins cher depuis les nœuds reliés à un départ via `pathTo`, chemin compris), on applique, on mesure. Idem pour le prochain nœud d'attribut Force / Dextérité / Intelligence. Tri par gain par point. Le test `optimizer.test.js` vérifie que le gain annoncé est exactement celui obtenu après achat.

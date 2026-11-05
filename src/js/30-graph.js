@@ -1,28 +1,32 @@
 
 /* =========================== GRAPHE (style Obsidian) =========================== */
-/* Regroupements thématiques : 12 points de départ, comme les 12 départs de l'arbre 1.0.
-   Les liaisons sont une reconstruction : la position exacte des nœuds du jeu n'est pas publiée. */
+/* Tracé réel du jeu 1.0 : positions et liaisons des fichiers du jeu (relevé PinDrop, voir 01-tree-data.js).
+   Chaque nœud est ancré à sa position réelle : on peut le tirer (effet élastique), il revient toujours à sa place.
+   La Flamme (nœud logique reliant les 12 départs) n'est jamais dessinée : un vrai nœud occupe le centre. */
 
 
 const G=(()=>{
   const cv=$('#gcv'),wrap=$('#gwrap'),card=$('#gcard');const ctx=cv.getContext('2d');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
-  const {N,E,byId,core}=TOPO;let W=0,H=0,dpr=1,curR=new Set();
-  const cam={x:0,y:0,k:.8};let alpha=1,dirty=true,hover=null,sel=null,lastO=null,drag=null,fitted=false,hoverTarget=null,hoverAmt=0,leaveT=0;
+  const {N,E}=TOPO;const V=N.filter(n=>n.kind!=='hub');let W=0,H=0,dpr=1,curR=new Set();
+  const cam={x:0,y:0,k:.8};let alpha=0,dirty=true,hover=null,sel=null,lastO=null,drag=null,fitted=false,hoverTarget=null,hoverAmt=0,leaveT=0;
   const glowCache={};
   function glow(col){if(!glowCache[col]){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=.6;x.fillStyle=gr;x.fillRect(0,0,64,64);glowCache[col]=c}return glowCache[col]}
+  /* Libellés des trois zones, au bord extérieur de leurs nœuds (comme le planificateur PinDrop) */
+  const zones=AREAS.filter(a=>a[0]!=='core').map(([k,l])=>{const ns=V.filter(n=>n.area===k);const ang=Math.atan2(ns.reduce((a,n)=>a+n.ay,0),ns.reduce((a,n)=>a+n.ax,0));
+    const R=Math.max(...ns.map(n=>Math.hypot(n.ax,n.ay)))+30;return {k,l,x:Math.cos(ang)*R,y:Math.sin(ang)*R}});
 
-  /* Simulation de forces */
+  /* Ressorts à la longueur réelle + rappel constant vers la position réelle : au repos, le tracé est exactement celui du jeu */
+  function home(){for(const p of V){p.x=p.ax;p.y=p.ay;p.vx=p.vy=0}alpha=0;dirty=true}
   function tick(){
     const a=alpha;
-    for(let i=0;i<N.length;i++){const p=N[i];for(let j=i+1;j<N.length;j++){const q=N[j];let dx=q.x-p.x,dy=q.y-p.y,d2=dx*dx+dy*dy;if(d2>40000)continue;if(d2<16)d2=16;
-      const f=900/d2*a,d=Math.sqrt(d2);dx/=d;dy/=d;p.vx-=dx*f;p.vy-=dy*f;q.vx+=dx*f;q.vy+=dy*f}}
     for(const [p,q,L] of E){let dx=q.x-p.x,dy=q.y-p.y,d=Math.sqrt(dx*dx+dy*dy)||1;const f=(d-L)*.06*a;dx/=d;dy/=d;p.vx+=dx*f;p.vy+=dy*f;q.vx-=dx*f;q.vy-=dy*f}
-    for(const p of N){if(p.ax!==undefined){p.vx+=(p.ax-p.x)*p.as*a;p.vy+=(p.ay-p.y)*p.as*a}
-      if(p===drag||p===core){p.vx=p.vy=0;continue}p.vx*=.78;p.vy*=.78;p.x+=p.vx;p.y+=p.vy}
-    alpha=Math.max(0,alpha*.985-.0004);
+    let mv=0;for(const p of V){p.vx+=(p.ax-p.x)*.1;p.vy+=(p.ay-p.y)*.1;
+      if(p===drag){p.vx=p.vy=0;continue}p.vx*=.78;p.vy*=.78;p.x+=p.vx;p.y+=p.vy;mv=Math.max(mv,Math.abs(p.x-p.ax)+Math.abs(p.y-p.ay))}
+    alpha=Math.max(0,alpha*.985-.0004);if(!drag&&(alpha<=.002||mv<.05))home(); // revenu en place : on s'arrête
   }
-  for(let i=0;i<420;i++){alpha=Math.max(.15,alpha);tick()}alpha=0;
+  function release(){if(reduce.matches)home();else alpha=Math.max(alpha,.3)}
+  reduce.addEventListener('change',()=>{if(reduce.matches)home()});
 
   /* État du build */
   const b=()=>B();
@@ -56,11 +60,12 @@ const G=(()=>{
       if(hl&&(p===hover||q===hover)){ctx.globalAlpha=.9+.1*hoverAmt;if(!on&&hoverAmt>.5)ctx.strokeStyle=colors.label;ctx.lineWidth=(1+.6*hoverAmt)/Math.max(.6,cam.k)}
       ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
     // nœuds
-    for(const n of N){const on=isOn(n);const col=areaCol(n.area);ctx.globalAlpha=fa(n);
+    for(const n of V){const on=isOn(n);const col=areaCol(n.area);ctx.globalAlpha=fa(n);
       const r=n.r*(n===hover?1+.12*hoverAmt:1);
-      if(n.kind==='start'||n.kind==='hub'){ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=colors.bg;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=on?col:colors.node;
+      if(n.kind==='start'){ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=colors.bg;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=on?col:colors.node;
         if(on){const R=r*2.4;ctx.drawImage(glow(col),n.x-R,n.y-R,2*R,2*R)}ctx.stroke();
-        if(n.kind==='hub'){ctx.beginPath();ctx.arc(n.x,n.y,r*.45,0,7);ctx.fillStyle=colors.ember;ctx.fill()}continue}
+        ctx.beginPath();ctx.arc(n.x,n.y,r*.45,0,7);ctx.fillStyle=colors.ember;ctx.fill();
+        if(n===sel){ctx.beginPath();ctx.arc(n.x,n.y,r+5,0,7);ctx.lineWidth=1.5/cam.k;ctx.strokeStyle=colors.ring;ctx.stroke()}continue}
       if(on){const R=r*(n.kind==='pip'?2.6:2.9);ctx.drawImage(glow(col),n.x-R,n.y-R,2*R,2*R)}
       const av=!on&&avail(n);if(!on&&!av)ctx.globalAlpha*=.55;
       ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=on?col:colors.node;ctx.fill();
@@ -77,16 +82,22 @@ const G=(()=>{
     // libellés en coordonnées écran (nets à tous les zooms)
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='top';
     const fade=Math.max(0,Math.min(1,(cam.k-.75)/.45));
-    for(const n of N){let a=0,txt='';
-      if(n.kind==='start'||n.kind==='hub'){a=1;txt=n.label}
-      else if(n.kind==='skill'){txt=n.sk.fr;a=fade;if(n===sel||(ms&&ms.has(n)))a=1;else if(n===hover)a=Math.max(a,hoverAmt);else if(isOn(n))a=Math.max(a,Math.min(1,fade+.35))}
-      else if(n===hover){a=hoverAmt;txt=PIPS.find(p=>p[0]===n.attr)[1]+' +1'}
+    // zones, gardées dans le cadre ; puis les noms par priorité (sélection, survol, recherche, acquis), sans chevauchement
+    const placed=[],free=x=>!placed.some(q=>x[0]<q[2]&&x[2]>q[0]&&x[1]<q[3]&&x[3]>q[1]);
+    ctx.font='700 13px "Alegreya SC", Georgia, serif';
+    for(const z of zones){const t=z.l.toUpperCase(),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
+      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+16]);ctx.globalAlpha=.85;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
+    const lab=[];
+    for(const n of V){let a=0,txt='',pr=0;
+      if(n.kind==='start'){if(n===hover||n===sel){a=n===sel?1:hoverAmt;txt='Étincelle';pr=3}}
+      else if(n.kind==='skill'){txt=n.sk.fr;a=fade;if(n===sel||(ms&&ms.has(n))){a=1;pr=n===sel?4:2}else if(n===hover){a=Math.max(a,hoverAmt);pr=3}else if(isOn(n)){a=Math.max(a,Math.min(1,fade+.35));pr=1}}
+      else if(n===hover){a=hoverAmt;txt=PIPS.find(p=>p[0]===n.attr)[1]+' +1';pr=3}
       if(!a||!txt)continue;a*=fa(n);
-      const [sx,sy]=toS(n.x,n.y);if(sx<-80||sx>W+80||sy<-30||sy>H+30)continue;
-      ctx.globalAlpha=a;
-      if(n.kind==='start'||n.kind==='hub'){ctx.font='700 12px "Alegreya SC", Georgia, serif';ctx.fillStyle=n.kind==='hub'?colors.ember:areaCol(n.area);ctx.fillText(txt.toUpperCase(),sx,sy+n.r*cam.k+6)}
-      else{ctx.font=(n===hover||n===sel?'700 ':'500 ')+'12px "Alegreya Sans", system-ui, sans-serif';ctx.fillStyle=colors.label;ctx.fillText(txt,sx,sy+(n.r+5)*cam.k+3)}
-    }
+      const [sx,sy]=toS(n.x,n.y);if(sx<-80||sx>W+80||sy<-30||sy>H+30)continue;lab.push({n,a,txt,pr,sx,sy})}
+    lab.sort((p,q)=>q.pr-p.pr);
+    for(const L of lab){const bold=L.n===hover||L.n===sel;ctx.font=(bold?'700 ':'500 ')+'12px "Alegreya Sans", system-ui, sans-serif';
+      const w=ctx.measureText(L.txt).width,y=L.sy+(L.n.r+5)*cam.k+3,box=[L.sx-w/2-2,y,L.sx+w/2+2,y+14];
+      if(L.pr<3&&!free(box))continue;placed.push(box);ctx.globalAlpha=L.a;ctx.fillStyle=colors.label;ctx.fillText(L.txt,L.sx,y)}
     ctx.globalAlpha=1;
   }
 
@@ -103,29 +114,29 @@ const G=(()=>{
   requestAnimationFrame(loop);
 
   /* Caméra */
-  function fit(filter){const ns=N.filter(n=>!filter||filter==='all'||n.area===filter||(filter==='core'&&n.kind==='hub'));if(!ns.length||!W)return;
+  function fit(filter){const ns=V.filter(n=>!filter||filter==='all'||n.area===filter);if(!ns.length||!W)return;
     let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const n of ns){x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y)}
     cam.x=(x0+x1)/2;cam.y=(y0+y1)/2;cam.k=Math.min(2.4,Math.max(.25,Math.min((W-60)/Math.max(60,x1-x0),(H-80)/Math.max(60,y1-y0))));fitted=true;dirty=true}
 
   /* Pointeur */
   const ptrs=new Map();let pan=null,moved=0,pinch=null;
-  function hit(sx,sy){const [x,y]=toW(sx,sy);let best=null,bd=Infinity;for(const n of N){const d=Math.hypot(n.x-x,n.y-y);const lim=n.r+(n.kind==='pip'?4:6)/Math.min(1,cam.k);if(d<lim&&d<bd){bd=d;best=n}}return best}
+  function hit(sx,sy){const [x,y]=toW(sx,sy);let best=null,bd=Infinity;for(const n of V){const d=Math.hypot(n.x-x,n.y-y);const lim=n.r+(n.kind==='pip'?4:6)/Math.min(1,cam.k);if(d<lim&&d<bd){bd=d;best=n}}return best}
   const pos=e=>{const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
   cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pos(e);ptrs.set(e.pointerId,p);moved=0;
-    if(ptrs.size===2){const [a,c]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-c[0],a[1]-c[1]),k:cam.k};drag=null;pan=null;return}
-    if(e.button===2)return;const n=hit(...p);if(n&&n!==core){drag=n;cv.classList.add('grabbing')}else{pan={sx:p[0],sy:p[1],cx:cam.x,cy:cam.y};cv.classList.add('grabbing')}});
+    if(ptrs.size===2){const [a,c]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-c[0],a[1]-c[1]),k:cam.k};if(drag)release();drag=null;pan=null;return}
+    if(e.button===2)return;const n=hit(...p);if(n){drag=n;cv.classList.add('grabbing')}else{pan={sx:p[0],sy:p[1],cx:cam.x,cy:cam.y};cv.classList.add('grabbing')}});
   cv.addEventListener('pointermove',e=>{const p=pos(e);
     if(ptrs.has(e.pointerId)){const old=ptrs.get(e.pointerId);moved+=Math.hypot(p[0]-old[0],p[1]-old[1]);ptrs.set(e.pointerId,p)}
     if(pinch&&ptrs.size===2){const [a,c]=[...ptrs.values()];const d=Math.hypot(a[0]-c[0],a[1]-c[1]);cam.k=Math.min(4,Math.max(.2,pinch.k*d/pinch.d));dirty=true;return}
-    if(drag&&moved>3){const [x,y]=toW(...p);drag.x=x;drag.y=y;drag.ax!==undefined&&(drag.ax=x,drag.ay=y);alpha=Math.max(alpha,.25);dirty=true;return}
+    if(drag&&moved>3){const [x,y]=toW(...p);drag.x=x;drag.y=y;alpha=Math.max(alpha,.25);dirty=true;return}
     if(pan){cam.x=pan.cx-(p[0]-pan.sx)/cam.k;cam.y=pan.cy-(p[1]-pan.sy)/cam.k;dirty=true;return}
     let h=hit(...p);
     if(!h&&hoverTarget){const [x,y]=toW(...p);if(Math.hypot(hoverTarget.x-x,hoverTarget.y-y)<hoverTarget.r+14/Math.min(1,cam.k))h=hoverTarget}
     if(h!==hoverTarget){if(!h)leaveT=performance.now();hoverTarget=h;cv.classList.toggle('pointer',!!h)}});
   function end(e){const p=pos(e);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;cv.classList.remove('grabbing');
-    if(moved<5&&e.button!==2){const n=hit(...p);if(n&&n!==core){if(e.shiftKey)change(n,-1);select(n)}else{sel=null;showCard()}}
-    drag=null;pan=null;dirty=true}
-  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;drag=null;pan=null});
+    if(moved<5&&e.button!==2){const n=hit(...p);if(n){if(e.shiftKey)change(n,-1);select(n)}else{sel=null;showCard()}}
+    if(drag)release();drag=null;pan=null;dirty=true}
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;if(drag)release();drag=null;pan=null});
   cv.addEventListener('pointerleave',()=>{if(hoverTarget){hoverTarget=null;leaveT=performance.now()}});
   cv.addEventListener('dblclick',e=>{const n=hit(...pos(e));if(n){change(n,+1);select(n)}});
   cv.addEventListener('contextmenu',e=>{e.preventDefault();const n=hit(...pos(e));if(n){change(n,-1);select(n)}});
@@ -140,13 +151,13 @@ const G=(()=>{
   function showCard(){
     if(!sel||sel.kind==='hub'){card.hidden=true;return}
     const bb=b();card.hidden=false;card.style.setProperty('--ac',areaColor(sel.area));
-    if(sel.kind==='start'){const c=CLUSTERS.find(x=>x[1]===sel.cl);const pts=c[4].reduce((a,id)=>a+(bb.sk[id]||0)*SKI[id].cost,0);
-      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Point de départ · ${AREAS.find(a=>a[0]===sel.area)[1]}</div><h3>${esc(c[2])}</h3><div class="d">${c[4].length} compétences dans ce groupe, ${pts} points investis.</div><div class="m">Attribut sur le chemin : ${PIPS.find(p=>p[0]===c[3])[1]}</div>`}
+    if(sel.kind==='start'){const nb=[...sel.nb].filter(n=>n.kind!=='hub').map(n=>n.kind==='skill'?n.sk.fr:PIPS.find(p=>p[0]===n.attr)[1]+' +1');
+      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Point de départ · gratuit</div><h3>Étincelle</h3><div class="en">Spark</div><div class="d">Permet de réapparaître à l'autel de la Flamme. Ses voisins s'achètent sans autre prérequis.</div><div class="m">Relié à : ${esc(nb.join(', '))}</div>`}
     else if(sel.kind==='pip'){const P=PIPS.find(p=>p[0]===sel.attr);const v=bb.pip[sel.attr]||0;const own=!!bb.pn[sel.id];const lock=!own&&!canBuy(bb,sel);
       card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Nœud d'attribut · 1 point</div><h3>${P[1]} +1</h3><div class="d">${{str:'+5 % de dégâts de mêlée par point.',con:'+50 de santé par point.',end:'+10 de vigueur par point.',dex:'+5 % de dégâts à l\'arc et aux dagues par point.',int:'+5 % de dégâts magiques par point.',spi:'+20 de mana par point.'}[sel.attr]}</div>
        <div class="step"><button data-d="-1" aria-label="Retirer ce nœud" ${own?'':'disabled'}>−</button><span class="rk">${own?'acquis':lock?'verrouillé':'disponible'}</span><button data-d="1" aria-label="Acquérir ce nœud" ${own||lock?'disabled':''}>+</button></div><div class="m">${P[1]} : ${v}/${P[4]} nœuds acquis</div>${lockHtml(bb,sel,lock)}`}
-    else{const s=sel.sk,v=bb.sk[s.id]||0,g=gearOf(sel);const lock=!v&&!canBuy(bb,sel);const cl=CLUSTERS.find(x=>x[1]===sel.cl);
-      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">${AREAS.find(a=>a[0]===s.area)[1]}${cl?' · '+cl[2]:''}${s.nw?' · nouveau en 1.0':''}</div><h3>${esc(s.fr)}</h3><div class="en">${esc(s.en)}</div><div class="d">${esc(s.d)}</div>
+    else{const s=sel.sk,v=bb.sk[s.id]||0,g=gearOf(sel);const lock=!v&&!canBuy(bb,sel);
+      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">${AREAS.find(a=>a[0]===s.area)[1]}${s.nw?' · nouveau en 1.0':''}</div><h3>${esc(s.fr)}</h3><div class="en">${esc(s.en)}</div><div class="d">${esc(s.d)}</div>
        <div class="step"><button data-d="-1" aria-label="Retirer un rang" ${v?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button data-d="1" aria-label="Ajouter un rang" ${v<s.max&&!lock?'':'disabled'}>+</button><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?' / rang':''}</span></div>
        ${g?`<div class="m" style="color:var(--shroud)">+${g} rang${g>1?'s':''} apporté${g>1?'s':''} par l'équipement</div>`:''}${lockHtml(bb,sel,lock)}`}
     card.querySelector('.x').onclick=()=>{sel=null;card.hidden=true;dirty=true};
@@ -154,8 +165,8 @@ const G=(()=>{
     const pb=card.querySelector('.pathb');if(pb)pb.onclick=()=>{const pth=pathTo(bb,sel);if(pth){buyPath(bb,pth);renderAll()}};
   }
   $('#gFit').onclick=()=>{area='all';fit();renderSkills()};
-  $('#gShake').onclick=()=>{for(const n of N){if(n!==core){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}}alpha=.8;if(reduce.matches)for(let i=0;i<300;i++)tick();dirty=true};
+  $('#gShake').onclick=()=>{if(reduce.matches){home();return}for(const n of V){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}alpha=.8;dirty=true};
   resize();fit();
-  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},nodes:N,edges:E};
+  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
 })();
 window.G=G;

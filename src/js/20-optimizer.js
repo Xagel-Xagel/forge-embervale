@@ -117,7 +117,7 @@ function renderOptNow(){optT=null;
       <td class="act"><button class="btn sm" data-inv="${i}">${x.cost>free?'Acheter (dépasse)':'Acheter'}</button></td></tr>`);
     cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3><span class="lbl">${free>=0?free+' pts libres':'budget dépassé de '+(-free)+' pts'}</span></div>
       ${ir.length?optTable(ir,['#','Nœud','Coût','Gain','Gain / pt',''],'named'):vsEnemy(wc,o,en).m===0?`<p class="empty">${esc(en.n)} est immunisé aux dégâts ${WTYPE[wc.w.type]} : aucun point ne changera rien. Changez d'arme (voir le classement).</p>`:'<p class="empty">Aucun nœud accessible n\'augmente encore les dégâts de cette arme contre cette cible : vos bonus offensifs sont au maximum.</p>'}
-      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis la Flamme.</div></div>`;
+      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis vos nœuds reliés à un point de départ.</div></div>`;
     root._inv=inv}
   // 5. défense
   const cDef=`<div class="ocard"><div class="oh"><h3>Défense : combien de coups encaissez-vous ?</h3><span class="lbl">${fmt(o.hp)} PV</span></div>
@@ -144,6 +144,7 @@ function renderOptNow(){optT=null;
       <code>dégâts sur la cible = Σ (part du type × multiplicateur du type)</code></div>
     <div><span class="tag est">communauté</span><b>Dégâts infligés.</b> <code>coup = base de l'arme × (1 + Σ bonus %) × multiplicateur du type × (1 + bonus contre la famille)</code>
       Bonus : +5 % par point de Force (mêlée), de Dextérité (arcs, dagues) ou d'Intelligence (magie), compétences de famille d'arme et de type de dégâts, statistiques d'équipement. Le simulateur additionne ces bonus ; le jeu en multiplie peut-être certains.</div>
+    <div><span class="tag ok">fichiers du jeu</span><b>Arbre de compétences.</b> Positions et liaisons des 243 nœuds : fichiers 1.0 (relevé PinDrop). <span class="tag hyp">déduit</span> Une liaison marche dans les deux sens (9 nœuds n'ont aucun lien entrant) et chaque rang coûte le prix du nœud (un seul coût par nœud dans les fichiers).</div>
     <div><span class="tag est">communauté</span><b>Critiques.</b> <code>moyenne = coup × (1 + chance de critique × dégâts critiques)</code> Base : 10 % de chance, +80 % de dégâts.</div>
     <div><span class="tag hyp">hypothèse</span><b>Résistances en %.</b> Appliquées après l'armure, en multiplication : <code>subis × (1 − résistance)</code>. Idem pour Tour, Gardien et Aura de terre (−10 % chacun quand ils s'appliquent).</div>
     <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Une arme est traitée comme infligeant 100 % de son type principal (la répartition exacte n'est pas publiée) ; les perks d'arme « feu magique », « dégâts perçants »… et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>

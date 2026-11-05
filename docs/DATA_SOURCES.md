@@ -4,7 +4,8 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 
 | Données | Fichier | Source | Remarques |
 |---|---|---|---|
-| Arbre de compétences 1.0 (172 compétences, coûts, rangs, effets) | 01-data.js `SK` | [PinDrop – skill tree](https://pindrop.gg/enshrouded/skill-tree) | Textes traduits en français. La **position** des nœuds n'est pas publiée : le graphe (04-tree.js) est une reconstruction thématique. |
+| Arbre de compétences 1.0 (172 compétences, coûts, rangs, effets) | 01-data.js `SK` | [PinDrop – skill tree](https://pindrop.gg/enshrouded/skill-tree) | Textes traduits en français. Coûts, rangs et zones recoupés avec le tracé ci-dessous le 2026-11-05 : 0 écart. |
+| **Tracé de l'arbre 1.0** : 243 nœuds (12 départs « Spark », 59 attributs +1, 172 compétences) avec positions x/y, 312 liaisons | 01-tree-data.js `TREE` | [PinDrop – skill tree](https://pindrop.gg/enshrouded/skill-tree) : JSON embarqué dans le bundle du planificateur, extrait par PinDrop des fichiers du **serveur dédié Enshrouded** (Steam app 2278520, build 1267041 release_1.0 ; coûts de 3 nœuds mis à jour au patch #1) | Relevé le 2026-11-05 par `scripts/tree-from-pindrop.mjs` (lecture du JSON, jamais exécuté). Liaisons **non orientées** et **même coût à chaque rang** : déductions de PinDrop (9 nœuds n'ont aucun lien entrant ; un seul coût par nœud dans les fichiers). PinDrop confirme qu'il n'y a **pas de sous-arbres** en 1.0 : les 12 groupes de l'ancienne reconstruction ont été retirés. La Flamme centrale reliant les départs est une représentation du simulateur. |
 | Armures (7 panoplies), anneaux | 01-data.js `SETS`, `RINGS` | PinDrop, [wiki Enshrouded](https://enshrouded.wiki.gg) | Stats de base + 5 perks débloqués par amélioration. Pas de bonus de panoplie en 1.0. Pas de valeur d'armure finale. |
 | Armes (53) | 01-data.js `WEAPONS` | [wiki Enshrouded](https://enshrouded.wiki.gg), guides | Dégâts = estimation au niveau requis. Type principal seulement. |
 | Gemmes (29) | 05-gems.js | PinDrop / wiki | Effets et valeurs de base de la carte ; non convertis en dégâts. |
@@ -20,5 +21,5 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 - **Fell Banshee**, **Hollow Reaper** : légers écarts → valeurs PinDrop retenues.
 - Formule d'armure `Armure/(Armure+400)` (NKB) : non vérifiée, contredit le tutoriel → non utilisée.
 
-## Sites inaccessibles depuis l'environnement d'origine
-Le planificateur PinDrop (`pindrop.gg/enshrouded/skill-tree/...`) et certaines pages wikily.gg n'étaient pas lisibles par l'outil de récupération web. Depuis une machine normale (ou un navigateur piloté), ils le sont.
+## Accès aux sites
+Le planificateur PinDrop n'était pas lisible par l'outil de récupération web de l'environnement d'origine (claude.ai). Depuis une machine normale, la page et son bundle JS se téléchargent sans navigateur : c'est ce que fait `scripts/tree-from-pindrop.mjs`. Certaines pages wikily.gg restent à vérifier depuis un navigateur.
