@@ -36,6 +36,8 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 
 15. (Claude Code, 2026-11-06) « Go » → ROADMAP n° 3 (armure par pièce) : aucune source 1.0 (PinDrop : valeur absente des fichiers pour les sets 1.0). QCM : **« bloquer, passer à la suite »**.
 
+16. (Claude Code, 2026-11-06) ROADMAP n° 4 (attaques des ennemis) : fichiers 1.0 sans dégâts ni type par attaque (PinDrop). QCM : **« bloquer, passer à la suite »**.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.
