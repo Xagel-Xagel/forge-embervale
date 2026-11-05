@@ -8,7 +8,7 @@ Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et co
 3. **Valeurs d'armure par pièce — BLOQUÉ (2026-11-06).** PinDrop (https://pindrop.gg/enshrouded/armor) : pour les sets 1.0 (Emberguard, Crestflame…), « the game files do not store the number » ; seules les pièces d'avant la 1.0 ont une valeur (wiki). Déblocage : relevé en jeu par l'utilisateur. En attendant, le calculateur de défense prend l'armure de la fiche en jeu (saisie manuelle).
 
 ## Priorité moyenne
-4. Attaques des ennemis (dégâts et type par attaque) pour pré-remplir « Coup reçu ».
+4. **Attaques des ennemis — BLOQUÉ (2026-11-06).** PinDrop (pages ennemis, fichiers 1.0) : liste des attaques avec portée et menace, mais ni dégâts ni type ; seul un facteur relatif (« Damage scaling ×0.5 of the baseline enemy »). Déblocage : relevé en jeu. « Coup reçu » reste saisi à la main.
 5. Intégrer les gemmes et perks d'arme qui ajoutent des dégâts (Lumière focalisée, Courants, Saignement…) dans un « DPS conditionnel » séparé.
 6. Vérifier : bonus additifs ou multiplicatifs ; Aura de terre par rang ou totale ; compétences qui relèvent le plafond de 60 % ; modificateur deux mains ×1,5.
 7. Feux follets : trancher entre les sources (vérification en jeu ou nouvelle extraction).
