@@ -55,6 +55,19 @@ test('retirer un nœud élague tout ce qui n\'est plus relié à un départ', ()
   }
   assert.ok(cas > 0, 'aucun nœud d\'attribut voisin d\'un départ : test vide');
 });
+// Revue des presets sur le tracé réel (1.10.0) : 277 → 155 points de liaison. Plafond par preset = valeur mesurée ce jour-là.
+test('presets : points perdus en liaisons plafonnés (revue 1.10.0)', () => {
+  const MAX = {'Mage de bataille': 5, 'Rôdeur archer': 11, 'Guerrier épée et bouclier': 6, 'Barbare deux mains': 5, 'Assassin aux dagues': 9, 'Soigneur de groupe': 8, 'Sadi Fourbe': 22,
+    'Sorcier de feu': 8, 'Mage de foudre (baguette)': 8, 'Mage de glace (contrôle)': 12, 'Nécromancien invocateur': 12, 'Arcaniste du bâton (critiques)': 12, 'Paladin soigneur': 15,
+    'Gardien du Shroud (soutien)': 12, 'Prêtre du feu (soin offensif)': 10};
+  for (const p of PRESETS) { const perte = spentPoints(fromPreset(p)) - spentPoints({sk: p.sk, pip: p.pip});
+    assert.ok(p.name in MAX, p.name + ' : plafond à définir'); assert.ok(perte <= MAX[p.name], `${p.name} : ${perte} points de liaison (plafond ${MAX[p.name]})`); }
+});
+test('presets mage et soin : 2 CON demandés, au plus 1 de plus en liaison (plus de traversée de la zone Guerrier pour la CON)', () => {
+  for (const p of PRESETS.filter(q => q.cat === 'mage' || q.cat === 'heal')) { const b = fromPreset(p);
+    assert.equal(p.pip.con, 2, p.name); assert.ok(b.pip.con <= 3, p.name + ' : ' + b.pip.con + ' CON');
+    assert.ok(Object.keys(b.pn).some(id => TOPO.byId[id].attr === 'con' && [...TOPO.byId[id].nb].some(m => m.kind === 'start')), p.name + ' : aucun CON voisin d\'un départ'); }
+});
 test('normalize : aucune liaison inutile laissée dans les presets', () => {
   for (const p of PRESETS) { const b = fromPreset(p);
     for (const n of TOPO.N) { const extra = n.kind === 'skill' ? b.sk[n.id] > 0 && !(n.id in p.sk) : n.kind === 'pip' && b.pn[n.id] && b.pip[n.attr] > (p.pip[n.attr] || 0);

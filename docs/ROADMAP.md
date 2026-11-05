@@ -3,7 +3,7 @@
 Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et comment le débloquer.
 
 ## Priorité haute
-1. **Revoir les presets sur le tracé réel.** Depuis la 1.9.0, `normalize` leur ajoute des nœuds de liaison (ex. un mage à 11 CON traverse la zone Guerrier : Voie du guerrier, Taillade, Plaques lourdes…). Choisir des attributs et compétences cohérents avec le vrai tracé, sources à l'appui ; les codes b3 déjà partagés ne bougent pas.
+1. **Presets : liaisons restantes.** Revue 1.10.0 faite (277 → 155 points de liaison). Reste : Sadi Fourbe (22, build de l'utilisateur, non touché) et les liaisons structurelles (ex. Rôdeur archer : Esprit calme, Lames venimeuses, Mithridatisé) ; envisager de rendre utiles les liaisons obligatoires (rang 3 si l'effet sert le rôle).
 2. **Dégâts mixtes des armes.** Beaucoup d'armes infligent deux types (ex. tranchant + glace). Trouver la répartition (fichiers du jeu via PinDrop/enshrouded.tools) et l'ajouter à `WEAPONS` sous forme de parts ; `vsEnemy` devient `Σ part × multiplicateur`. Ajouter un champ ou réordonner ne casse pas les codes (tables figées `FZ`, CLAUDE.md §2).
 3. **Valeurs d'armure par pièce.** Si une source 1.0 les publie, calculer l'armure physique/magique dans `compute()` (avec Plaques lourdes/brillantes) et pré-remplir le calculateur de défense.
 
