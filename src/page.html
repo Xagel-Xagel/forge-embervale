@@ -1,0 +1,123 @@
+<title>Forge d'Embervale</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- INLINE:CSS -->
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Forge d'<span>Embervale</span></h1>
+      <div class="sub">Simulateur de stuff pour Enshrouded 1.0 · niveau max 50, équipement jusqu'au niveau 55, 212 points de compétence</div>
+    </div>
+    <span class="ver">Données : version 1.0 (oct.–nov. 2026)</span>
+  </header>
+
+  <div class="toolbar" role="toolbar" aria-label="Builds">
+    <div class="tabs" role="tablist" id="buildTabs"></div>
+    <input type="text" class="namein" id="buildName" aria-label="Nom du build">
+    <label class="chk"><input type="checkbox" id="cmp"> Comparer A et B</label>
+    <span class="sep"></span>
+    <select id="preset" aria-label="Builds prédéfinis"><option value="">Charger un build prédéfini…</option></select>
+    <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
+    <button class="btn" id="reset">Vider</button>
+    <span class="sep"></span>
+    <button class="btn" id="save">Enregistrer</button>
+    <select id="saved" aria-label="Builds enregistrés"><option value="">Mes builds…</option></select>
+    <button class="btn" id="delSaved">Supprimer</button>
+    <span class="sep"></span>
+    <button class="btn primary" id="share">Partager</button>
+    <button class="btn" id="import">Importer un code</button>
+  </div>
+
+  <section class="panel" aria-labelledby="h-sk">
+    <div class="ph"><h2 id="h-sk">Arbre de compétences</h2>
+      <div class="row"><span class="lbl">172 compétences · 59 nœuds d'attribut · 12 départs</span>
+      <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div></div>
+    <div class="pb">
+      <div class="treehead">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="budget">
+            <label>Niveau du personnage<input type="number" id="lvl" min="1" max="50"></label>
+            <label>Points d'exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
+            <label>Niveau de la Flamme<input type="number" id="flame" min="1" max="11"></label>
+          </div>
+          <div>
+            <div class="budgetline"><span id="spent"></span><span id="needLvl"></span></div>
+            <div class="bar" id="bar"><i></i></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="areas" id="areas"></div>
+          <div class="filters">
+            <input type="text" id="q" placeholder="Rechercher une compétence (FR ou EN)" aria-label="Rechercher une compétence">
+            <label class="chk"><input type="checkbox" id="onlyOn"> Prises seulement</label>
+          </div>
+        </div>
+      </div>
+      <div id="graphView">
+        <div class="gwrap" id="gwrap">
+          <canvas id="gcv" aria-label="Arbre de compétences en graphe. Utilisez la vue Liste pour une navigation au clavier."></canvas>
+          <div class="ghelp">Glisser pour déplacer · molette ou pincement pour zoomer · clic pour sélectionner · double-clic : +1 rang · clic droit : −1 rang · un nœud ne s'achète que s'il touche un nœud acquis</div>
+          <div class="gtools"><button id="gFit">Tout afficher</button><button id="gShake">Réorganiser</button></div>
+          <div class="gcard" id="gcard" hidden></div>
+        </div>
+        <div class="glegend" style="margin-top:8px">
+          <span><i style="background:var(--g-node)"></i>non acquis</span>
+          <span><i style="background:var(--mag);box-shadow:0 0 8px var(--mag)"></i>acquis (couleur de la zone)</span>
+          <span><i style="border:1.5px solid var(--g-label);background:transparent"></i>point de départ</span>
+          <span><i style="background:var(--g-node);box-shadow:0 0 0 2px var(--mag)"></i>achetable (relié)</span>
+          <span><i style="background:var(--g-node);opacity:.5"></i>verrouillé</span>
+          <span><i style="border:1.5px dashed var(--shroud);background:transparent"></i>rang donné par l'équipement</span>
+          <span>petits nœuds : attributs (+1)</span>
+        </div>
+      </div>
+      <div id="listView" hidden>
+        <div class="pips" id="pips"></div>
+        <div class="nodes" id="nodes" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-eq">
+      <div class="ph"><h2 id="h-eq">Équipement</h2><span class="lbl" id="eqCount"></span></div>
+      <div class="pb">
+        <div class="upg">
+          <label for="upg" class="lbl">Améliorations</label>
+          <input type="range" id="upg" min="0" max="5" step="1">
+          <span id="upgTxt" style="font-family:var(--f-mono);font-size:.85rem"></span>
+        </div>
+        <div id="slots" class="pb" style="padding:0"></div>
+      </div>
+    </section>
+
+
+    <section class="panel stats" aria-labelledby="h-st">
+      <div class="ph"><h2 id="h-st">Fiche du personnage</h2><span class="lbl" id="stMode"></span></div>
+      <div class="pb" id="stats"></div>
+    </section>
+  </div>
+
+  <section class="panel" id="optPanel" aria-labelledby="h-opt">
+    <div class="ph"><h2 id="h-opt">Calculateur d'optimisation</h2><span class="lbl" id="optFor"></span></div>
+    <div class="pb">
+      <div class="optbar">
+        <label>Ennemi ciblé<select id="oEnemy"></select></label>
+        <label>Arme analysée<select id="oSlot"><option value="w1">Arme 1</option><option value="w2">Arme 2</option></select></label>
+        <label>Armes à classer<select id="oFam"></select></label>
+      </div>
+      <div id="optBody" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </section>
+
+  <p class="foot">
+    Sources : arbre de compétences, anneaux et panoplies 1.0 relevés dans les fichiers du jeu par <a href="https://pindrop.gg/enshrouded/skill-tree" target="_blank" rel="noopener">PinDrop</a> ;
+    valeurs d'attributs (<a href="https://metabot.gg/en/enshrouded/mechanics" target="_blank" rel="noopener">MetaBot</a>, <a href="https://enshrouded.wiki.gg/wiki/Attributes" target="_blank" rel="noopener">wiki Enshrouded</a>) ;
+    dégâts des armes estimés par la formule du wiki au niveau requis ; builds inspirés de <a href="https://www.keengamer.com/articles/guides/enshrouded-1-0-best-builds-weapons-armor-skills/" target="_blank" rel="noopener">KeenGamer</a>.
+    Les noms d'objets restent ceux du jeu en anglais ; les noms de compétences sont traduits ici (nom anglais en italique).
+    Faiblesses des ennemis : tables 1.0 de <a href="https://pindrop.gg/enshrouded/enemy-weaknesses" target="_blank" rel="noopener">PinDrop</a> et <a href="https://enshrouded.tools/1-0" target="_blank" rel="noopener">enshrouded.tools</a> ; armure d'après le tutoriel en jeu (<a href="https://enshrouded.wiki.gg/wiki/Combat_Mechanics" target="_blank" rel="noopener">wiki</a>).
+    Projet de fan, sans lien avec Keen Games.
+  </p>
+</div>
+
+<!-- INLINE:JS -->

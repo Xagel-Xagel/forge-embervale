@@ -1,0 +1,64 @@
+# Formules de jeu utilisées
+
+Niveau de confiance : **officiel** (texte du jeu), **fichiers** (valeurs extraites des fichiers du jeu par des sites tiers), **communauté** (estimation non vérifiée), **hypothèse** (choix du simulateur faute de source).
+
+## Progression (fichiers / wiki)
+| Règle | Valeur | Confiance |
+|---|---|---|
+| Niveau max | 50 ; équipement jusqu'au niveau 55 | fichiers |
+| Points de compétence | 2 par niveau (98) + 114 d'exploration (Racines du Shroud 1 pt, Puits d'élixir 3 pts) = **212** | wiki |
+| `budget(b)` | `2 × (niveau − 1) + exploration` | — |
+| Bonus de panoplie | **aucun en 1.0** | fichiers (PinDrop) |
+| Nœuds « Flamme » (Barbare, Démarche gracieuse, Exalté, Concentration arcanique, Peau épaisse, Flamme d'endurance) | +1 attribut tous les 2 niveaux de Flamme (Flamme max 11 → +5) | wiki |
+
+## Attributs (MetaBot, wiki)
+| Attribut | Effet par point |
+|---|---|
+| Constitution | +50 PV |
+| Esprit | +20 mana |
+| Endurance | +10 vigueur |
+| Force | +5 % de dégâts de mêlée |
+| Dextérité | +5 % de dégâts aux arcs et dagues |
+| Intelligence | +5 % de dégâts magiques (baguettes, bâtons) |
+
+Base : 100 PV, 100 mana, 100 vigueur. Critique de base : 10 % de chance, +80 % de dégâts.
+
+Implémenté dans `compute()` (src/js/02-calc.js). Quelques compétences convertissent un attribut en PV : Athlète (3 × Force par rang), Vigueur voilée (3 × Dex), Essences de vie (3 × Int).
+
+## Dégâts infligés (communauté)
+```
+coup     = base de l'arme × (1 + Σ bonus %)                        weaponCalc()
+moyenne  = coup × (1 + chance de critique × dégâts critiques)
+sur cible = coup × multiplicateur du type × (1 + bonus contre la famille)   vsEnemy()
+```
+- Σ bonus : attribut de la famille d'arme, compétences de famille (Voie du guerrier, Voie du barbare, Tranchant du titan, Tireur d'élite, Maîtrise des dagues, Apprenti mage, Maîtrise des baguettes, Lanceur de sorts), compétences de type (Taillade, Brute, Estoc, Perforation, Pyromane, Homme de glace, Tonnerre, Arts sombres), stats d'équipement.
+- **Hypothèse** : le simulateur additionne tous ces bonus. Le jeu en multiplie peut-être certains entre eux (non documenté).
+- Bonus contre une famille : « contre les Fell » (équipement), Os en cendres (Hollow, +5 %/rang), Fléau des aigles (volants, +10 %/rang). Appliqués comme multiplicateur séparé (**hypothèse**).
+- Base de l'arme : valeur du wiki au niveau requis (**communauté**). Deux familles d'unités : « Dégâts » (mêlée, dagues, baguettes) et « Puissance » (arcs, bâtons), non comparables directement.
+- Non comptés : modificateur deux mains (×1,5 selon MetaBot), points faibles, attaque impitoyable (×5 de base, +40 %/rang d'Opportunité), attaque furtive (×9 de base), perks d'arme « feu magique » etc., gemmes.
+
+## Faiblesses des ennemis (fichiers)
+Chaque ennemi a un multiplicateur caché par type : tranchant, perçant, contondant, poison, feu, glace, Shroud, foudre.
+`1,2` = +20 % de dégâts subis, `0,8` = −20 %, `0` = immunisé. Tous les Fell sont immunisés au Shroud.
+Pour une arme à dégâts mixtes, chaque part est multipliée séparément : `Σ (part × multiplicateur)`.
+**Limite actuelle** : le simulateur considère qu'une arme inflige 100 % de son type principal (`w.type`), la répartition n'étant pas publiée.
+
+## Défense
+```
+armure    : subis = max(coup − armure, coup × (1 − plafond))       plafond = 60 %     officiel
+            armure physique → tranchant, perçant, contondant
+            armure magique  → feu, glace, foudre, Shroud
+poison    : ignore l'armure ; seule la résistance au poison compte   officiel / wiki
+résistance: subis × (1 − résistance %)                               hypothèse (ordre et cumul)
+Tour      : −10 % physique si ≥ 3 ennemis à 20 m                     texte de compétence ; cumul = hypothèse
+Gardien   : −10 % magique  si ≥ 3 ennemis à 20 m                     idem
+Aura de terre : −10 %                                                texte ; « par rang ou total » non vérifié
+coups avant K.O. = ⌈PV / subis⌉
+```
+Texte du tutoriel en jeu : « Each point of Armor reduces incoming damage by 1, up to a maximum of 60% damage reduction. » Le plafond peut être augmenté par des compétences (lesquelles et de combien : non vérifié), d'où le champ « Réduction max. » modifiable.
+Une formule `Armure / (Armure + 400)` circule (NKB Gaming) mais n'est pas vérifiée et contredit le tutoriel : **non utilisée**.
+
+L'armure finale de chaque pièce n'est pas dans les données publiques 1.0 : l'utilisateur saisit celle de sa fiche en jeu. Plaques lourdes / brillantes (+4 % d'armure des objets par rang) sont affichées en % mais pas appliquées à cette saisie (la fiche en jeu les inclut déjà, **hypothèse**).
+
+## Optimiseur de points (`investments()`)
+Pour chaque compétence non au maximum : on simule +1 rang ; si les dégâts moyens sur la cible augmentent, on calcule le vrai coût (rang suivant, ou chemin le moins cher depuis la Flamme via `pathTo`, chemin compris), on applique, on mesure. Idem pour le prochain nœud d'attribut Force / Dextérité / Intelligence. Tri par gain par point. Le test `optimizer.test.js` vérifie que le gain annoncé est exactement celui obtenu après achat.

@@ -1,0 +1,18 @@
+# Tests sur les branches et pull requests (le déploiement ne se fait que depuis main).
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/run.mjs
+      - run: node scripts/build.mjs
