@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR:-/home/vinmo/forge-embervale}/.claude/hooks/prepare-session.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
