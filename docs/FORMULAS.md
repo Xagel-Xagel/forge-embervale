@@ -39,6 +39,9 @@ sur cible = coup × multiplicateur du type × (1 + bonus contre la famille)   vs
 - Base de l'arme : valeur du wiki au niveau requis (**communauté**). Deux familles d'unités : « Dégâts » (mêlée, dagues, baguettes) et « Puissance » (arcs, bâtons), non comparables directement.
 - Non comptés : modificateur deux mains (×1,5 selon MetaBot), points faibles, attaque impitoyable (×5 de base, +40 %/rang d'Opportunité), attaque furtive (×9 de base), perks d'arme « feu magique » etc., gemmes.
 
+## Optimiseur multi-points (simulateur)
+`planPoints(b, arme, ennemi, N)` (20-optimizer.js) : à chaque étape, liste les achats possibles (`investments`, chemin compris) dont le coût tient dans le reste des N points ; deux gloutons (meilleur gain par point, meilleur gain brut), puis amélioration locale (retirer une étape, re-remplir) tant que les dégâts moyens montent (1,5 s au plus). **Heuristique** : pas de preuve d'optimalité.
+
 ## Faiblesses des ennemis (fichiers)
 Chaque ennemi a un multiplicateur caché par type : tranchant, perçant, contondant, poison, feu, glace, Shroud, foudre.
 `1,2` = +20 % de dégâts subis, `0,8` = −20 %, `0` = immunisé. Tous les Fell sont immunisés au Shroud.

@@ -38,6 +38,8 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 
 16. (Claude Code, 2026-11-06) ROADMAP n° 4 (attaques des ennemis) : fichiers 1.0 sans dégâts ni type par attaque (PinDrop). QCM : **« bloquer, passer à la suite »**.
 
+17. (Claude Code, 2026-11-06) QCM « suite » : **optimiseur multi-points** (ROADMAP n° 11) → 1.12.0 : `planPoints` (gloutons + amélioration locale), formulaire « Répartir au mieux N points » et « Appliquer le plan ».
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

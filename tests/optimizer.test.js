@@ -53,3 +53,14 @@ test('le gain annoncé = le gain obtenu après achat', () => {
     assert.equal(TOPO.N.filter(n => owned(b, n) && !reach(b).has(n)).length, 0, 'achat non relié');
   }
 });
+test('optimiseur multi-points : budget respecté, arbre relié, gain = gain obtenu, au moins le meilleur achat unique', () => {
+  const en = ENEMIES.find(e => e.n === 'Fell Black Knight');
+  for (const i of [0, 3, 4]) for (const N of [5, 12, 30]) {
+    const b = fromPreset(PRESETS[i]); const sp = spentPoints(b); const P = planPoints(b, 'w1', en, N);
+    assert.ok(P, PRESETS[i].name); assert.ok(P.used <= N && spentPoints(P.t) - sp === P.used, `${PRESETS[i].name} N=${N} : ${P.used} pts`);
+    assert.equal(TOPO.N.filter(n => owned(P.t, n) && !reach(P.t).has(n)).length, 0, 'plan non relié');
+    assert.ok(Math.abs(effVs(P.t, 'w1', en).avg - P.avg) < 1e-6, 'gain annoncé ≠ gain obtenu');
+    assert.equal(spentPoints(b), sp, 'le build d\'origine ne doit pas changer');
+    for (const it of investments(b, 'w1', en)) if (it.cost <= N) assert.ok(P.avg >= it.avg - 1e-6, `${PRESETS[i].name} N=${N} : ${it.id} seul fait mieux`);
+  }
+});
