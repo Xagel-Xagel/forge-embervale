@@ -3,7 +3,7 @@ const TI={};DTYPES.forEach((d,i)=>TI[d[0]]=i);
 const FLY=/Vulture|Bat\b|Wispwyvern|Dragon Youngling|Bees|Raven/;
 ENEMIES.forEach(e=>e.fly=FLY.test(e.n));
 const DTL=Object.fromEntries(DTYPES.map(d=>[d[0],d[1]]));
-let oEnemy=Math.max(0,ENEMIES.findIndex(e=>e.n==='Fell Black Knight')),oSlot='w1',oFam='same',oMxF='all',oMxQ='';
+let planN=10,oEnemy=Math.max(0,ENEMIES.findIndex(e=>e.n==='Fell Black Knight')),oSlot='w1',oFam='same',oMxF='all',oMxQ='';
 const DEF={hit:600,type:'cut',armP:300,armM:200,cap:60,crowd:false,aura:false};
 const famOf=w=>CAT[w.cat][1];
 const FAM={melee:'Mêlée (épées, haches, masses, espadons)',dagger:'Dagues',bow:'Arcs',wand:'Baguettes',staff:'Bâtons'};
@@ -41,6 +41,18 @@ function buyInvest(b,it){
   const s=SKI[it.id],n=TOPO.byId[it.id];if((b.sk[it.id]||0)>0){b.sk[it.id]=Math.min(s.max,b.sk[it.id]+1);return}
   const pth=pathTo(b,n);if(pth)buyPath(b,pth);
 }
+/* Optimiseur multi-points : meilleure façon de dépenser N points contre une cible (dégâts moyens de l'arme analysée).
+   Gloutons (gain par point, puis gain brut), puis amélioration locale : retirer une étape et re-remplir ; le meilleur plan gagne. Invariant de l'arbre préservé (buyInvest). */
+function planPoints(b,slot,en,N,tmax){const t0=Date.now(),sp0=spentPoints(b),base=effVs(b,slot,en);if(!base||base.avg<=0||N<1)return null;
+  const byPer=(x,y)=>y.per-x.per||y.gain-x.gain,byGain=(x,y)=>y.gain-x.gain||x.cost-y.cost;
+  const fill=(t,steps,key)=>{for(let g=0;g<300;g++){const left=N-(spentPoints(t)-sp0);const inv=investments(t,slot,en).filter(x=>x.cost<=left).sort(key);if(!inv.length)break;buyInvest(t,inv[0]);steps.push(inv[0])}
+    return {t,steps,avg:effVs(t,slot,en).avg,used:spentPoints(t)-sp0}};
+  const replay=list=>{const t=clone(b),steps=[];for(const it of list){const left=N-(spentPoints(t)-sp0);const inv=investments(t,slot,en).find(x=>x.kind===it.kind&&x.id===it.id);if(!inv||inv.cost>left)continue;buyInvest(t,inv);steps.push(inv)}return {t,steps}};
+  let best=null;for(const key of [byPer,byGain]){const r=fill(clone(b),[],key);if(!best||r.avg>best.avg+1e-9)best=r}
+  for(let more=true,k=0;more&&k<5&&Date.now()-t0<(tmax||1500);k++){more=false;
+    for(let i=0;i<best.steps.length&&Date.now()-t0<(tmax||1500);i++){const {t,steps}=replay(best.steps.filter((_,j)=>j!==i));
+      for(const key of [byPer,byGain]){const r=fill(clone(t),[...steps],key);if(r.avg>best.avg*1.000001){best=r;more=true;break}}if(more)break}}
+  return {...best,base:base.avg,gain:best.avg/base.avg-1}}
 function defense(o,d,type){
   const kind=DTYPES[TI[type]][2];const hit=Math.max(0,+d.hit||0);const cap=Math.max(0,Math.min(95,+d.cap||0))/100;const steps=[];
   let v=hit;
@@ -118,7 +130,9 @@ function renderOptNow(){optT=null;
       <td class="act"><button class="btn sm" data-inv="${i}">${x.cost>free?'Acheter (dépasse)':'Acheter'}</button></td></tr>`);
     cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3><span class="lbl">${free>=0?free+' pts libres':'budget dépassé de '+(-free)+' pts'}</span></div>
       ${ir.length?optTable(ir,['#','Nœud','Coût','Gain','Gain / pt',''],'named'):vsEnemy(wc,o,en).m===0?`<p class="empty">${esc(en.n)} est immunisé aux dégâts ${wtypeTxt(wc.w)} : aucun point ne changera rien. Changez d'arme (voir le classement).</p>`:'<p class="empty">Aucun nœud accessible n\'augmente encore les dégâts de cette arme contre cette cible : vos bonus offensifs sont au maximum.</p>'}
-      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis vos nœuds reliés à un point de départ.</div></div>`;
+      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis vos nœuds reliés à un point de départ.</div>
+      <div class="row"><label class="chk">Répartir au mieux <input type="number" id="planN" min="1" max="212" value="${Math.max(1,Math.min(planN,Math.max(1,free)))}" style="width:5rem" aria-label="Nombre de points à répartir"> points</label><button class="btn sm" id="planGo">Calculer</button></div>
+      <div id="planOut"></div></div>`;
     root._inv=inv}
   // 5. défense
   const cDef=`<div class="ocard"><div class="oh"><h3>Défense : combien de coups encaissez-vous ?</h3><span class="lbl">${fmt(o.hp)} PV</span></div>
@@ -154,6 +168,12 @@ function renderOptNow(){optT=null;
   // événements
   root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(ITEMS[bt.dataset.eq].n+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
   root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});
+  const pg=root.querySelector('#planGo');if(pg)pg.onclick=()=>{planN=Math.max(1,Math.min(212,parseInt(root.querySelector('#planN').value)||1));const P=planPoints(b,oSlot,en,planN);const out=root.querySelector('#planOut');
+    if(!P||!P.steps.length){out.innerHTML='<p class="empty">Aucun point ne peut augmenter les dégâts de cette arme contre cette cible.</p>';return}
+    let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
+    out.innerHTML=`${optTable(rows,['#','Nœud','Coût','Cumul'],'named')}<p class="verdict">${P.used} / ${planN} points : dégâts moyens ${fmt(P.base)} → <b>${fmt(P.avg)}</b> <span class="d-up">(+${fmt(P.gain*100,1)} %)</span>${P.used<planN?' · plus rien d\'autre n\'augmente ces dégâts':''}</p>
+      <div class="row"><button class="btn sm primary" id="planApply">Appliquer le plan</button><span class="meta2">Méthode : gloutons puis amélioration locale (pas une preuve d'optimalité).</span></div>`;
+    out.querySelector('#planApply').onclick=()=>{builds[cur]=Object.assign(P.t,{name:b.name});renderAll();toast(`Plan appliqué : ${P.used} pts, +${fmt(P.gain*100,1)} %`)}};
   root.querySelector('#mxBody').onclick=e=>{const bt=e.target.closest('button[data-en]');if(!bt)return;oEnemy=+bt.dataset.en;renderOptNow();$('#optPanel').scrollIntoView({behavior:'smooth',block:'start'})};
   const upd=()=>{$('#defOut').innerHTML=defOut(compute(B()))};
   const num=(id,k)=>{root.querySelector(id).oninput=e=>{DEF[k]=Math.max(0,parseFloat(e.target.value)||0);upd()}};

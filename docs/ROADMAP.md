@@ -17,5 +17,4 @@ Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et co
 ## Confort
 9. Accessibilité du graphe au clavier (aujourd'hui, la vue Liste sert d'alternative).
 10. Mémoriser la cible et les réglages de défense (localStorage, try/catch).
-11. Optimiseur multi-points (« meilleure répartition de N points ») — glouton sur `investments()` puis amélioration locale.
-12. Comparaison A/B dans le calculateur (même cible, deux builds).
+11. Comparaison A/B dans le calculateur (même cible, deux builds).

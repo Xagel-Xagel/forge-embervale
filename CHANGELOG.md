@@ -2,6 +2,10 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.12.0 — 2026-11-06 · Optimiseur multi-points
+- Calculateur, carte « Où placer vos prochains points » : **« Répartir au mieux N points »** donne le plan d'achat (nœuds, coûts, cumul) qui maximise les dégâts moyens de l'arme analysée contre la cible, chemins d'accès compris ; bouton « Appliquer le plan ».
+- Méthode : deux gloutons (gain par point, gain brut) puis amélioration locale (retirer une étape et re-remplir) ; affichée comme non garantie optimale. Le plan s'arrête quand plus rien n'augmente les dégâts.
+
 ## 1.11.0 — 2026-11-06 · Dégâts mixtes des armes
 - Les 16 armes à deux types de dégâts (ex. Aurora Sword : tranchant 50 % + glace 50 %) sont calculées part par part contre chaque ennemi, d'après les **fichiers du jeu 1.0** (PinDrop) ; les 21 autres armes de mêlée, dagues et baguettes restent à 100 % d'un type.
 - Une compétence de type (Taillade, Pyromane, Tonnerre…) ne compte que sur sa part ; le détail des bonus l'indique (« part tranchant 50 % »).
