@@ -15,6 +15,7 @@ npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
 npm run test:e2e   # Playwright (optionnel) : 4 captures clair/sombre × 1300/400 px dans tests/screenshots/
 npm run check      # build + tests
+npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
 ```
 
 Aucune dépendance npm n'est nécessaire hormis Playwright pour `test:e2e` (`npm i -D playwright && npx playwright install chromium`).
@@ -26,16 +27,18 @@ src/page.html        balisage + marqueurs <!-- INLINE:CSS --> et <!-- INLINE:JS 
 src/styles.css       tous les styles (jetons de couleur clair/sombre)
 src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, chacun dans son <script>
   01-data.js         ST (stats), SETS (armures), RINGS, CAT, WTYPE, WPERK, WEAPONS, SK (compétences), PIPS, AREAS, PRESETS
+  01-tree-data.js    TREE : tracé réel de l'arbre 1.0 (243 nœuds x/y, 312 liaisons) — GÉNÉRÉ, ne pas éditer à la main
   02-calc.js         blankBuild, fromPreset, budget, compute(build) → fiche, weaponCalc
-  03-share.js        encode/decode des codes de partage (b2-…, rétrocompatible b1-…)
-  04-tree.js         CLUSTERS, TOPO (graphe de l'arbre), règles de liaison : reach, canBuy, pathTo, buyPath, prune, normalize
+  03-share.js        tables figées FZ, encode/decode des codes de partage (b3-…, rétrocompatible b2- et b1-)
+  04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
   10-ui.js           état (builds, cur, compare…), rendus (onglets, équipement, arbre en liste, fiche), événements
   20-optimizer.js    calculateur : effVs, investments, buyInvest, defense, renderOpt ; surcharge renderStats pour se rafraîchir
-  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (forces, survol, zoom), expose window.G
+  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
+scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)
 tests/               run.mjs (lanceur), *.test.js, dom-stub.cjs, e2e.mjs
 docs/                ARCHITECTURE, FORMULAS, DATA_SOURCES, ROADMAP, HISTORY
 ```
@@ -57,21 +60,23 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 - Pas de nouvelle dépendance si on peut l'éviter.
 
 ### 2. Compatibilité des codes de partage (liens déjà envoyés par l'utilisateur)
-Le code `b2-` encode des **indices** :
-- objets : index dans `ALL_ITEMS = Object.keys(ITEMS)` = armures (SETS) puis anneaux (RINGS) puis armes (WEAPONS) ;
-- compétences : index dans `SK` ;
-- gemmes : index dans `GEMS` ;
-- nœuds d'attribut : bit n° i = `TOPO.pips[i]`, qui dépend de la construction de l'arbre (CLUSTERS, PIPS).
+Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de 03-share.js), jamais l'ordre des données vivantes :
+- `FZ.items` (objets), `FZ.gems` (gemmes) : formats b1, b2 et b3 ;
+- `FZ.at`, `FZ.nd` : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel, format b3 ;
+- `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
+
+Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>]` (1 chiffre de rang par compétence possédée ; un code tronqué est refusé).
 
 Donc :
-- **ajouter une arme : uniquement à la fin de `WEAPONS`** ; une gemme : à la fin de `GEMS` ; une compétence : à la fin du **dernier** appel `S(...)` de SK.
-- Ajouter une armure ou un anneau, réordonner quoi que ce soit, ou changer la topologie de l'arbre (CLUSTERS, répartition des nœuds d'attribut) **décale les indices** : il faut alors créer un format `b3-` (avec par exemple des identifiants au lieu d'indices) et garder `decode` capable de lire `b1-` et `b2-` via des tables figées de l'ordre actuel.
-- `tests/share.test.js` contient un code b2 figé : s'il casse, c'est qu'un lien existant est cassé. **Ne pas « corriger » le test en changeant la valeur attendue.**
+- **ajouter un objet, une gemme, une compétence ou un nœud : l'ajouter aussi EN FIN de sa table FZ** (le test des tables figées le réclame). L'ordre de SETS, RINGS, WEAPONS, GEMS, SK ou TREE peut alors changer sans casser de lien.
+- Ne jamais réordonner ni retirer une entrée de `FZ` : les empreintes du test cassent, et des liens avec.
+- Les codes b1/b2 datent de l'ancien tracé thématique : `decode` les lit via les tables figées, garde l'équipement, les compétences et les comptes d'attributs, puis `migrate` relie le tout au tracé réel (fenêtre « Lien d'avant le tracé réel »).
+- `tests/share.test.js` contient des codes b2 et b3 figés : s'ils cassent, un lien existant est cassé. **Ne pas « corriger » le test en changeant une valeur attendue.** Pour b2, le test vérifie (décision du 2026-11-05) que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés.
 
 ### 3. Règle de l'arbre
-Un nœud ne s'achète que s'il touche un nœud acquis relié à la Flamme (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les presets et les codes importés passent par `normalize`, qui achète le chemin le moins cher pour reconnecter. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js et optimizer.test.js).
+Un nœud ne s'achète que s'il touche un point de départ (Étincelle, gratuit) ou un nœud acquis qui y est relié (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les presets, les codes importés et les builds enregistrés passent par `normalize`, qui achète le chemin le moins cher pour reconnecter. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js, optimizer.test.js et share.test.js).
 
-Le tracé actuel est une **reconstruction thématique**, pas le tracé réel du jeu (non publié). Le dire si on en parle.
+Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé par PinDrop (`src/js/01-tree-data.js`, régénéré par `scripts/tree-from-pindrop.mjs`). La « Flamme » est un nœud **logique** du simulateur, reliant les 12 départs ; elle n'est jamais dessinée (un vrai nœud, Architecte aérien, occupe le centre). Liaisons non orientées et coût identique à chaque rang : déductions des fichiers (comme PinDrop), à présenter comme telles.
 
 ### 4. Honnêteté des données
 - Chaque chiffre de jeu doit avoir une source dans `docs/DATA_SOURCES.md`. Ne rien inventer : si une valeur est inconnue, l'afficher comme telle ou demander.

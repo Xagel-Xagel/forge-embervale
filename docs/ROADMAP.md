@@ -3,12 +3,8 @@
 Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et comment le débloquer.
 
 ## Priorité haute
-1. **Tracé réel de l'arbre de compétences.** Le graphe actuel est une reconstruction (groupes thématiques, liaisons inventées). L'utilisateur l'a demandé (« il te faut quoi pour avoir le tracé réel du jeu ? une image te suffirait ? »).
-   - Sources possibles : une capture de l'arbre en jeu fournie par l'utilisateur (une image par zone, zoomée, suffit pour relever positions et liaisons), ou le planificateur PinDrop (pindrop.gg/enshrouded/skill-tree) ouvert dans un navigateur — ses données de liaison sont peut-être dans le JSON de la page.
-   - Impact : remplacer `CLUSTERS`/`TOPO` (04-tree.js) par des positions et arêtes réelles ; garder le rendu Obsidian (30-graph.js) avec des ancres fixes.
-   - ⚠️ Change `TOPO.pips` → **nouveau format de code `b3-`** obligatoire, avec lecture des anciens codes (voir CLAUDE.md §2). Pour b2, migrer en convertissant les nœuds d'attribut en comptes par attribut (comme b1) puis `normalize`.
-   - Mettre à jour le libellé « reconstruction thématique » dans la page et les notes.
-2. **Dégâts mixtes des armes.** Beaucoup d'armes infligent deux types (ex. tranchant + glace). Trouver la répartition (fichiers du jeu via PinDrop/enshrouded.tools) et l'ajouter à `WEAPONS` sous forme de parts ; `vsEnemy` devient `Σ part × multiplicateur`. Attention : ajouter un champ ne casse pas les codes, réordonner si.
+1. **Revoir les presets sur le tracé réel.** Depuis la 1.9.0, `normalize` leur ajoute des nœuds de liaison (ex. un mage à 11 CON traverse la zone Guerrier : Voie du guerrier, Taillade, Plaques lourdes…). Choisir des attributs et compétences cohérents avec le vrai tracé, sources à l'appui ; les codes b3 déjà partagés ne bougent pas.
+2. **Dégâts mixtes des armes.** Beaucoup d'armes infligent deux types (ex. tranchant + glace). Trouver la répartition (fichiers du jeu via PinDrop/enshrouded.tools) et l'ajouter à `WEAPONS` sous forme de parts ; `vsEnemy` devient `Σ part × multiplicateur`. Ajouter un champ ou réordonner ne casse pas les codes (tables figées `FZ`, CLAUDE.md §2).
 3. **Valeurs d'armure par pièce.** Si une source 1.0 les publie, calculer l'armure physique/magique dans `compute()` (avec Plaques lourdes/brillantes) et pré-remplir le calculateur de défense.
 
 ## Priorité moyenne

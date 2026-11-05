@@ -16,14 +16,19 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 4. « Un stuff "Sadi Fourbe", un tank qui ne tape pas mais vole de la vie de façon passive aux ennemis. » → preset Sadi Fourbe (Aura radieuse, Contre-coup, Givre, Aura d'eau, Némésis, gemmes Blindage/Moisson d'âmes).
 5. « Trop de scintillement lorsqu'on survole un point de compétence. » → fondu, hystérésis du survol, délai de sortie, halos pré-rendus au lieu de `shadowBlur`.
 6. « Si le point central (le père) n'est pas sélectionné, le fils ne peut pas être sélectionné. Il faut au minimum une liaison. » → règle de liaison (`canBuy`, `prune`, `pathTo`, bouton « Acheter le chemin »), codes `b2-` avec nœuds d'attribut individuels.
-7. « Il te faut quoi pour avoir le tracé réel du jeu ? Une image te suffirait ? » → réponse : oui, des captures de l'arbre en jeu (ou le planificateur PinDrop dans le navigateur de l'utilisateur, avec son accord). **Pas encore fourni** → ROADMAP n° 1.
+7. « Il te faut quoi pour avoir le tracé réel du jeu ? Une image te suffirait ? » → réponse : oui, des captures de l'arbre en jeu (ou le planificateur PinDrop dans le navigateur de l'utilisateur, avec son accord). Réalisé ensuite sans captures (demande 12).
 8. « Rajoute les pierres précieuses pour les armes aussi. » → 29 gemmes, un emplacement par arme, alerte si le type de dégâts ne déclenche pas l'effet.
 9. « Récupère la formule de calcul des dégâts et résistances, et les résistances et faiblesses entre chaque type de dégât et monstre, pour un calculateur d'optimisation. » → 06-enemies.js + 20-optimizer.js (version 8).
 10. « Prépare tout un package pour que Claude Code prenne le relais. » → ce dépôt.
 11. « Objectif final : le mettre sur GitHub et y accéder avec mon navigateur. » → dépôt `Xagel-Xagel/forge-embervale`, GitHub Pages. Le déploiement par `actions/deploy-pages` restait bloqué sur « updating_pages » (incident GitHub en cours les 4–5 nov. 2026) → publication via la branche `gh-pages` (« Deploy from a branch »).
 
+12. (Claude Code, 2026-11-05) « Remplacer l'arbre "reconstruction thématique" par le TRACÉ RÉEL du jeu » → 1.9.0 : tracé extrait du JSON du planificateur PinDrop (fichiers du serveur dédié 1.0), 0 écart avec nos 172 compétences ; format de partage `b3-` ; critique adversariale de la conception avant le code. QCM de l'utilisateur :
+    - test du code b2 figé : **« choix conservés »** — valeurs figées intactes ; comme le build b2 ne peut plus être relié tel quel sur le vrai tracé (16 nœuds isolés, prouvé), le test vérifie que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés (la critique proposait de figer aussi la migration : non retenu) ;
+    - format b3 : **« compact »** — places dans des tables figées d'identifiants du jeu, ~120 caractères (au lieu d'identifiants en clair, ~720).
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.
-- Code de partage dans le hash (`#b2-…`), lisible sans serveur.
+- Code de partage dans le hash (`#b3-…`), lisible sans serveur ; tables figées `FZ` (ajout en fin seulement) pour que réordonner ou ajouter des données ne casse aucun lien.
+- Tracé de l'arbre = fichiers du jeu (PinDrop) ; la Flamme est un nœud logique non dessiné ; coût identique à chaque rang et liaisons non orientées signalés comme déductions.
 - Les estimations sont signalées comme telles dans l'interface (note « Comment lire ces chiffres », panneau « Formules utilisées »).
