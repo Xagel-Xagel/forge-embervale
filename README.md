@@ -9,7 +9,7 @@ Simulateur de stuff pour **Enshrouded 1.0**, en français, dans une seule page w
 
 **Utiliser l'outil : https://xagel-xagel.github.io/forge-embervale/**
 
-Le site est republié automatiquement par GitHub Actions à chaque push sur `main` (tests, build, déploiement GitHub Pages). Une copie existe aussi en Artifact claude.ai : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f
+Le site est republié automatiquement par GitHub Actions à chaque push sur `main` (tests, build, puis copie du site sur la branche `gh-pages` servie par GitHub Pages). Une copie existe aussi en Artifact claude.ai : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f
 
 ## Démarrer
 Prérequis : Node.js 18 ou plus récent.

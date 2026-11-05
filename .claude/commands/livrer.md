@@ -8,7 +8,7 @@ Livre la version en cours de la Forge d'Embervale. Étapes, dans l'ordre, en t'a
 3. Relis le diff de `src/` : pas de couleur littérale hors jetons, pas de ressource externe hors Google Fonts / CDN autorisés, textes injectés passés par `esc()`, interface en français.
 4. Mets à jour `CHANGELOG.md`, la version de `package.json`, et `docs/FORMULAS.md` / `docs/DATA_SOURCES.md` / `docs/ROADMAP.md` si le changement les touche.
 5. Commit en français décrivant le changement, puis `git push origin main`.
-6. Suis le déploiement : `gh run watch` (workflow « Publier sur GitHub Pages »). En cas d'échec, lis le log (`gh run view --log-failed`), corrige, repousse.
+6. Suis la publication : `gh run watch` (workflow « Publier sur GitHub Pages », qui met à jour la branche `gh-pages`), puis GitHub Pages republie en 1 à 2 minutes. En cas d'échec, lis le log (`gh run view --log-failed`), corrige, repousse.
 7. Vérifie le site en ligne : https://xagel-xagel.github.io/forge-embervale/ (rechargement forcé si l'ancienne version s'affiche).
 8. Optionnel : si l'outil Artifact est disponible, republie aussi `dist/forge-embervale.html` sur https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (lis d'abord l'artifact, puis publie avec `url`).
 9. Résume en 2–3 phrases ce qui a changé pour l'utilisateur.

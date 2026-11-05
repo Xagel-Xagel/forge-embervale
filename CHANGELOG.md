@@ -8,7 +8,7 @@ Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes 
 - Défense : armure officielle (−1 par point, plafond 60 %), poison hors armure, résistances, Tour/Gardien/Aura de terre, coups avant K.O.
 - Panneau « Formules utilisées et niveau de confiance ».
 - Passage en dépôt : sources découpées dans `src/`, build, tests, documentation pour Claude Code.
-- Publication sur GitHub Pages par GitHub Actions (https://xagel-xagel.github.io/forge-embervale/), icône d'onglet, vraie page HTML (`dist/index.html`).
+- Publication sur GitHub Pages via la branche `gh-pages`, mise à jour par GitHub Actions (https://xagel-xagel.github.io/forge-embervale/), icône d'onglet, vraie page HTML (`dist/index.html`).
 
 ## Étapes précédentes (même journée)
 - Gemmes d'arme (29), alerte de type de dégâts incompatible, code de partage `-g…`.

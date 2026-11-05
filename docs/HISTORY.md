@@ -20,6 +20,7 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 8. « Rajoute les pierres précieuses pour les armes aussi. » → 29 gemmes, un emplacement par arme, alerte si le type de dégâts ne déclenche pas l'effet.
 9. « Récupère la formule de calcul des dégâts et résistances, et les résistances et faiblesses entre chaque type de dégât et monstre, pour un calculateur d'optimisation. » → 06-enemies.js + 20-optimizer.js (version 8).
 10. « Prépare tout un package pour que Claude Code prenne le relais. » → ce dépôt.
+11. « Objectif final : le mettre sur GitHub et y accéder avec mon navigateur. » → dépôt `Xagel-Xagel/forge-embervale`, GitHub Pages. Le déploiement par `actions/deploy-pages` restait bloqué sur « updating_pages » (incident GitHub en cours les 4–5 nov. 2026) → publication via la branche `gh-pages` (« Deploy from a branch »).
 
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.

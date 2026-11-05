@@ -1,4 +1,7 @@
-# Publie le simulateur sur GitHub Pages à chaque push sur main (après tests).
+# Publie le simulateur sur GitHub Pages à chaque push sur main :
+# tests → build → copie du site sur la branche gh-pages.
+# Réglage requis une fois : Settings → Pages → Source « Deploy from a branch », branche gh-pages, dossier / (root).
+# (La méthode « GitHub Actions » + deploy-pages restait bloquée sur « updating_pages » lors de la mise en place, nov. 2026.)
 name: Publier sur GitHub Pages
 
 on:
@@ -7,16 +10,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -27,24 +28,14 @@ jobs:
         run: node tests/run.mjs
       - name: Build
         run: node scripts/build.mjs
-      - name: Préparer le site
+      - name: Publier sur la branche gh-pages
         run: |
-          mkdir -p _site
-          cp dist/index.html _site/index.html
-          cp dist/forge-embervale.html _site/forge-embervale.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 1200000
+          mkdir -p _site && cd _site
+          cp ../dist/index.html ../dist/forge-embervale.html .
+          touch .nojekyll
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Site publié depuis ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
