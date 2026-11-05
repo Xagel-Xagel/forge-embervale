@@ -5,7 +5,7 @@ Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et co
 ## Priorité haute
 1. **Presets : liaisons restantes.** Revue 1.10.0 faite (277 → 155 points de liaison). Reste : Sadi Fourbe (22, build de l'utilisateur, non touché) et les liaisons structurelles (ex. Rôdeur archer : Esprit calme, Lames venimeuses, Mithridatisé) ; envisager de rendre utiles les liaisons obligatoires (rang 3 si l'effet sert le rôle).
 2. **Perks élémentaires des armes.** Les répartitions 1.0 sont intégrées (1.11.0). Reste à savoir comment le jeu ajoute « Feu magique +10 % des dégâts de base » (PinDrop) : vérification en jeu ou nouvelle extraction ; aujourd'hui hors calcul.
-3. **Valeurs d'armure par pièce.** Si une source 1.0 les publie, calculer l'armure physique/magique dans `compute()` (avec Plaques lourdes/brillantes) et pré-remplir le calculateur de défense.
+3. **Valeurs d'armure par pièce — BLOQUÉ (2026-11-06).** PinDrop (https://pindrop.gg/enshrouded/armor) : pour les sets 1.0 (Emberguard, Crestflame…), « the game files do not store the number » ; seules les pièces d'avant la 1.0 ont une valeur (wiki). Déblocage : relevé en jeu par l'utilisateur. En attendant, le calculateur de défense prend l'armure de la fiche en jeu (saisie manuelle).
 
 ## Priorité moyenne
 4. Attaques des ennemis (dégâts et type par attaque) pour pré-remplir « Coup reçu ».

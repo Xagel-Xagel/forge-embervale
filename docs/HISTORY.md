@@ -34,6 +34,8 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 
 14. (Claude Code, 2026-11-06) « La suite ? » → QCM : **dégâts mixtes** (ROADMAP n° 2) → 1.11.0. Source : pages armes de PinDrop (fichiers 1.0) — 100 % ou 50/50, rien d'autre ; l'« estimation » de PinDrop (formule du wiki d'avant la 1.0) donne d'autres parts, écartée. QCM : perks élémentaires **« hors calcul »** (pas d'hypothèse ajoutée).
 
+15. (Claude Code, 2026-11-06) « Go » → ROADMAP n° 3 (armure par pièce) : aucune source 1.0 (PinDrop : valeur absente des fichiers pour les sets 1.0). QCM : **« bloquer, passer à la suite »**.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.
