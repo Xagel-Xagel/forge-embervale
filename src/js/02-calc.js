@@ -1,5 +1,5 @@
 /* =========================== CALCUL =========================== */
-function blankBuild(name){return {name:name||'Nouveau build',gear:{},gem:{},sk:{},pip:{},pn:{},lvl:50,exp:114,flame:11,upg:5}}
+function blankBuild(name){return {name:name||'Nouveau build',gear:{},gem:{},sk:{},pip:{},pn:{},lvl:50,exp:114,flame:11,upg:5,tv:1}} // tv : build fait sur le tracé réel (1.9.0+)
 function fromPreset(p){const b=blankBuild(p.name);b.gear={...p.gear};b.gem={...(p.gem||{})};b.sk={...p.sk};b.pip={...p.pip};delete b.pn;return normalize(b)}
 function spentPoints(b){let t=0;for(const id in b.sk){const s=SKI[id];if(s)t+=s.cost*Math.min(b.sk[id],s.max)}for(const k in b.pip)t+=b.pip[k]||0;return t}
 function budget(b){return 2*(Math.max(1,Math.min(50,b.lvl))-1)+Math.max(0,Math.min(114,b.exp))}

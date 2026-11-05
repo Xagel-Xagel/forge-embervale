@@ -5,10 +5,12 @@ Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes 
 ## 1.9.0 — 2026-11-05 · Tracé réel de l'arbre de compétences
 - L'arbre reprend le **tracé du jeu 1.0** : 243 nœuds à leur position réelle et 312 liaisons, extraits des fichiers du serveur dédié par PinDrop (`src/js/01-tree-data.js`, régénéré par `scripts/tree-from-pindrop.mjs`). Les 12 groupes thématiques inventés disparaissent (la 1.0 n'a pas de sous-arbres).
 - Graphe : chaque nœud est ancré à sa vraie place (glisser = effet élastique, retour automatique), libellés GUERRIER / RÔDEUR / MAGE, noms sans chevauchement, la Flamme n'est plus dessinée (un vrai nœud occupe le centre). La règle devient « relié à un point de départ (Étincelle) ».
-- **Nouveau code de partage `b3-`** (~120 caractères, 40 % plus court) fondé sur des tables figées : ajouter ou réordonner des données ne cassera plus de lien. Un lien tronqué est refusé au lieu de donner un build faux.
+- **Nouveau code de partage `b3-`** (~125 caractères, 40 % plus court) fondé sur des tables figées : ajouter ou réordonner des données ne cassera plus de lien. Une somme de contrôle fait refuser un lien tronqué ou abîmé (message affiché) au lieu de donner un autre build.
 - Les liens `b2-`/`b1-` et les builds enregistrés avant cette version s'ouvrent toujours : choix conservés, nœuds de liaison ajoutés, fenêtre qui les liste (et signale un éventuel dépassement de budget) ; l'adresse passe en `b3-`.
 - Vue Liste : bouton « Acheter le chemin » pour un attribut dont aucun nœud n'est voisin ; à 400 px, les boutons +/− des attributs ne débordent plus.
-- Calculs de chemin plus rapides (un seul Dijkstra par tour de `normalize`).
+- `normalize` retire les liaisons devenues inutiles et les attributs en surplus (ex. Sadi Fourbe 142 pts au lieu de 147) ; calculs de chemin plus rapides (un seul Dijkstra par tour).
+- Le panneau « Formules utilisées » indique ce qui vient des fichiers (tracé) et ce qui est déduit (liaisons dans les deux sens, coût par rang).
+- Revue `/code-review` : 15 points relevés, tous corrigés (dont le générateur, qui filtre désormais tout texte distant recopié).
 
 ## 1.8.0 — 2026-11-05 · Calculateur d'optimisation
 - 101 ennemis × 8 multiplicateurs de dégâts (PinDrop, enshrouded.tools), table complète filtrable.

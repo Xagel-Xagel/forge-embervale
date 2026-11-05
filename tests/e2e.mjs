@@ -47,7 +47,14 @@ for (const motion of ['no-preference', 'reduce']) {
   await page.goto(url); await page.waitForTimeout(500);
   if (!await home(page)) errs.push('nœuds hors de leur position réelle au chargement');
   await page.click('#gShake'); await page.waitForTimeout(motion === 'reduce' ? 100 : 2500);
-  if (!await home(page)) errs.push('nœuds pas revenus à leur position réelle');
+  if (!await home(page)) errs.push('nœuds pas revenus à leur position réelle après « Réorganiser »');
+  // glisser un nœud puis le relâcher : il doit s'être déplacé, puis revenir exactement à sa place
+  await page.locator('#gwrap').scrollIntoViewIfNeeded();
+  const pt = await page.evaluate(() => { const n = window.G.nodes.find(x => x.id === 'wizard'); const [x, y] = window.G.screen(n); const r = document.querySelector('#gcv').getBoundingClientRect(); return [r.left + x, r.top + y]; });
+  await page.mouse.move(pt[0], pt[1]); await page.mouse.down(); await page.mouse.move(pt[0] + 60, pt[1] + 40, {steps: 6});
+  if (await home(page)) errs.push('le glisser ne déplace pas le nœud');
+  await page.mouse.up(); await page.waitForTimeout(motion === 'reduce' ? 100 : 2500);
+  if (!await home(page)) errs.push('nœud glissé pas revenu à sa position réelle');
   console.log(errs.length ? '✗' : '✓', 'retour au tracé réel (' + motion + ')', errs.join(' | '));
   fail += errs.length; await page.close();
 }

@@ -45,9 +45,9 @@ test('ancien format b1 toujours lisible', () => {
 });
 test('code invalide → null', () => { assert.equal(decode('n-importe-quoi'), null); });
 
-// Code b3 figé le 2026-11-05 (preset Mage de bataille, version 1.9.0, tracé réel). Ne jamais modifier ces valeurs :
+// Code b3 figé le 2026-11-05 (preset Mage de bataille, version 1.9.0, tracé réel, avec somme de contrôle). Ne jamais modifier ces valeurs :
 // si ce test casse, un lien b3 déjà partagé est cassé (tables figées FZ, tracé ou décodage).
-const REF_B3 = 'b3-1e360b05-0k0l0m0n0o2e2o1618-4do28ek3ae4m-1mvvis7z3y7553tjrcoqjgz2bbcp0pt3k0-1111111111133313111111133131333131111-g0l0g';
+const REF_B3 = 'b3-1e360b05-0k0l0m0n0o2e2o1618-4do28ek3ae4m-1mvvis7z3y7553tjrcoqjgz2bbcp0pt3k0-1111111111133313111111133131333131111-g0l0g-n7';
 const REF_B3_BUILD = {"gear":{"head":"fla_h","chest":"fla_c","hands":"fla_g","legs":"fla_l","feet":"fla_f","w1":"w_bloodflow","w2":"w_guidance","r1":"rg_mf","r2":"rg_ths"},"gem":{"w1":"g_curr","w2":"g_light"},"sk":{"mageApprentice":3,"wandMastery":3,"wizard":3,"thunder":3,"arsonist":3,"blastCast":1,"wandSpec":1,"unity":3,"wandEvasion":1,"aerialWand":1,"blink":1,"waterAura":3,"manaCurrents":3,"quickCharge":3,"chainHit":1,"massDestr":1,"sting":1,"arcaneProlif":1,"fireResistance":3,"lifeEssences":3,"exalted":1,"arcaneConc":1,"doubleJump":1,"eternalSpark":1,"healer":1,"healingRevive":1,"radiantAura":1,"spellslinger":1,"barbariansPath":1,"warriorsPath":1,"heavyPlates":1,"shinyPlates":1,"absorb":1,"slasher":1,"runner":1,"finesse":1,"bash":1},"pip":{"int":11,"spi":11,"con":11,"str":3,"end":1},"pn":["pip:101011r","pip:110miev","pip:13cdgsq","pip:14r1h78","pip:14rs954","pip:16sd25b","pip:1aeg1z2","pip:1f1pjpd","pip:1lm4k0r","pip:1ob651f","pip:1qjlln9","pip:1rkw3ke","pip:1rv6bfd","pip:1skigoj","pip:1th8yhf","pip:1wwtpca","pip:1xv3exe","pip:27th6o","pip:7tyb4s","pip:8qaa6k","pip:9vl5y4","pip:9y2o4y","pip:a3gm4i","pip:an50g0","pip:axd60g","pip:b7lnsa","pip:beub9v","pip:fj7jpn","pip:hmo27n","pip:ipgty9","pip:itley","pip:j06qca","pip:oal925","pip:q9awwi","pip:s8qir2","pip:u3ewct","pip:utqucn"]};
 test('un code b3 déjà partagé se décode toujours à l\'identique', () => {
   const d = decode(REF_B3);
@@ -85,20 +85,19 @@ test('tables figées du partage : rien de réordonné, tout identifiant vivant p
 
 const from36 = s => [...s].reduce((v, c) => v * 36n + BigInt(parseInt(c, 36)), 0n);
 test('lien tronqué, corrompu ou d\'une version plus récente : refusé ou lu, jamais d\'exception', () => {
-  // toutes les coupures d'un code b3 sont refusées, sauf juste avant les gemmes (code valide, sans gemmes)
-  const cut = REF_B3.lastIndexOf('-g');
-  for (let i = 1; i < REF_B3.length; i++) {
-    const d = decode(REF_B3.slice(0, i));
-    if (i === cut) assert.ok(d && !d.gem.w1, 'coupure juste avant les gemmes'); else assert.equal(d, null, 'coupure au caractère ' + i);
-  }
-  const p = REF_B3.split('-');
-  assert.equal(decode([...p.slice(0, 5), p[5] + '1', p[6]].join('-')), null, 'un rang de trop');
-  assert.equal(decode([...p.slice(0, 5), '0' + p[5].slice(1), p[6]].join('-')), null, 'rang nul');
+  // toutes les coupures d'un code b3 sont refusées (somme de contrôle)
+  for (let i = 1; i < REF_B3.length; i++) assert.equal(decode(REF_B3.slice(0, i)), null, 'coupure au caractère ' + i);
+  // un seul caractère abîmé (hors tirets) : refusé
+  let bad = 0; for (let i = 3; i < REF_B3.length; i++) if (REF_B3[i] !== '-') for (const c of '0az') { const s = REF_B3.slice(0, i) + c + REF_B3.slice(i + 1); if (s !== REF_B3 && decode(s)) bad++; }
+  assert.equal(bad, 0, 'caractère abîmé accepté');
+  const sum = s => s + '-' + b3sum(s), p = REF_B3.split('-').slice(0, -1);   // sans la somme de contrôle
+  assert.equal(decode(sum([...p.slice(0, 5), p[5] + '1', p[6]].join('-'))), null, 'un rang de trop');
+  assert.equal(decode(sum([...p.slice(0, 5), '0' + p[5].slice(1), p[6]].join('-'))), null, 'rang nul');
   assert.equal(decode(REF_B3.toUpperCase()).sk.wizard, 3, 'majuscules acceptées');
-  // bits au-delà des tables (code d'une version plus récente) : ignorés, le reste est intact
+  // bits au-delà des tables (code d'une version plus récente) : ignorés, le reste est intact, et c'est signalé
   const q = [...p]; q[3] = (from36(p[3]) | 1n << BigInt(FZ.at.length + 3)).toString(36); q[4] = (from36(p[4]) | 1n << BigInt(FZ.nd.length + 5)).toString(36); q[5] = p[5] + '2';
-  const d = decode(q.join('-')), r = decode(REF_B3);
-  assert.ok(d, 'code plus récent lisible'); assert.deepEqual(d.sk, r.sk); assert.deepEqual(d.pn, r.pn);
+  const d = decode(sum(q.join('-'))), r = decode(REF_B3);
+  assert.ok(d, 'code plus récent lisible'); assert.deepEqual(d.sk, r.sk); assert.deepEqual(d.pn, r.pn); assert.equal(d._mig.gone, 2);
   // codes abîmés au hasard (déterministe) : décodage sans exception, et tout build obtenu est relié
   let seed = 7; const rnd = n => (seed = seed * 16807 % 2147483647) % n; const A = '0123456789abcdefghijklmnopqrstuvwxyz';
   const old = 'b1-1e360b05-0k0l0m0n0o2e2o1618-0b00bb-0000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000033000300013110000010011103030303030000000303111001';
@@ -112,6 +111,9 @@ test('lien tronqué, corrompu ou d\'une version plus récente : refusé ou lu, j
 });
 
 test('un build enregistré avant le tracé réel (1.8) se recharge : choix conservés, relié, jamais de _mig enregistré', () => {
+  // build 1.8 sans aucun nœud d'attribut : doit aussi être migré (pas de marqueur tv)
+  const core = loadSaved({name: 'Outils', gear: {}, gem: {}, sk: {miner: 1, pickSpec: 1, prospector: 1, qualityGear: 1}, pip: {}, pn: {}, lvl: 50, exp: 114, flame: 11, upg: 5});
+  assert.equal(core._mig.from, 'saved'); assert.equal(core.tv, 1);
   const old = {name: 'Ancien', gear: {...REF_BUILD.gear}, gem: {...REF_BUILD.gem}, sk: {...REF_BUILD.sk}, pip: {...REF_BUILD.pip}, pn: {}, lvl: 50, exp: 114, flame: 11, upg: 5};
   for (const [a, n] of Object.entries(REF_BUILD.pip)) for (let i = 0; i < n; i++) old.pn[`pip:${a}:${i}`] = 1;
   const b = loadSaved(old);
@@ -123,16 +125,25 @@ test('un build enregistré avant le tracé réel (1.8) se recharge : choix conse
   // très ancien build sans nœuds d'attribut : les comptes servent de base
   const older = {...old, pn: undefined}; delete older.pn;
   assert.ok(loadSaved(older).pip.int >= 11, 'comptes d\'attributs perdus');
-  // build enregistré au nouveau format : rechargé à l'identique, sans migration
+  // build enregistré au nouveau format : rechargé à l'identique, sans migration ; un nœud disparu (patch) ne fait perdre que lui
   const fresh = fromPreset(PRESETS[1]); const again = loadSaved(JSON.parse(JSON.stringify(fresh)));
   assert.deepEqual(again.pn, fresh.pn); assert.deepEqual(again.sk, fresh.sk); assert.equal(again._mig, undefined);
+  const patched = JSON.parse(JSON.stringify(fresh)); const keep = Object.keys(patched.pn); patched.pn['pip:retire-par-un-patch'] = 1; patched.pip.dex++;
+  const p2 = loadSaved(patched); for (const id of keep) assert.ok(p2.pn[id], 'nœud valide perdu : ' + id);
 });
 
 test('ouvrir un lien b2 : build migré, puis adresse remplacée par son code b3', () => {
-  let url = null; const rs = history.replaceState; history.replaceState = (s, t, u) => { url = u; };
+  let url = null; const rs = history.replaceState, saved = [builds[0], cur, compare]; history.replaceState = (s, t, u) => { url = u; };
   location.hash = '#' + REF_B2;
-  try { assert.equal(fromHash(), true); } finally { history.replaceState = rs; location.hash = ''; }
+  let got;
+  try { assert.equal(fromHash(), true); got = builds[0]; location.hash = '#' + REF_B3.slice(0, -4); assert.equal(fromHash(), false, 'lien abîmé refusé'); }
+  finally { history.replaceState = rs; location.hash = ''; [builds[0], cur, compare] = saved; }
   assert.match(url, /^#b3-/);
-  assert.deepEqual(decode(url).sk, builds[0].sk);
-  assert.equal(builds[0]._mig.from, 'b2');
+  assert.deepEqual(decode(url).sk, got.sk);
+  assert.equal(got._mig.from, 'b2');
+});
+test('un code b3 dont un nœud a disparu du tracé (patch) : migré et signalé, le reste conservé', () => {
+  const n = TOPO.byId.wizard, g = n.gid; delete TOPO.byGid[g];
+  let d; try { d = decode(REF_B3); } finally { TOPO.byGid[g] = n; }
+  assert.equal(d._mig.from, 'b3'); assert.equal(d._mig.gone, 1); assert.notEqual(d.sk.wizard, 3, 'rang du nœud disparu non lu'); assert.equal(d.sk.thunder, 3);
 });

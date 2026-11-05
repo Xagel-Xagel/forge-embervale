@@ -41,12 +41,20 @@ function normalize(b){
   for(const id in b.pn)if(!TOPO.byId[id]||TOPO.byId[id].kind!=='pip'||!b.pn[id])delete b.pn[id];
   if(want)for(const a in want){let have=TOPO.pips.filter(p=>p.attr===a&&b.pn[p.id]).length;
     for(const p of TOPO.pips){if(have>=want[a])break;if(p.attr===a&&!b.pn[p.id]){b.pn[p.id]=1;have++}}}
-  syncPips(b);
+  syncPips(b);const added=[];
   for(let g=0;g<300;g++){const R=reach(b);
     const lost=TOPO.N.filter(n=>(n.kind==='skill'||n.kind==='pip')&&owned(b,n)&&!R.has(n));if(!lost.length)break;
     const D=dijkstra(b,R);let best=null;for(const n of lost)if(D.dist.has(n)&&(!best||D.dist.get(n)<D.dist.get(best)))best=n;
-    if(!best)break;buyPath(b,trace(D,best))}
-  return b}
+    if(!best)break;const path=trace(D,best);for(const n of path)if(!owned(b,n))added.push(n);buyPath(b,path)}
+  // une liaison achetée peut être devenue inutile (un chemin acheté plus tard passe ailleurs) : la retirer si tout reste relié
+  const set=(n,v)=>{if(n.kind==='skill'){if(v)b.sk[n.id]=1;else delete b.sk[n.id]}else if(v)b.pn[n.id]=1;else delete b.pn[n.id]};
+  const orphan=()=>{const R=reach(b);return TOPO.N.some(m=>(m.kind==='skill'||m.kind==='pip')&&owned(b,m)&&!R.has(m))};
+  // idem pour un nœud d'attribut en surplus (au-delà du compte demandé) ; on recommence tant qu'un retrait en permet un autre
+  for(let more=true,k=0;more&&k<20;k++){more=false;const n0=spentPoints(syncPips(b));
+    for(let i=added.length-1;i>=0;i--)if(owned(b,added[i])){set(added[i],0);if(orphan())set(added[i],1)}
+    if(want)for(const a in want)for(const p of [...TOPO.pips].reverse()){if(p.attr!==a||!b.pn[p.id])continue;if(TOPO.pips.filter(q=>q.attr===a&&b.pn[q.id]).length<=want[a])break;set(p,0);if(orphan())set(p,1)}
+    more=spentPoints(syncPips(b))<n0}
+  return syncPips(b)}
 /* Build d'avant le tracé réel (codes b1/b2, builds enregistrés en 1.8) : normalize, en notant ce qui a été ajouté pour relier (jamais enregistré) */
 function migrate(b,from){const sk={...b.sk},pip={...(b.pip||{})},before=spentPoints(b);normalize(b);
   const addSk=Object.keys(b.sk).filter(id=>b.sk[id]>0&&!(sk[id]>0)),addPip={};for(const a in b.pip){const d=b.pip[a]-(pip[a]||0);if(d>0)addPip[a]=d}

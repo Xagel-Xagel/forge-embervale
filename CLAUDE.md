@@ -65,7 +65,7 @@ Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de
 - `FZ.at`, `FZ.nd` : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel, format b3 ;
 - `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
 
-Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>]` (1 chiffre de rang par compétence possédée ; un code tronqué est refusé).
+Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>]-<contrôle>` (1 chiffre de rang par compétence possédée ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
 
 Donc :
 - **ajouter un objet, une gemme, une compétence ou un nœud : l'ajouter aussi EN FIN de sa table FZ** (le test des tables figées le réclame). L'ordre de SETS, RINGS, WEAPONS, GEMS, SK ou TREE peut alors changer sans casser de lien.

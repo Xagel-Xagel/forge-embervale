@@ -50,7 +50,9 @@ const B2A={c:'con',s:'str',d:'dex',e:'end',i:'int',p:'spi'};
 const b36=n=>n.toString(36).padStart(2,'0');
 const big36=s=>{let v=0n;for(const ch of s)v=v*36n+BigInt(parseInt(ch,36));return v};
 const bitsOf=v=>{const o=[];for(let i=0;v>0n;i++,v>>=1n)if(v&1n)o.push(i);return o};
-/* b3-<en-tête>-<équipement>-<masque des nœuds d'attribut>-<masque des compétences>-<rangs : 1 chiffre par compétence possédée, ou 0>[-g<gemmes>] */
+/* b3-<en-tête>-<équipement>-<masque des nœuds d'attribut>-<masque des compétences>-<rangs : 1 chiffre par compétence possédée, ou 0>[-g<gemmes>]-<contrôle>
+   contrôle = 2 caractères (FNV-1a du reste, modulo 36²) : un lien tronqué ou abîmé est refusé au lieu de donner un autre build */
+function b3sum(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}return b36(h%1296)}
 function encode(b){
   const head=[b.lvl,b.exp,b.flame,b.upg].map(b36).join('');
   const it=SLOTS.map(([sl])=>{const i=FZ.items.indexOf(b.gear[sl]);return i<0?'zz':b36(i)}).join('');
@@ -58,19 +60,23 @@ function encode(b){
   FZ.at.forEach((g,i)=>{const n=TOPO.byGid[g];if(n&&b.pn&&b.pn[n.id])at|=1n<<BigInt(i)});
   FZ.nd.forEach((g,i)=>{const n=TOPO.byGid[g];const v=n&&n.kind==='skill'?Math.min(b.sk[n.id]||0,n.sk.max):0;if(v>0){nd|=1n<<BigInt(i);rk.push(v.toString(36))}});
   const gm=['w1','w2'].map(sl=>{const i=FZ.gems.indexOf((b.gem||{})[sl]);return i<0?'zz':b36(i)}).join('');
-  return 'b3-'+head+'-'+it+'-'+at.toString(36)+'-'+nd.toString(36)+'-'+(rk.join('')||'0')+(gm!=='zzzz'?'-g'+gm:'');
+  const s='b3-'+head+'-'+it+'-'+at.toString(36)+'-'+nd.toString(36)+'-'+(rk.join('')||'0')+(gm!=='zzzz'?'-g'+gm:'');return s+'-'+b3sum(s);
 }
 /* Code illisible, tronqué ou corrompu → null (jamais d'exception : la page doit toujours démarrer) */
 function decode(code){try{return decodeCode(code)}catch(e){return null}}
 function decodeCode(code){
   const s=String(code).trim().replace(/^#/,'').toLowerCase();if(s.length>3000)return null;let m;
-  if((m=s.match(/^b3-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?$/))){
-    const b=baseOf(m[1],m[2],m[6]);
-    for(const i of bitsOf(big36(m[3]))){const n=TOPO.byGid[FZ.at[i]];if(n&&n.kind==='pip')b.pn[n.id]=1}
+  if((m=s.match(/^b3-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?-([0-9a-z]{2})$/))){
+    if(b3sum(s.slice(0,-3))!==m[7])return null;
+    const b=baseOf(m[1],m[2],m[6]);let gone=0;
+    for(const i of bitsOf(big36(m[3]))){const n=TOPO.byGid[FZ.at[i]];if(n&&n.kind==='pip')b.pn[n.id]=1;else gone++}
     // un chiffre de rang par bit posé, même hors table (code d'une version plus récente) : un écart signale un lien tronqué
     const bits=bitsOf(big36(m[4])),rk=m[5];if(bits.length?rk.length!==bits.length:rk!=='0')return null;
-    for(let k=0;k<bits.length;k++){const v=parseInt(rk[k],36);if(!v)return null;const n=TOPO.byGid[FZ.nd[bits[k]]];if(n&&n.kind==='skill')b.sk[n.id]=Math.min(v,n.sk.max)}
-    syncPips(b);return normalize(b)}
+    for(let k=0;k<bits.length;k++){const v=parseInt(rk[k],36);if(!v)return null;const n=TOPO.byGid[FZ.nd[bits[k]]];if(n&&n.kind==='skill')b.sk[n.id]=Math.min(v,n.sk.max);else gone++}
+    syncPips(b);const R=reach(b);
+    // tracé régénéré depuis (nœud disparu ou liaison changée) : migrer et le dire, sinon décodage exact
+    if(!gone&&!TOPO.N.some(n=>owned(b,n)&&!R.has(n)))return normalize(b);
+    migrate(b,'b3');b._mig.gone=gone;return b}
   // b1 et b2 : codes d'avant le tracé réel → comptes par attribut, puis migration (normalize relie au tracé réel)
   if(!(m=s.match(/^(b[12])-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?$/)))return null;
   const b=baseOf(m[2],m[3],m[6]);delete b.pn;

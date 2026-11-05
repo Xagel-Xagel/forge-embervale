@@ -1,5 +1,5 @@
 /* Tracé réel de l'arbre de compétences 1.0 — fichier GÉNÉRÉ par scripts/tree-from-pindrop.mjs : ne pas éditer à la main.
-   Source : https://pindrop.gg/enshrouded/skill-tree (bundle /_next/static/immutable/chunks/2h987apxy9ikb.js), relevé le 2026-11-05.
+   Source : https://pindrop.gg/enshrouded/skill-tree (bundle 2h987apxy9ikb.js), relevé le 2026-11-05.
    Extrait par PinDrop des fichiers du jeu : Enshrouded Dedicated Server (Keen Games), Steam app 2278520, depot 2278521, manifest 3715394091293008757 (build 1267041 release_1.0).
    costs of Wand Evasion Attack, Aerial Wand Attack and Whirlwind Crescendo updated for Patch #1 (scripts/enshrouded/apply-1011-skill-costs.py).
    nodes : [identifiant du nœud dans le jeu (base 36), clé, x, y] ; clé = id de compétence (SK), '@str'… = nœud d'attribut +1,

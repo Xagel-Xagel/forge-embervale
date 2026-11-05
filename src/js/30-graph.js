@@ -26,6 +26,7 @@ const G=(()=>{
     alpha=Math.max(0,alpha*.985-.0004);if(!drag&&(alpha<=.002||mv<.05))home(); // revenu en place : on s'arrête
   }
   function release(){if(reduce.matches)home();else alpha=Math.max(alpha,.3)}
+  reduce.addEventListener('change',()=>{if(reduce.matches)home()});
 
   /* État du build */
   const b=()=>B();
@@ -122,7 +123,7 @@ const G=(()=>{
   function hit(sx,sy){const [x,y]=toW(sx,sy);let best=null,bd=Infinity;for(const n of V){const d=Math.hypot(n.x-x,n.y-y);const lim=n.r+(n.kind==='pip'?4:6)/Math.min(1,cam.k);if(d<lim&&d<bd){bd=d;best=n}}return best}
   const pos=e=>{const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
   cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pos(e);ptrs.set(e.pointerId,p);moved=0;
-    if(ptrs.size===2){const [a,c]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-c[0],a[1]-c[1]),k:cam.k};drag=null;pan=null;return}
+    if(ptrs.size===2){const [a,c]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-c[0],a[1]-c[1]),k:cam.k};if(drag)release();drag=null;pan=null;return}
     if(e.button===2)return;const n=hit(...p);if(n){drag=n;cv.classList.add('grabbing')}else{pan={sx:p[0],sy:p[1],cx:cam.x,cy:cam.y};cv.classList.add('grabbing')}});
   cv.addEventListener('pointermove',e=>{const p=pos(e);
     if(ptrs.has(e.pointerId)){const old=ptrs.get(e.pointerId);moved+=Math.hypot(p[0]-old[0],p[1]-old[1]);ptrs.set(e.pointerId,p)}
@@ -166,6 +167,6 @@ const G=(()=>{
   $('#gFit').onclick=()=>{area='all';fit();renderSkills()};
   $('#gShake').onclick=()=>{if(reduce.matches){home();return}for(const n of V){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}alpha=.8;dirty=true};
   resize();fit();
-  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},nodes:N,edges:E};
+  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
 })();
 window.G=G;

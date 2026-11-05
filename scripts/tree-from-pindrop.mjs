@@ -13,6 +13,9 @@ const PAGE = 'https://pindrop.gg/enshrouded/skill-tree';
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) forge-embervale-tree-sync';
 const AT = {Strength: 'str', Constitution: 'con', Endurance: 'end', Dexterity: 'dex', Intelligence: 'int', Spirit: 'spi'};
 const fail = m => { console.error('✗ ' + m); process.exit(1); };
+// Texte distant recopié en commentaire : liste blanche de caractères (impossible de fermer le commentaire ou d'injecter du code)
+const safe = s => String(s ?? '?').replace(/[^\p{L}\p{N} .,;:()#_'+\/-]/gu, '').slice(0, 300);
+const getOpt = async u => { try { const r = await fetch(u, {headers: {'user-agent': UA}, signal: AbortSignal.timeout(30000)}); return r.ok ? r.text() : ''; } catch { return ''; } };
 const get = async u => { const r = await fetch(u, {headers: {'user-agent': UA}, signal: AbortSignal.timeout(30000)}); if (!r.ok) fail(`${u} : HTTP ${r.status}`); return r.text(); };
 
 // Chaîne JS entre apostrophes → texte (sans eval)
@@ -22,7 +25,7 @@ function unescapeJs(s) {
     const c = s[i];
     if (c !== '\\') { o += c; continue; }
     const n = s[++i];
-    if (n === 'u' && s[i + 1] === '{') { const e = s.indexOf('}', i); o += String.fromCodePoint(parseInt(s.slice(i + 2, e), 16)); i = e; }
+    if (n === 'u' && s[i + 1] === '{') { const e = s.indexOf('}', i); if (e < 0) throw new Error('\\u{ non fermé'); o += String.fromCodePoint(parseInt(s.slice(i + 2, e), 16)); i = e; }
     else if (n === 'u') { o += String.fromCharCode(parseInt(s.slice(i + 1, i + 5), 16)); i += 4; }
     else if (n === 'x') { o += String.fromCharCode(parseInt(s.slice(i + 1, i + 3), 16)); i += 2; }
     else if (n === '\n') { /* continuation de ligne */ }
@@ -34,10 +37,10 @@ const jsonModules = js => [...js.matchAll(/JSON\.parse\('((?:[^'\\]|\\.)*)'\)/gs
 
 // 1. Trouver le bundle qui porte le tracé
 const html = await get(PAGE);
-const chunks = [...new Set(html.match(/\/_next\/static\/[^"'\s]+?\.js/g) || [])];
+const chunks = [...new Set(html.match(/\/_next\/static\/[^"'\s]+?\.js(?![a-z0-9])/gi) || [])];
 let tree, names, bundle;
 for (const c of chunks) {
-  const js = await get(new URL(c, PAGE).href);
+  const js = await getOpt(new URL(c, PAGE).href);
   if (!js.includes('"links":[[')) continue;
   for (const m of jsonModules(js)) {
     if (Array.isArray(m.nodes) && Array.isArray(m.links)) tree = m;
@@ -60,7 +63,7 @@ const nodes = tree.nodes.map(g => {
   if (!Number.isInteger(g.id) || g.id < 0 || g.id > 0xffffffff || !Number.isFinite(g.x) || !Number.isFinite(g.y)) fail('nœud mal formé : ' + JSON.stringify(g).slice(0, 120));
   let key;
   if (g.t === 'root') key = '*';
-  else if (g.t === 'attribute' && g.attr) { key = '@' + AT[g.attr]; if (!AT[g.attr]) fail('attribut inconnu : ' + g.attr); }
+  else if (g.t === 'attribute' && g.attr) { if (!Object.hasOwn(AT, g.attr)) fail('attribut inconnu : ' + safe(g.attr)); key = '@' + AT[g.attr]; }
   else {
     const nm = names[String(g.id)]?.name, s = byEn.get(norm(nm));
     if (!s) fail(`nœud ${g.id} « ${nm} » : aucune compétence de SK ne porte ce nom anglais`);
@@ -101,11 +104,11 @@ const links = tree.links.map(([a, b]) => [idx.get(a), idx.get(b)].sort((p, q) =>
 
 // 6. Écriture
 const meta = tree._meta || {};
-const build = (String(meta.source || '').match(/build \d+[^)]*/) || ['build inconnu'])[0];
+const build = safe((String(meta.source || '').match(/build \d+[^)]*/) || ['build inconnu'])[0]);
 const date = new Date().toISOString().slice(0, 10);
 const out = `/* Tracé réel de l'arbre de compétences 1.0 — fichier GÉNÉRÉ par scripts/tree-from-pindrop.mjs : ne pas éditer à la main.
-   Source : ${PAGE} (bundle ${bundle}), relevé le ${date}.
-   Extrait par PinDrop des fichiers du jeu : ${String(meta.source || '?').replace(/\*\//g, '')}.${meta.patch1011 ? '\n   ' + String(meta.patch1011).replace(/\*\//g, '') + '.' : ''}
+   Source : ${PAGE} (bundle ${safe(bundle.split('/').pop())}), relevé le ${date}.
+   Extrait par PinDrop des fichiers du jeu : ${safe(meta.source)}.${meta.patch1011 ? '\n   ' + safe(meta.patch1011) + '.' : ''}
    nodes : [identifiant du nœud dans le jeu (base 36), clé, x, y] ; clé = id de compétence (SK), '@str'… = nœud d'attribut +1,
    '*' = départ (Étincelle, gratuit). Coordonnées du jeu, y vers le bas (comme PinDrop). links : liaisons non orientées (indices de nodes).
    Nœuds d'attribut rangés, par attribut, du moins cher au plus cher d'accès depuis les départs, puis par identifiant : cet ordre sert d'index. */

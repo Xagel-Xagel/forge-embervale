@@ -55,6 +55,13 @@ test('retirer un nœud élague tout ce qui n\'est plus relié à un départ', ()
   }
   assert.ok(cas > 0, 'aucun nœud d\'attribut voisin d\'un départ : test vide');
 });
+test('normalize : aucune liaison inutile laissée dans les presets', () => {
+  for (const p of PRESETS) { const b = fromPreset(p);
+    for (const n of TOPO.N) { const extra = n.kind === 'skill' ? b.sk[n.id] > 0 && !(n.id in p.sk) : n.kind === 'pip' && b.pn[n.id] && b.pip[n.attr] > (p.pip[n.attr] || 0);
+      if (!extra) continue; const t = JSON.parse(JSON.stringify(b)); if (n.kind === 'skill') delete t.sk[n.id]; else delete t.pn[n.id]; syncPips(t);
+      assert.ok(TOPO.N.some(m => owned(t, m) && !reach(t).has(m)), p.name + ' : ' + n.id + ' retirable sans rien couper'); }
+  }
+});
 test('normalize : comptes d\'attributs respectés, clés inconnues retirées sans perdre les autres', () => {
   const b = blankBuild(); b.pip = {int: 4, dex: 2}; delete b.pn; normalize(b);
   assert.equal(b.pip.int, 4); assert.equal(b.pip.dex, 2);
