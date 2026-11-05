@@ -39,7 +39,7 @@ function renderSlots(){
     sel.onchange=()=>{if(sel.value)b.gear[sl]=sel.value;else delete b.gear[sl];renderAll()};
     const it=ITEMS[b.gear[sl]];if(it)n++;
     let info='';
-    if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+WTYPE[it.type])}${it.wperks.map(p=>chip(WPERK[p],'tag')).join('')}</div>`}
+    if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+wtypeTxt(it))}${it.wperks.map(p=>chip(WPERK[p],'tag')).join('')}</div>`}
     else if(it){const base=Object.entries(it.base).map(([k,v])=>chip(`${ST[k][0]} ${sign(v,ST[k][1])}`)).join('');
       info=`<div class="chips">${base}${it.perks.map((p,i)=>perkChip(p,i<b.upg)).join('')}</div><div class="meta">Niv. ${it.lv} · ${esc(it.cls)}${it.src?' · '+esc(it.src):''}${it.set?' · panoplie '+esc(it.set):''}</div>`}
     wrap.innerHTML=`<div class="sname"><label for="slot-${sl}">${lab}</label></div>`;
@@ -119,7 +119,7 @@ function attrBlock(o,o2){
 }
 function weaponBlock(wc,label){
   if(!wc)return `<div class="wcard"><div class="wl">${label} : aucune arme</div></div>`;
-  return `<div class="wcard"><div class="wl">${label} · ${wc.catName} · ${WTYPE[wc.w.type]}</div><h3>${esc(wc.w.n)}</h3>
+  return `<div class="wcard"><div class="wl">${label} · ${wc.catName} · ${wtypeTxt(wc.w)}</div><h3>${esc(wc.w.n)}</h3>
   <div class="big"><div><b>${fmt(wc.hit)}</b><span>${wc.unit} estimés / coup</span></div><div><b>${fmt(wc.avg)}</b><span>moyenne avec critiques</span></div><div><b>+${fmt(wc.bonus)} %</b><span>bonus cumulés</span></div><div><b>${fmt(wc.cc,1)} %</b><span>critique</span></div></div>
   ${wc.gem?`<div class="wl" style="color:var(--ink)"><span class="gdot" style="--rc:${RAR[wc.gem.r][1]}"></span>${esc(wc.gem.fr)} : ${esc(wc.gem.d)} <span style="color:var(--muted)">(effet conditionnel, non compté dans les dégâts)</span></div>`:'<div class="wl">Aucune gemme</div>'}
   <details class="why"><summary>Détail des bonus (base ${wc.w.val})</summary><ul>${wc.parts.map(p=>`<li>${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')||'<li>Aucun bonus</li>'}${wc.cparts.map(p=>`<li>Critique · ${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')}</ul></details></div>`;

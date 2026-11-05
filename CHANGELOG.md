@@ -2,6 +2,13 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.11.0 — 2026-11-06 · Dégâts mixtes des armes
+- Les 16 armes à deux types de dégâts (ex. Aurora Sword : tranchant 50 % + glace 50 %) sont calculées part par part contre chaque ennemi, d'après les **fichiers du jeu 1.0** (PinDrop) ; les 21 autres armes de mêlée, dagues et baguettes restent à 100 % d'un type.
+- Une compétence de type (Taillade, Pyromane, Tonnerre…) ne compte que sur sa part ; le détail des bonus l'indique (« part tranchant 50 % »).
+- Immunité partielle : un Fell, immunisé au Shroud, subit encore la part contondante de Rotblood.
+- Arcs et bâtons : type affiché « selon la flèche / le sort » (aucune répartition dans les fichiers).
+- Gemmes : l'alerte de type tient compte des deux types de l'arme. Perks élémentaires toujours hors calcul (formule inconnue).
+
 ## 1.10.0 — 2026-11-05 · Presets revus sur le tracé réel
 - Les 15 builds prédéfinis perdent beaucoup moins de points en nœuds de liaison : **277 → 155** au total (mesure : points dépensés après `normalize` − points choisis).
 - Mages et soigneurs : **2 CON** au lieu de 6 à 11 — les deux nœuds CON voisins d'un départ (1 point chacun) ; les autres imposaient de traverser la zone Guerrier (Voie du guerrier, Taillade, Plaques…).

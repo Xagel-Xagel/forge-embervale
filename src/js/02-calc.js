@@ -46,26 +46,30 @@ function weaponCalc(w,o,s,R,A){
   if(fam==='wand')P(SKI.wandMastery.fr,5*R('wandMastery'));
   if(fam==='staff')P(SKI.spellslinger.fr,5*R('spellslinger'));
   const melee=fam==='melee'||fam==='dagger';
-  if(melee&&w.type==='cut')P(SKI.slasher.fr,10*R('slasher'));
-  if(melee&&w.type==='blunt')P(SKI.brute.fr,10*R('brute'));
-  if(melee&&w.type==='pierce')P(SKI.thrust.fr,10*R('thrust'));
-  if(fam==='bow'&&w.type==='pierce')P(SKI.puncture.fr,10*R('puncture'));
-  const el={fire:'arsonist',ice:'iceman',shock:'thunder',shroud:'darkArts'}[w.type];
-  if(el)P(SKI[el].fr,10*R(el));
   if(melee)P('Équip. : dégâts de mêlée',s.dmgMelee||0);
   if(hands===2)P('Équip. : mêlée deux mains',s.dmg2H||0);
   if(fam==='bow')P('Équip. : dégâts à distance',s.dmgRanged||0);
   if(fam==='staff')P('Équip. : dégâts des bâtons',s.dmgStaff||0);
   if(fam==='dagger')P('Équip. : dégâts des dagues',s.dmgDagger||0);
-  if(w.type==='blunt')P('Équip. : tous dégâts contondants',s.bluntAll||0);
-  const em={fire:'fireMagic',ice:'iceMagic',shock:'shockMagic',shroud:'shroudMagic'}[w.type];
-  if(em)P('Équip. : '+ST[em][0].toLowerCase(),s[em]||0);
+  // bonus propres à un type : ne s'appliquent qu'à la part de ce type (arme mixte 50/50 → moitié de l'effet sur le coup)
+  const common=parts.reduce((a,p)=>a+p[1],0);
+  const tb=t=>{const q=[];const Q=(n,v)=>{if(v)q.push([n,v])};
+    if(melee&&t==='cut')Q(SKI.slasher.fr,10*R('slasher'));
+    if(melee&&t==='blunt')Q(SKI.brute.fr,10*R('brute'));
+    if(melee&&t==='pierce')Q(SKI.thrust.fr,10*R('thrust'));
+    if(fam==='bow'&&t==='pierce')Q(SKI.puncture.fr,10*R('puncture'));
+    const el={fire:'arsonist',ice:'iceman',shock:'thunder',shroud:'darkArts'}[t];if(el)Q(SKI[el].fr,10*R(el));
+    if(t==='blunt')Q('Équip. : tous dégâts contondants',s.bluntAll||0);
+    const em={fire:'fireMagic',ice:'iceMagic',shock:'shockMagic',shroud:'shroudMagic'}[t];if(em)Q('Équip. : '+ST[em][0].toLowerCase(),s[em]||0);
+    return q};
+  const byType=w.split.map(([t,sh])=>{const q=tb(t);for(const [n,v] of q)parts.push([sh<1?`${n} (part ${WTYPE[t]} ${Math.round(sh*100)} %)`:n,v*sh]);
+    return [t,sh,w.val*sh*(1+(common+q.reduce((a,x)=>a+x[1],0))/100)]});
   const bonus=parts.reduce((a,p)=>a+p[1],0);
   let cc=o.critC;const cparts=[['Base',10]];if(s.critC)cparts.push(['Équip. : critique',s.critC]);if(R('fatalPrecision'))cparts.push([SKI.fatalPrecision.fr,5*R('fatalPrecision')]);
   if(melee){cc+=(s.critCMelee||0)+2*R('veteran');if(s.critCMelee)cparts.push(['Équip. : critique mêlée',s.critCMelee]);if(R('veteran'))cparts.push([SKI.veteran.fr,2*R('veteran')])}
   if(fam==='bow'){cc+=(s.critCRanged||0)+2*R('sniper');if(s.critCRanged)cparts.push(['Équip. : critique à distance',s.critCRanged]);if(R('sniper'))cparts.push([SKI.sniper.fr,2*R('sniper')])}
   if(fam==='wand'||fam==='staff'){cc+=(s.critCMagic||0)+2*R('wizard');if(s.critCMagic)cparts.push(['Équip. : critique magique',s.critCMagic]);if(R('wizard'))cparts.push([SKI.wizard.fr,2*R('wizard')])}
   cc=Math.min(100,cc);
-  const hit=w.val*(1+bonus/100);const avg=hit*(1+cc/100*o.critD/100);
-  return {w,catName,unit:(fam==='bow'||fam==='staff')?'Puissance':'Dégâts',bonus,parts,cc,cparts,hit,avg};
+  const hit=byType.reduce((a,x)=>a+x[2],0);const avg=hit*(1+cc/100*o.critD/100);
+  return {w,catName,unit:(fam==='bow'||fam==='staff')?'Puissance':'Dégâts',bonus,parts,cc,cparts,hit,avg,byType};
 }

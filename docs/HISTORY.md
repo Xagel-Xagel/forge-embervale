@@ -32,6 +32,8 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - proposition complète (Rôdeur, Barbare, Assassin, Arcaniste, Prêtre ; Sadi inchangé) : **« Valider tout »**.
     Source de chaque choix : coût de liaison mesuré sur le tracé (fichiers du jeu via PinDrop) et effet de la compétence (`SK`).
 
+14. (Claude Code, 2026-11-06) « La suite ? » → QCM : **dégâts mixtes** (ROADMAP n° 2) → 1.11.0. Source : pages armes de PinDrop (fichiers 1.0) — 100 % ou 50/50, rien d'autre ; l'« estimation » de PinDrop (formule du wiki d'avant la 1.0) donne d'autres parts, écartée. QCM : perks élémentaires **« hors calcul »** (pas d'hypothèse ajoutée).
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

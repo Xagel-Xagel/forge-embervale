@@ -32,6 +32,8 @@ moyenne  = coup × (1 + chance de critique × dégâts critiques)
 sur cible = coup × multiplicateur du type × (1 + bonus contre la famille)   vsEnemy()
 ```
 - Σ bonus : attribut de la famille d'arme, compétences de famille (Voie du guerrier, Voie du barbare, Tranchant du titan, Tireur d'élite, Maîtrise des dagues, Apprenti mage, Maîtrise des baguettes, Lanceur de sorts), compétences de type (Taillade, Brute, Estoc, Perforation, Pyromane, Homme de glace, Tonnerre, Arts sombres), stats d'équipement.
+- Arme mixte : `coup = Σ base × part × (1 + bonus communs + bonus du type de la part)`. Une compétence ou stat de type (Taillade, Pyromane, « tous dégâts contondants »…) ne joue que sur sa part (**hypothèse** : lecture littérale des descriptions).
+- Perks élémentaires de l'arme (« Feu magique : +10 % des dégâts de base », PinDrop) : **non comptés** (décision du 2026-11-06), la façon dont le jeu les ajoute n'étant pas dans les fichiers.
 - **Hypothèse** : le simulateur additionne tous ces bonus. Le jeu en multiplie peut-être certains entre eux (non documenté).
 - Bonus contre une famille : « contre les Fell » (équipement), Os en cendres (Hollow, +5 %/rang), Fléau des aigles (volants, +10 %/rang). Appliqués comme multiplicateur séparé (**hypothèse**).
 - Base de l'arme : valeur du wiki au niveau requis (**communauté**). Deux familles d'unités : « Dégâts » (mêlée, dagues, baguettes) et « Puissance » (arcs, bâtons), non comparables directement.
@@ -41,7 +43,9 @@ sur cible = coup × multiplicateur du type × (1 + bonus contre la famille)   vs
 Chaque ennemi a un multiplicateur caché par type : tranchant, perçant, contondant, poison, feu, glace, Shroud, foudre.
 `1,2` = +20 % de dégâts subis, `0,8` = −20 %, `0` = immunisé. Tous les Fell sont immunisés au Shroud.
 Pour une arme à dégâts mixtes, chaque part est multipliée séparément : `Σ (part × multiplicateur)`.
-**Limite actuelle** : le simulateur considère qu'une arme inflige 100 % de son type principal (`w.type`), la répartition n'étant pas publiée.
+Répartition (**fichiers du jeu 1.0**, PinDrop) : 16 armes de mêlée et dagues à 50/50 (ex. Aurora Sword : tranchant + glace), les autres à 100 % d'un type (`WSPLIT`, 01-data.js).
+Arcs et bâtons n'ont pas de répartition dans les fichiers : la flèche ou le sort la porte. Leur type reste indicatif (« selon la flèche / le sort »).
+Multiplicateur affiché pour une arme mixte = moyenne des multiplicateurs pondérée par les dégâts de chaque part.
 
 ## Défense
 ```

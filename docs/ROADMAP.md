@@ -4,7 +4,7 @@ Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et co
 
 ## Priorité haute
 1. **Presets : liaisons restantes.** Revue 1.10.0 faite (277 → 155 points de liaison). Reste : Sadi Fourbe (22, build de l'utilisateur, non touché) et les liaisons structurelles (ex. Rôdeur archer : Esprit calme, Lames venimeuses, Mithridatisé) ; envisager de rendre utiles les liaisons obligatoires (rang 3 si l'effet sert le rôle).
-2. **Dégâts mixtes des armes.** Beaucoup d'armes infligent deux types (ex. tranchant + glace). Trouver la répartition (fichiers du jeu via PinDrop/enshrouded.tools) et l'ajouter à `WEAPONS` sous forme de parts ; `vsEnemy` devient `Σ part × multiplicateur`. Ajouter un champ ou réordonner ne casse pas les codes (tables figées `FZ`, CLAUDE.md §2).
+2. **Perks élémentaires des armes.** Les répartitions 1.0 sont intégrées (1.11.0). Reste à savoir comment le jeu ajoute « Feu magique +10 % des dégâts de base » (PinDrop) : vérification en jeu ou nouvelle extraction ; aujourd'hui hors calcul.
 3. **Valeurs d'armure par pièce.** Si une source 1.0 les publie, calculer l'armure physique/magique dans `compute()` (avec Plaques lourdes/brillantes) et pré-remplir le calculateur de défense.
 
 ## Priorité moyenne
