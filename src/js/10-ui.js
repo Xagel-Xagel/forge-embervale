@@ -56,13 +56,13 @@ function renderSlots(){
 }
 function areaColor(k){return `var(${(AREAS.find(a=>a[0]===k)||['','','--ember'])[2]})`}
 function lockedMsg(n){const pth=pathTo(B(),n);toast(pth?`Verrouillé : il faut d'abord un nœud relié (chemin le plus court : ${pathCost(B(),pth)} pts)`:'Verrouillé : aucun chemin vers ce nœud')}
-function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill').length,pp=gone.length-sk;toast(`Plus reliés à la Flamme, donc retirés : ${sk?sk+' compétence'+(sk>1?'s':''):''}${sk&&pp?' et ':''}${pp?pp+' nœud'+(pp>1?'s':'')+" d'attribut":''}`)}}
+function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill').length,pp=gone.length-sk;toast(`Plus reliés à un point de départ, donc retirés : ${sk?sk+' compétence'+(sk>1?'s':''):''}${sk&&pp?' et ':''}${pp?pp+' nœud'+(pp>1?'s':'')+" d'attribut":''}`)}}
 function addRank(b,id){const s=SKI[id],n=TOPO.byId[id];if(!s)return false;if(!(b.sk[id]>0)&&!canBuy(b,n)){lockedMsg(n);return false}b.sk[id]=Math.min(s.max,(b.sk[id]||0)+1);return true}
 function remRank(b,id){const v=(b.sk[id]||0)-1;if(v>0)b.sk[id]=v;else{delete b.sk[id];goneMsg(prune(b))}}
 function addPipNode(b,n){if(b.pn[n.id])return false;if(!canBuy(b,n)){lockedMsg(n);return false}b.pn[n.id]=1;syncPips(b);return true}
 function remPipNode(b,n){if(!b.pn[n.id])return;delete b.pn[n.id];syncPips(b);goneMsg(prune(b))}
 function addPip(b,k){const R=reach(b);const n=TOPO.pips.filter(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,R)).sort((x,y)=>x.idx-y.idx)[0];
-  if(!n){toast(TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id])?"Aucun nœud de cet attribut n'est relié pour l'instant : acquérez d'abord un nœud voisin":'Tous les nœuds de cet attribut sont acquis');return}addPipNode(b,n)}
+  if(!n){toast(TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id])?"Aucun nœud de cet attribut n'est relié pour l'instant : utilisez « Acheter le chemin »":'Tous les nœuds de cet attribut sont acquis');return}addPipNode(b,n)}
 function remPip(b,k){let best=null,bc=Infinity;for(const p of TOPO.pips){if(p.attr!==k||!b.pn[p.id])continue;const t=JSON.parse(JSON.stringify(b));delete t.pn[p.id];syncPips(t);const c=prune(t).length;if(c<bc){bc=c;best=p}}if(best)remPipNode(b,best)}
 function renderSkills(){
   const b=B();
@@ -79,20 +79,23 @@ function renderSkills(){
   $('#vGraph').setAttribute('aria-pressed',view==='graph');$('#vList').setAttribute('aria-pressed',view==='list');
   $('#graphView').hidden=view!=='graph';$('#listView').hidden=view!=='list';
   if(view==='graph'){if(window.G)G.refresh(o);return}
+  const RR=reach(b),DJ=dijkstra(b,RR);
   const pe=$('#pips');pe.innerHTML='';
   PIPS.filter(p=>area==='all'||p[3]===area).forEach(([k,n,ab,,max])=>{const v=b.pip[k]||0;const d=document.createElement('div');d.className='pip';
-    d.innerHTML=`<div><b>${n}</b><div class="lbl">nœuds d'attribut · 1 pt</div></div><div class="step" style="grid-row:auto"><button aria-label="Retirer ${n}" ${v?'':'disabled'}>−</button><span class="rk">${v}/${max}</span><button aria-label="Ajouter ${n}" ${v<max?'':'disabled'}>+</button></div>`;
-    const [m,p]=d.querySelectorAll('button');m.onclick=()=>{remPip(b,k);renderAll()};p.onclick=()=>{addPip(b,k);renderAll()};pe.appendChild(d)});
+    // aucun nœud de cet attribut n'est voisin d'un nœud relié : proposer le chemin le moins cher (la vue liste sert d'alternative au clavier)
+    let far=null;if(v<max&&!TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,RR)))for(const p of TOPO.pips)if(p.attr===k&&!b.pn[p.id]&&DJ.dist.has(p)&&(!far||DJ.dist.get(p)<DJ.dist.get(far)))far=p;
+    d.innerHTML=`<div><b>${n}</b><div class="lbl">nœuds d'attribut · 1 pt</div>${far?`<button class="btn sm pathb">Acheter le chemin (${DJ.dist.get(far)} pts)</button>`:''}</div><div class="step" style="grid-row:auto"><button aria-label="Retirer ${n}" ${v?'':'disabled'}>−</button><span class="rk">${v}/${max}</span><button aria-label="Ajouter ${n}" ${v<max?'':'disabled'}>+</button></div>`;
+    const [m,p]=d.querySelectorAll('.step button');m.onclick=()=>{remPip(b,k);renderAll()};p.onclick=()=>{addPip(b,k);renderAll()};
+    const pb=d.querySelector('.pathb');if(pb)pb.onclick=()=>{const pth=pathTo(b,far);if(pth){buyPath(b,pth);renderAll()}};pe.appendChild(d)});
   pe.hidden=area==='core';
   const ne=$('#nodes');ne.innerHTML='';
   const q=query.toLowerCase();
   const list=SK.filter(s=>(q?(s.fr+' '+s.en).toLowerCase().includes(q):(area==='all'||s.area===area))&&(!onlyOn||(b.sk[s.id]||0)>0||(o.gearRk[s.id]||0)>0));
   if(!list.length)ne.innerHTML='<div class="empty">Aucune compétence ne correspond. Videz la recherche ou décochez « Prises seulement ».</div>';
-  const RR=reach(b);
   list.forEach(s=>{const v=b.sk[s.id]||0,g=o.gearRk[s.id]||0;const tn=TOPO.byId[s.id];const lock=!v&&!canBuy(b,tn,RR);const d=document.createElement('div');d.className='node'+(v?' on':'')+(lock?' lock':'');
     d.style.setProperty('--ac',areaColor(s.area));
     d.innerHTML=`<div class="nn">${esc(s.fr)}<span class="en">${esc(s.en)}</span>${s.nw?'<span class="new">1.0</span>':''}${g?`<span class="gear">+${g} équip.</span>`:''}${lock?'<span class="lk">verrouillé</span>':''}</div>
-      <div class="nd">${esc(s.d)}${lock?` <button class="btn sm pathb">Acheter le chemin (${pathCost(b,pathTo(b,tn)||[])} pts)</button>`:''}</div>
+      <div class="nd">${esc(s.d)}${lock?` <button class="btn sm pathb">Acheter le chemin (${DJ.dist.has(tn)?DJ.dist.get(tn):'—'} pts)</button>`:''}</div>
       <div class="step"><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?'/rang':''}</span><button aria-label="Retirer un rang à ${esc(s.fr)}" ${v?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button aria-label="Ajouter un rang à ${esc(s.fr)}" ${v<s.max&&!lock?'':'disabled'}>+</button></div>`;
     const bs=d.querySelectorAll('.step button');bs[0].onclick=()=>{remRank(b,s.id);renderAll()};bs[1].onclick=()=>{if(addRank(b,s.id))renderAll()};
     const pb=d.querySelector('.pathb');if(pb)pb.onclick=()=>{const pth=pathTo(b,tn);if(pth){buyPath(b,pth);renderAll()}};ne.appendChild(d)});
@@ -145,7 +148,7 @@ function renderStats(){
     el.innerHTML=`<div><div class="lbl">Attributs</div>${attrBlock(o)}</div>${weaponBlock(o.weapons[0],'Arme 1')}${weaponBlock(o.weapons[1],'Arme 2')}${t}${gearSkills(o)}${note()}`;
   }
 }
-function note(){return `<div class="note"><strong>Comment lire ces chiffres.</strong> La 1.0 n'a <strong>aucun bonus de panoplie</strong> : chaque pièce apporte ses propres stats, porter 5 pièces d'un même set n'ajoute rien. Les fichiers 1.0 ne publient pas les valeurs d'armure finales, d'où les pourcentages seuls. Les dégâts d'armes sont des estimations du wiki au niveau requis ; les bonus sont additionnés, ce qui reste une approximation du calcul du jeu. Les rangs donnés par l'équipement sont ajoutés à ceux de l'arbre. Les nœuds « +1 tous les 2 niveaux de Flamme » utilisent le niveau de Flamme saisi. Un nœud ne s'achète que s'il est relié à la Flamme par des nœuds déjà acquis ; les liaisons sont une reconstruction thématique, pas le tracé exact du jeu.</div>`}
+function note(){return `<div class="note"><strong>Comment lire ces chiffres.</strong> La 1.0 n'a <strong>aucun bonus de panoplie</strong> : chaque pièce apporte ses propres stats, porter 5 pièces d'un même set n'ajoute rien. Les fichiers 1.0 ne publient pas les valeurs d'armure finales, d'où les pourcentages seuls. Les dégâts d'armes sont des estimations du wiki au niveau requis ; les bonus sont additionnés, ce qui reste une approximation du calcul du jeu. Les rangs donnés par l'équipement sont ajoutés à ceux de l'arbre. Les nœuds « +1 tous les 2 niveaux de Flamme » utilisent le niveau de Flamme saisi. Un nœud ne s'achète que s'il touche un point de départ (Étincelle) ou un nœud acquis qui y est relié ; le tracé de l'arbre (positions et liaisons) est celui des fichiers du jeu 1.0, relevé par PinDrop. Chaque rang est supposé coûter le prix du nœud (les fichiers n'en donnent qu'un par nœud).</div>`}
 function renderSaved(){const s=lsGet();$('#saved').innerHTML='<option value="">Mes builds…</option>'+s.map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join('')}
 function renderAll(){renderTabs();renderSlots();renderSkills();renderStats()}
 
@@ -164,15 +167,24 @@ $('#vGraph').onclick=()=>{view='graph';renderSkills();if(window.G)G.resize()};
 $('#vList').onclick=()=>{view='list';renderSkills()};
 $('#save').onclick=()=>{const s=lsGet();const b=JSON.parse(JSON.stringify(B()));const i=s.findIndex(x=>x.name===b.name);if(i>=0)s[i]=b;else s.push(b);
   if(lsSet(s)){renderSaved();toast('« '+b.name+' » enregistré dans ce navigateur')}else toast('Enregistrement impossible ici : utilisez « Partager »')};
-$('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=normalize(Object.assign(blankBuild(),JSON.parse(JSON.stringify(s))));renderAll();toast('Chargé dans '+'AB'[cur])}};
+/* Build enregistré : ceux d'avant le tracé réel (1.8 et avant : nœuds d'attribut de l'ancien tracé, ou comptes seuls) sont migrés */
+function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringify(s)));if(s.pn&&!Object.keys(s.pn).some(id=>!TOPO.byId[id]||TOPO.byId[id].kind!=='pip'))return normalize(b);delete b.pn;return migrate(b,'saved')}
+$('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!migNotice(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
 $('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
+/* Build d'avant le tracé réel : dire ce qui a été ajouté pour le relier, et l'éventuel dépassement de budget */
+function migNotice(b){const g=b&&b._mig;if(!g||!(g.pts>0))return false;
+  const names=[...g.addSk.map(id=>SKI[id].fr),...Object.entries(g.addPip).map(([a,n])=>PIPS.find(p=>p[0]===a)[1]+' +'+n)];const over=spentPoints(b)-budget(b);
+  const m=modal(`<h2>${g.from==='saved'?'Build enregistré':'Lien'} d'avant le tracé réel</h2><p class="sub">${g.from==='saved'?'Ce build a été enregistré':'Ce code '+esc(g.from)+'- a été créé'} avant la version 1.9.0, qui reprend le vrai tracé de l'arbre du jeu. Vos choix sont conservés (équipement, gemmes, compétences et rangs, attributs). Pour les relier à un point de départ, ces nœuds ont été ajoutés (+${g.pts} pt${g.pts>1?'s':''}) :</p>
+<div>${esc(names.join(', '))}.</div>${over>0?`<p class="over-msg">Budget dépassé de ${over} pts : retirez des nœuds ou montez de niveau.</p>`:''}<div class="row"><button class="btn primary" id="mok">Compris</button></div>`);
+  m.querySelector('#mok').onclick=()=>m.remove();return true}
 function modal(html){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="box" role="dialog" aria-modal="true">${html}</div>`;m.onclick=e=>{if(e.target===m)m.remove()};document.body.appendChild(m);return m}
 function copy(text,ta){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast('Copié'),()=>{ta.select();toast('Sélectionné : copiez avec Ctrl+C')})}else{ta.select();toast('Sélectionné : copiez avec Ctrl+C')}}
 $('#share').onclick=()=>{const code=encode(B());try{history.replaceState(null,'','#'+code)}catch(e){location.hash=code}
   const m=modal(`<h2>Partager « ${esc(B().name)} »</h2><p class="sub">Ce code contient l'équipement, l'arbre et les réglages. Il est aussi placé à la fin du lien de la page : un lien copié depuis la barre d'adresse ouvre directement ce build.</p>
   <textarea id="shareCode" readonly>${code}</textarea><div class="row"><button class="btn primary" id="cpy">Copier le code</button><button class="btn" id="cls">Fermer</button></div>`);
   m.querySelector('#cpy').onclick=()=>copy(code,m.querySelector('#shareCode'));m.querySelector('#cls').onclick=()=>m.remove()};
-$('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b2-</code> (les anciens <code>b1-</code> marchent aussi). Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b1-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
-  m.querySelector('#go').onclick=()=>{const b=decode(m.querySelector('#impCode').value);if(!b){m.querySelector('#impErr').hidden=false;return}builds[cur]=b;m.remove();renderAll();toast('Build importé dans '+'AB'[cur])};m.querySelector('#cls').onclick=()=>m.remove()};
-function fromHash(){const h=location.hash.slice(1);if(/^b[12]-/.test(h)){const b=decode(h);if(b){builds[0]=b;cur=0;compare=false;return true}}return false}
+$('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b3-</code> ; les anciens <code>b2-</code> et <code>b1-</code> marchent aussi (adaptés au tracé réel de l'arbre). Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b3-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b3-, b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
+  m.querySelector('#go').onclick=()=>{const b=decode(m.querySelector('#impCode').value);if(!b){m.querySelector('#impErr').hidden=false;return}builds[cur]=b;m.remove();renderAll();if(!migNotice(b))toast('Build importé dans '+'AB'[cur])};m.querySelector('#cls').onclick=()=>m.remove()};
+function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const b=decode(h);if(b){builds[0]=b;cur=0;compare=false;
+  if(b._mig){try{history.replaceState(null,'','#'+encode(b))}catch(e){}setTimeout(()=>migNotice(b),0)}return true}}return false}
 window.addEventListener('hashchange',()=>{if(fromHash())renderAll()});

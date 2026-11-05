@@ -8,11 +8,13 @@ test('identifiants de compétences uniques et complets', () => {
     assert.ok(s.fr && s.en && s.d, s.id + ' : texte manquant');
   }
 });
-test('chaque compétence est placée une seule fois dans l\'arbre', () => {
-  for (const s of SK) assert.ok(TOPO.byId[s.id], s.id + ' absent de TOPO');
-  const inClusters = CLUSTERS.flatMap(c => c[4]);
-  assert.equal(new Set(inClusters).size, inClusters.length, 'compétence présente dans deux groupes');
-  for (const id of inClusters) assert.ok(SKI[id], 'groupe : compétence inconnue ' + id);
+test('chaque compétence correspond à un seul nœud du tracé réel', () => {
+  const keys = TREE.nodes.map(n => n[1]).filter(k => k !== '*' && k[0] !== '@');
+  assert.equal(new Set(keys).size, keys.length, 'compétence présente deux fois dans le tracé');
+  for (const k of keys) assert.ok(SKI[k], 'tracé : compétence inconnue ' + k);
+  for (const s of SK) assert.ok(TOPO.byId[s.id] && TOPO.byId[s.id].kind === 'skill', s.id + ' absent du tracé');
+  assert.equal(new Set(TREE.nodes.map(n => n[0])).size, TREE.nodes.length, 'identifiant de jeu en double');
+  for (const [i, j] of TREE.links) assert.ok(TREE.nodes[i] && TREE.nodes[j] && i !== j, 'liaison invalide ' + i + '-' + j);
 });
 test('objets : catégories et perks connus', () => {
   for (const w of WEAPONS) { assert.ok(CAT[w[2]], w[0] + ' : catégorie'); assert.ok(WTYPE[w[5]], w[0] + ' : type'); for (const p of w[6]) assert.ok(WPERK[p], w[0] + ' : perk ' + p); }

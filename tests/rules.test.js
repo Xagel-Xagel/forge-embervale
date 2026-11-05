@@ -13,7 +13,22 @@ test('attributs : CON +50 PV, ESP +20 mana, END +10 vigueur', () => {
   const o = compute(b);
   assert.equal(o.hp, 200); assert.equal(o.mana, 160); assert.equal(o.sta, 140);
 });
-for (const p of PRESETS) test(`preset « ${p.name} » : relié à la Flamme et dans le budget`, () => {
+test('tracé réel : 243 nœuds, 312 liaisons, tout est relié aux 12 départs', () => {
+  assert.equal(TREE.nodes.length, 243); assert.equal(TOPO.E.length, 312);
+  assert.equal(TOPO.N.filter(n => n.kind === 'start').length, 12);
+  for (const [k, , , , max] of PIPS) assert.equal(TOPO.pips.filter(p => p.attr === k).length, max, 'nœuds ' + k);
+  const all = blankBuild(); for (const s of SK) all.sk[s.id] = 1; for (const p of TOPO.pips) all.pn[p.id] = 1; syncPips(all);
+  assert.equal(reach(all).size, TOPO.N.length, 'nœud isolé dans le tracé');
+  // la Flamme est logique : reliée aux seuls départs, absente des liaisons dessinées
+  assert.ok([...TOPO.core.nb].every(n => n.kind === 'start'));
+  assert.ok(TOPO.E.every(([p, q]) => p.kind !== 'hub' && q.kind !== 'hub'));
+});
+test('chemin : Dijkstra multi-cibles = coût et chemin de pathTo', () => {
+  const b = fromPreset(PRESETS[4]); const R = reach(b), D = dijkstra(b, R);
+  for (const n of TOPO.N) { if (R.has(n)) continue; const p = pathTo(b, n);
+    assert.deepEqual(trace(D, n).map(x => x.id), p.map(x => x.id), n.id); assert.equal(D.dist.get(n), pathCost(b, p), n.id); }
+});
+for (const p of PRESETS) test(`preset « ${p.name} » : relié à un départ et dans le budget`, () => {
   const b = fromPreset(p); const R = reach(b);
   const lost = TOPO.N.filter(n => owned(b, n) && !R.has(n));
   assert.equal(lost.length, 0, 'nœuds non reliés : ' + lost.map(n => n.id).join(', '));
@@ -28,13 +43,23 @@ test('un nœud ne s\'achète que s\'il touche un nœud acquis', () => {
   assert.ok(b.sk.wizard > 0);
   assert.equal(TOPO.N.filter(n => owned(b, n) && !reach(b).has(n)).length, 0);
 });
-test('retirer un nœud élague tout ce qui n\'est plus relié à la Flamme', () => {
+test('retirer un nœud élague tout ce qui n\'est plus relié à un départ', () => {
+  let cas = 0;
   for (const attr of ['int', 'spi', 'con']) {
     const b = fromPreset(PRESETS[0]); const before = spentPoints(b);
-    const pip = TOPO.pips.find(p => p.attr === attr && b.pn[p.id] && p.nb.has(TOPO.core));
-    if (!pip) continue;
+    const pip = TOPO.pips.find(p => p.attr === attr && b.pn[p.id] && [...p.nb].some(n => n.kind === 'start'));
+    if (!pip) continue; cas++;
     delete b.pn[pip.id]; syncPips(b); prune(b);
     assert.ok(spentPoints(b) <= before - 1, attr);
     assert.equal(TOPO.N.filter(n => owned(b, n) && !reach(b).has(n)).length, 0, attr + ' : nœud orphelin restant');
   }
+  assert.ok(cas > 0, 'aucun nœud d\'attribut voisin d\'un départ : test vide');
+});
+test('normalize : comptes d\'attributs respectés, clés inconnues retirées sans perdre les autres', () => {
+  const b = blankBuild(); b.pip = {int: 4, dex: 2}; delete b.pn; normalize(b);
+  assert.equal(b.pip.int, 4); assert.equal(b.pip.dex, 2);
+  const c = JSON.parse(JSON.stringify(b)); c.pn['pip:retire-par-un-patch'] = 1; c.pip.int = 5; normalize(c);
+  assert.equal(c.pip.int, 5, 'le nœud inconnu est remplacé par un autre du même attribut');
+  for (const id in b.pn) if (TOPO.byId[id].attr === 'dex') assert.ok(c.pn[id], 'nœud valide conservé : ' + id);
+  assert.equal(TOPO.N.filter(n => owned(c, n) && !reach(c).has(n)).length, 0);
 });

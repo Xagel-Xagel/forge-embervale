@@ -117,7 +117,7 @@ function renderOptNow(){optT=null;
       <td class="act"><button class="btn sm" data-inv="${i}">${x.cost>free?'Acheter (dépasse)':'Acheter'}</button></td></tr>`);
     cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3><span class="lbl">${free>=0?free+' pts libres':'budget dépassé de '+(-free)+' pts'}</span></div>
       ${ir.length?optTable(ir,['#','Nœud','Coût','Gain','Gain / pt',''],'named'):vsEnemy(wc,o,en).m===0?`<p class="empty">${esc(en.n)} est immunisé aux dégâts ${WTYPE[wc.w.type]} : aucun point ne changera rien. Changez d'arme (voir le classement).</p>`:'<p class="empty">Aucun nœud accessible n\'augmente encore les dégâts de cette arme contre cette cible : vos bonus offensifs sont au maximum.</p>'}
-      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis la Flamme.</div></div>`;
+      <div class="meta2">Classé par gain de dégâts moyens par point dépensé, chemin d'accès compris. Un nœud verrouillé est acheté avec le chemin le moins cher depuis vos nœuds reliés à un point de départ.</div></div>`;
     root._inv=inv}
   // 5. défense
   const cDef=`<div class="ocard"><div class="oh"><h3>Défense : combien de coups encaissez-vous ?</h3><span class="lbl">${fmt(o.hp)} PV</span></div>
