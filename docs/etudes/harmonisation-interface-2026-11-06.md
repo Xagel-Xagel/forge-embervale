@@ -114,7 +114,10 @@ Canevas publié (privé, 12 planches + 3 notes « masqué / déplacé / fusionn�
 - Pour chaque direction : 4 planches — bureau clair, bureau sombre, 400 px clair, 400 px sombre — avec une légende « masqué / déplacé / fusionné ».
 
 ## 5. Direction retenue
-_(à compléter après les QCM)_
+
+QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recommandée pour le risque ; C Parcours). Affinages suivants, un QCM à la fois, rendus révisés à chaque réponse :
+
+_(suite à compléter)_
 
 ## 6. Plan d'implémentation
 _(à compléter après les QCM)_
