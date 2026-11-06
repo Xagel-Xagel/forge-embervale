@@ -11,24 +11,113 @@ function lsSet(v,k=LS){try{localStorage.setItem(k,JSON.stringify(v));return true
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;($('#toasts')||document.body).appendChild(d);setTimeout(()=>d.remove(),2200)} // empilés dans #toasts (role="status")
 const B=()=>builds[cur];
 
-/* Onglets des parties (1.15.0) : une seule partie affichée ; l'onglet ouvert est retenu dans ce navigateur (lsGet/lsSet), jamais dans l'adresse (le hash est le code de partage) */
-const SECS=[['tree','Arbre'],['eq','Équipement'],['calc','Calculateur'],['bo','Build optimal'],['def','Défense'],['tab','Tables']];
-const LS_SEC='forge-embervale-onglet',OPT_SECS=['calc','bo','def','tab'],secOk=k=>SECS.some(s=>s[0]===k);
-function secSaved(){const k=lsGet(LS_SEC,'tree');return secOk(k)?k:'tree'}
-let sec='tree';
-/* Démarrage (fin de ce fichier, avant la création du graphe 30-graph.js) : l'onglet retenu est relu et appliqué ; caché, le graphe se cale à sa première ouverture */
-function initSec(){showSec(secSaved(),true)}
-/* Ouvre une partie : onglet sélectionné (aria-selected, tabindex itinérant), son panneau seul visible, fiche à droite d'Arbre et Équipement seulement,
-   choix de la cible déplacé dans l'onglet Build optimal. quiet (démarrage) : ni mémorisation ni rendu, renderAll suit */
-function showSec(id,quiet){if(!secOk(id))id='tree';const same=id===sec;sec=id;
-  for(const [k] of SECS){const t=$('#t-'+k),on=k===id;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;$('#p-'+k).hidden=!on}
-  const side=id==='tree'||id==='eq';$('#ficheAside').hidden=!side;$('#secLay').classList.toggle('side',side);
-  if(id==='calc'||id==='bo')$(id==='bo'?'#boTarget':'#optTarget').appendChild($('#optBar'));
-  if(quiet)return;
-  if(!same){lsSet(id,LS_SEC); // onglet déjà ouvert : rien à refaire (il est tenu à jour), seul le retour en haut de la partie s'applique
-    if(id==='tree'&&view==='graph'&&window.G)G.wake(); // canvas à la taille du panneau (et premier cadrage si le graphe était caché au démarrage)
-    if(OPT_SECS.includes(id))renderOptNow()} // seul l'onglet ouvert du calculateur est rendu (20-optimizer.js)
-  const p=$('#p-'+id);if(p.getBoundingClientRect().top<$('#secBar').getBoundingClientRect().bottom)p.scrollIntoView({block:'start'})} // page défilée : haut de la partie, sous les onglets
+/* Panneaux (1.18.0, HISTORY n° 25) : la page = grille de panneaux (plus d'onglets). Chaque panneau : ouvert / fermé (fermé = absent de la grille,
+   réouvrable depuis le rail), replié / déplié, taille S (replié) · M · L (deux colonnes). Disposition retenue dans ce navigateur (lsGet/lsSet),
+   jamais dans l'adresse (le hash est le code de partage). Sous 640 px : accordéon, un seul panneau déplié (lay.acc). */
+const PANELS=[['tree','Arbre','h-sk'],['eq','Équipement','h-eq'],['fiche','Fiche','h-st'],['calc','Calculateur','h-opt'],['bo','Build optimal','h-bo'],['def','Défense','h-def'],['tab','Tables','h-tab']];
+const PIDS=PANELS.map(p=>p[0]),pOk=k=>PIDS.includes(k),pName=k=>(PANELS.find(p=>p[0]===k)||[,''])[1];
+const OPT_PANELS=['calc','bo','def','tab'],SIZES=['S','M','L'],LS_PNL='forge-embervale-panneaux';
+/* Dispositions prêtes, figées dans le code (QCM 4 de l'étude) : ordre, tailles (M par défaut ; S = replié), panneaux fermés */
+const DISPOS={
+  theo:{l:'Théoricien',order:['tree','fiche','eq','calc','bo','def','tab'],size:{tree:'L'},closed:['bo','def','tab']},
+  combat:{l:'Combat',order:['calc','def','fiche','eq','tree','bo','tab'],size:{calc:'L'},closed:['tree','eq','fiche','bo','tab']},
+  mini:{l:'Minimal',order:['eq','fiche','tree','calc','bo','def','tab'],size:{tree:'S'},closed:['calc','bo','def','tab']},
+  all:{l:'Tout',order:['tree','eq','fiche','calc','bo','def','tab'],size:{tree:'L'},closed:[]}};
+const firstOpen=l=>l.order.find(k=>!l.closed.includes(k))||null;
+function mkDispo(k){const d=DISPOS[k],size={};for(const p of PIDS)size[p]=d.size[p]||'M';
+  const l={v:1,preset:k,order:d.order.slice(),size,folded:PIDS.filter(p=>size[p]==='S'),closed:d.closed.slice(),acc:null};l.acc=firstOpen(l);return l}
+/* Lecture d'un état enregistré : ordre, tailles, repliés, fermés ; identifiants inconnus ignorés, panneaux absents ajoutés à la fin ; S implique replié */
+function readSnap(x){if(!x||typeof x!=='object'||!Array.isArray(x.order)||!Array.isArray(x.folded)||!Array.isArray(x.closed)||!x.size||typeof x.size!=='object')return null;
+  const ids=a=>[...new Set(a.filter(pOk))],order=ids(x.order);order.push(...PIDS.filter(k=>!order.includes(k)));
+  const size={};for(const k of PIDS)size[k]=SIZES.includes(x.size[k])?x.size[k]:'M';
+  return {order,size,folded:[...new Set([...ids(x.folded),...PIDS.filter(k=>size[k]==='S')])],closed:ids(x.closed)}}
+/* Disposition retenue : une disposition prête est reprise du code (définition figée), « Ma disposition » de l'état enregistré ; illisible ou absente → Théoricien */
+const isDispo=k=>typeof k==='string'&&Object.hasOwn(DISPOS,k); // pas « toString », « __proto__ »… (stockage modifié à la main)
+function readLayout(x){if(!x||typeof x!=='object'||x.v!==1)return null;let mine=x.mine?readSnap(x.mine):null,l;
+  if(isDispo(x.preset))l=mkDispo(x.preset);else if(x.preset==='mine'){const s=readSnap(x);if(!s)return null;l=Object.assign({v:1,preset:'mine'},s);if(!mine)mine=JSON.parse(JSON.stringify(s))}else return null; // « Ma disposition » abîmée : refaite depuis l'état relu
+  if(mine)l.mine=mine;l.acc=pOk(x.acc)&&!l.closed.includes(x.acc)?x.acc:x.acc===null?null:firstOpen(l);return l}
+function loadLayout(){return readLayout(lsGet(LS_PNL,null))||mkDispo('theo')}
+let saveWarned=false;
+function saveLayout(){const ok=lsSet(lay,LS_PNL);if(!ok&&!saveWarned){saveWarned=true;toast('Disposition non retenue : stockage du navigateur bloqué (elle vaut jusqu\'au rechargement)')}return ok} // dit une fois par visite
+let lay=mkDispo('theo'),org=false,lastShown=new Set();
+const isAcc=()=>matchMedia('(max-width:639px)').matches;
+const isOpen=k=>!lay.closed.includes(k);
+const isFolded=k=>isAcc()?k!==lay.acc:lay.folded.includes(k);
+const shown=k=>pOk(k)&&isOpen(k)&&!isFolded(k); // ouvert et déplié : seuls ceux-là sont rendus (renderOptNow)
+/* Tout changement manuel (taille, ordre, repli, fermeture, ouverture) bascule sur « Ma disposition », qui est retenue à part (lay.mine) */
+function touch(){if(lay.preset!=='mine'&&lay.mine)toast('« Ma disposition » remplacée par celle-ci (partie de '+DISPOS[lay.preset].l+')');lay.preset='mine';lay.mine={order:lay.order.slice(),size:Object.assign({},lay.size),folded:lay.folded.slice(),closed:lay.closed.slice()}}
+function commit(){touch();saveLayout();paintLayout()}
+function applyDispo(k){let l;if(k==='mine'){if(!lay.mine)return false;l=Object.assign({v:1,preset:'mine'},JSON.parse(JSON.stringify(lay.mine)))}else if(isDispo(k))l=mkDispo(k);else return false;
+  if(lay.mine)l.mine=lay.mine;l.acc=lay.acc&&!l.closed.includes(lay.acc)?lay.acc:firstOpen(l);lay=l;saveLayout();paintLayout();return true}
+/* Monter / Descendre : échange avec le panneau ouvert voisin (les fermés ne comptent pas) */
+function movePanel(k,d){const vis=lay.order.filter(isOpen),i=vis.indexOf(k),j=i+d;if(i<0||j<0||j>=vis.length)return false;
+  const a=lay.order.indexOf(k),b=lay.order.indexOf(vis[j]);[lay.order[a],lay.order[b]]=[lay.order[b],lay.order[a]];commit();return true}
+function setSize(k,s){if(!pOk(k)||!SIZES.includes(s))return false;lay.size[k]=s;lay.folded=lay.folded.filter(x=>x!==k);if(s==='S')lay.folded.push(k);commit();return true}
+/* Replier / Déplier (on : true = replier, absent = basculer). Accordéon : déplier replie les autres, sans toucher à la disposition. Déplier un S le passe en M */
+function foldPanel(k,on){if(!pOk(k))return false;if(on===undefined)on=!isFolded(k);
+  if(isAcc()){lay.acc=on?(lay.acc===k?null:lay.acc):k;saveLayout();paintLayout();return true}
+  lay.folded=lay.folded.filter(x=>x!==k);if(on)lay.folded.push(k);else if(lay.size[k]==='S')lay.size[k]='M';commit();return true}
+function closePanel(k){if(!pOk(k)||!isOpen(k))return false;lay.closed.push(k);if(lay.acc===k)lay.acc=firstOpen(lay);commit();return true}
+function openPanel(k){if(!pOk(k)||isOpen(k))return false;lay.closed=lay.closed.filter(x=>x!==k);commit();return true}
+/* Aller à un panneau (barre basse, rail, clic dans Tables) : ouvert, déplié, ramené en haut de l'écran (sous la barre collée), focus sur sel ou son bouton Replier */
+function goPanel(k,sel){if(!pOk(k))return;if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false);
+  $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
+function setOrg(on){org=!!on;paintLayout()}
+/* Panneau affiché ET dans la fenêtre : sinon un message dit ce qui lui arrive (build optimal arrêté ou calculé) */
+function inView(k){if(!shown(k))return false;const r=$('#p-'+k).getBoundingClientRect();return r.top+r.height>0&&r.top<(window.innerHeight||Infinity)}
+/* Choix de la cible (#optBar) : dans le Calculateur s'il est affiché, sinon dans Build optimal ; ailleurs, Build optimal dit d'où vient sa cible */
+function placeBar(){const t=shown('calc')?'#optTarget':shown('bo')?'#boTarget':null;if(t&&$('#optBar').parentElement!==$(t))$(t).appendChild($('#optBar'));
+  $('#boTgtNote').hidden=!(t==='#optTarget'&&shown('bo'))}
+/* État → page : ordre (aussi l'ordre du focus), visibilité, tailles, boutons ; puis rendu des panneaux qui viennent d'apparaître. quiet (démarrage) : pas de rendu, renderAll suit */
+function paintLayout(quiet){const g=$('#pgrid'),acc=isAcc(),vis=lay.order.filter(isOpen);
+  if([...g.querySelectorAll('.pnl')].map(p=>p.id).join()!==lay.order.map(k=>'p-'+k).join())for(const k of lay.order)g.appendChild($('#p-'+k)); // seulement si l'ordre change (un élément déplacé perd le focus)
+  for(const k of PIDS){const p=$('#p-'+k),op=isOpen(k),fo=isFolded(k),f=$('#pf-'+k),i=vis.indexOf(k);
+    p.hidden=!op;p.setAttribute('data-size',lay.size[k]);p.classList.toggle('folded',fo);$('#pb-'+k).hidden=fo;
+    f.setAttribute('aria-expanded',String(!fo));f.textContent=fo?'Déplier':'Replier';f.hidden=org&&!acc;$('#po-'+k).hidden=!org;
+    for(const s of SIZES)$(`#ps-${k}-${s}`).setAttribute('aria-pressed',String(lay.size[k]===s));
+    $('#pu-'+k).disabled=i<=0;$('#pd-'+k).disabled=i<0||i>=vis.length-1;
+    $('#r-'+k).setAttribute('aria-pressed',String(op))}
+  $('#pEmpty').hidden=vis.length>0;$('#dispo').value=lay.preset;$('#dispoMine').disabled=!lay.mine;
+  $('#org').setAttribute('aria-pressed',String(org));$('#orgDone').hidden=!org;$('#orgHint').hidden=!org;$('#pgrid').classList.toggle('org',org);
+  placeBar();
+  const now=new Set(PIDS.filter(shown));
+  if(!quiet){const nw=[...now].filter(k=>!lastShown.has(k));
+    if(nw.includes('tree')&&view==='graph'&&window.G)G.wake();
+    if(nw.some(k=>OPT_PANELS.includes(k)))renderOptNow()} // seuls les panneaux du calculateur affichés sont rendus (20-optimizer.js)
+  lastShown=now}
+const ICON={tree:'<circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.4 7.6l3.6 8.6M16.6 7.6l-3.6 8.6M8 6h8"/>',
+  eq:'<path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/>',fiche:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  calc:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',bo:'<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5l-5.3 2.9 1.2-6-4.5-4.1 6-.7z"/>',
+  def:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',tab:'<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 10h18M9 5v14"/>',
+  reg:'<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',cible:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  plus:'<circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>'};
+const ico=k=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+/* Barre basse (< 640 px) : Réglages (niveau, exploration, Flamme : tuiles de l'Arbre), Arbre, Équipement, Cible (Calculateur), Plus (les autres) */
+const BBAR=[['reg','Réglages','tree','#lvl'],['tree','Arbre','tree'],['eq','Équipement','eq'],['cible','Cible','calc','#oEnemy']],BMORE=['fiche','bo','def','tab'];
+function moreOpen(on){$('#bmore').hidden=!on;$('#bb-plus').setAttribute('aria-expanded',String(on))}
+/* Construit le rail, la barre basse et les commandes de chaque en-tête, puis applique la disposition retenue (démarrage, avant la création du graphe) */
+function initPanels(){
+  $('#rail').innerHTML=PANELS.map(([k,l])=>`<button type="button" id="r-${k}" aria-pressed="true" title="${l} : afficher ou masquer le panneau">${ico(k)}<span>${l}</span></button>`).join('');
+  $('#bbar').innerHTML=BBAR.map(([k,l])=>`<button type="button" id="bb-${k}">${ico(k)}<span>${l}</span></button>`).join('')+`<button type="button" id="bb-plus" aria-expanded="false" aria-controls="bmore">${ico('plus')}<span>Plus</span></button>`;
+  $('#bmore').innerHTML=BMORE.map(k=>`<button type="button" id="bm-${k}">${ico(k)}<span>${pName(k)}</span></button>`).join('');
+  for(const [k,l] of PANELS){const ph=$('#p-'+k).querySelector('.ph');
+    ph.insertAdjacentHTML('beforeend',`<div class="ptools"><div class="porg" id="po-${k}" role="group" aria-label="Organiser le panneau ${l}" hidden>`+
+      `<span class="psz" role="group" aria-label="Taille">${SIZES.map(s=>`<button type="button" class="btn sm" id="ps-${k}-${s}" aria-pressed="false" aria-label="Taille ${s} : ${{S:'repliée',M:'normale',L:'deux colonnes'}[s]}">${s}</button>`).join('')}</span>`+
+      `<button type="button" class="btn sm" id="pu-${k}">Monter</button><button type="button" class="btn sm" id="pd-${k}">Descendre</button><button type="button" class="btn sm" id="px-${k}">Fermer</button></div>`+
+      `<button type="button" class="btn sm pfold" id="pf-${k}" aria-expanded="true" aria-controls="pb-${k}">Replier</button></div>`);
+    $('#pf-'+k).onclick=()=>foldPanel(k);
+    for(const s of SIZES)$(`#ps-${k}-${s}`).onclick=()=>setSize(k,s);
+    for(const [id,d] of [['#pu-',-1],['#pd-',1]])$(id+k).onclick=()=>{if(movePanel(k,d)){const b=$(id+k);(b.disabled?$((d<0?'#pd-':'#pu-')+k):b).focus()}}; // déplacé dans la page : focus rendu au bouton (ou à l'autre, à la borne)
+    $('#px-'+k).onclick=()=>{if(closePanel(k)){const r=$('#r-'+k);(r.offsetParent!==null?r:$('#org')).focus();toast('Panneau « '+l+' » fermé : rouvrez-le depuis le rail'+(isAcc()?' (« Plus » en bas)':''))}};
+    $('#r-'+k).onclick=()=>{if(isOpen(k))closePanel(k);else{openPanel(k);$('#p-'+k).scrollIntoView({block:'nearest'})}}}
+  for(const [k,,p,sel] of BBAR)$('#bb-'+k).onclick=()=>{moreOpen(false);goPanel(p,sel)};
+  for(const k of BMORE)$('#bm-'+k).onclick=()=>{moreOpen(false);goPanel(k)};
+  $('#bb-plus').onclick=()=>{const on=$('#bmore').hidden;moreOpen(on);if(on)$('#bm-'+BMORE[0]).focus()}; // ouvert : focus sur le premier choix
+  $('#bmore').onkeydown=$('#bb-plus').onkeydown=e=>{if(e.key==='Escape'&&!$('#bmore').hidden){moreOpen(false);$('#bb-plus').focus()}};
+  $('#dispo').onchange=e=>{if(applyDispo(e.target.value))toast('Disposition : '+(e.target.value==='mine'?'Ma disposition':DISPOS[e.target.value].l))};
+  $('#org').onclick=()=>setOrg(!org);$('#orgDone').onclick=()=>{setOrg(false);$('#org').focus()};
+  const mq=matchMedia('(max-width:639px)'),onMq=()=>{moreOpen(false);paintLayout()};if(mq.addEventListener)mq.addEventListener('change',onMq);else if(mq.addListener)mq.addListener(onMq); // vieux Safari : addListener // passage bureau ↔ téléphone : accordéon ou grille
+  lay=loadLayout();paintLayout(true)}
 
 function renderTabs(){
   const el=$('#buildTabs');el.innerHTML='';
@@ -189,7 +278,7 @@ function renderAll(){renderTabs();renderSlots();renderSkills();renderStats()}
 
 /* Événements */
 $('#buildName').oninput=e=>{B().name=e.target.value||'Sans nom';renderTabs();$('#buildName').focus();renderStats()};
-$('#cmp').onchange=e=>{compare=e.target.checked;renderStats();if(sec!=='tree'&&sec!=='eq')toast('Comparaison A et B '+(compare?'affichée':'retirée')+' : voir la fiche, onglets Arbre et Équipement')};
+$('#cmp').onchange=e=>{compare=e.target.checked;renderStats();if(!shown('fiche'))toast('Comparaison A et B '+(compare?'affichée':'retirée')+' : voir le panneau Fiche'+(isOpen('fiche')?' (replié)':' (fermé : rail)'))};
 [['mage','Mage et magie'],['heal','Soin et soutien'],['tank','Tank'],['war','Guerrier'],['rng','Rôdeur']].forEach(([c,l])=>$('#preset').insertAdjacentHTML('beforeend',`<optgroup label="${l}">`+PRESETS.map((p,i)=>p.cat===c?`<option value="${i}">${esc(p.name)}</option>`:'').join('')+'</optgroup>'));
 $('#preset').onchange=e=>{if(e.target.value==='')return;const p=PRESETS[+e.target.value];builds[cur]=fromPreset(p);e.target.value='';renderAll();
   toast('Build chargé dans '+'AB'[cur]+(p.lvl!=null||p.flame!=null?` : niveau ${B().lvl}, exploration ${B().exp}, Flamme ${B().flame} (réglages du preset)`:''))};
@@ -226,13 +315,7 @@ function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const
   if(b._mig){try{history.replaceState(null,'','#'+encode(b))}catch(e){}setTimeout(()=>migNotice(b),0)}return true}
   setTimeout(()=>toast('Lien de partage illisible (incomplet ou abîmé) : builds par défaut affichés'),0)}return false}
 window.addEventListener('hashchange',()=>{if(fromHash())renderAll()});
-/* Clic : focus posé sur l'onglet (Safari ne le donne pas au clic : il resterait dans le panneau caché) */
-function secClick(k){showSec(k);$('#t-'+k).focus({preventScroll:true})}
-/* Clavier (motif ARIA des onglets) : ← et → en boucle, Début, Fin ; l'onglet atteint s'ouvre (rendu immédiat) ; Alt, Ctrl, Cmd : laissés au navigateur */
-function secKey(e){if(e.altKey||e.ctrlKey||e.metaKey)return;const n=SECS.length;let i=SECS.findIndex(s=>'t-'+s[0]===(e.target&&e.target.id));if(i<0)i=SECS.findIndex(s=>s[0]===sec);
-  const j={ArrowRight:(i+1)%n,ArrowLeft:(i+n-1)%n,Home:0,End:n-1}[e.key];if(j===undefined)return;e.preventDefault();showSec(SECS[j][0]);$('#t-'+SECS[j][0]).focus()}
-SECS.forEach(([k])=>{$('#t-'+k).onclick=()=>secClick(k)});
-$('#secTabs').onkeydown=secKey;
-/* Hauteur des onglets collés (1 ou 2 lignes) sur :root : décalage de la fiche collée et du défilement (scroll-padding), pour que rien ne passe dessous */
-new ResizeObserver(()=>document.documentElement.style.setProperty('--navh',$('#secBar').offsetHeight+'px')).observe($('#secBar'));
-initSec();
+/* Hauteurs de la barre collée (en haut) et de la barre basse (téléphone) sur :root : décalage du rail et du défilement (scroll-padding), pour que rien ne passe dessous */
+new ResizeObserver(()=>document.documentElement.style.setProperty('--navh',$('#pBar').offsetHeight+'px')).observe($('#pBar'));
+new ResizeObserver(()=>document.documentElement.style.setProperty('--bbh',$('#bbar').offsetHeight+'px')).observe($('#bbar'));
+initPanels();

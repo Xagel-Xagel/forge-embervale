@@ -29,25 +29,25 @@
     <button class="btn" id="import">Importer un code</button>
   </div>
 
-  <!-- Onglets des parties : une seule affichée à la fois ; jamais dans l'adresse (le hash est réservé au code de partage) -->
-  <div class="secbar" id="secBar">
-    <div class="sectabs" role="tablist" aria-label="Parties du simulateur" id="secTabs">
-      <button role="tab" id="t-tree" aria-controls="p-tree" aria-selected="true">Arbre</button>
-      <button role="tab" id="t-eq" aria-controls="p-eq" aria-selected="false" tabindex="-1">Équipement</button>
-      <button role="tab" id="t-calc" aria-controls="p-calc" aria-selected="false" tabindex="-1">Calculateur</button>
-      <button role="tab" id="t-bo" aria-controls="p-bo" aria-selected="false" tabindex="-1">Build optimal</button>
-      <button role="tab" id="t-def" aria-controls="p-def" aria-selected="false" tabindex="-1">Défense</button>
-      <button role="tab" id="t-tab" aria-controls="p-tab" aria-selected="false" tabindex="-1">Tables</button>
-    </div>
+  <!-- Barre collée des panneaux (1.18.0) : disposition et mode Organiser ; jamais dans l'adresse (le hash est réservé au code de partage) -->
+  <div class="pbar" id="pBar">
+    <label class="dsel" for="dispo">Disposition</label>
+    <select id="dispo"><option value="mine" id="dispoMine">Ma disposition</option><option value="theo">Théoricien</option><option value="combat">Combat</option><option value="mini">Minimal</option><option value="all">Tout</option></select>
+    <button class="btn" id="org" aria-pressed="false" title="Taille, ordre et fermeture des panneaux">Organiser</button>
+    <button class="btn primary" id="orgDone" hidden>Terminé</button>
+    <span class="orghint" id="orgHint" hidden>Taille S (replié), M ou L (deux colonnes), Monter, Descendre, Fermer : dans l'en-tête de chaque panneau ; un panneau fermé se rouvre depuis le rail.</span>
   </div>
 
-  <div class="seclay side" id="secLay">
-  <div class="secmain">
-  <section class="panel" id="p-tree" role="tabpanel" aria-labelledby="t-tree" tabindex="0">
+  <!-- Rail (≥ 640 px) : afficher ou masquer chaque panneau ; grille de panneaux : 3, 2 ou 1 colonnes (accordéon sous 640 px) -->
+  <div class="playout">
+  <nav class="rail" id="rail" aria-label="Panneaux"></nav>
+  <div class="pgrid" id="pgrid">
+  <p class="pempty" id="pEmpty" hidden>Tous les panneaux sont fermés : rouvrez-en un depuis le rail (ou « Plus » en bas de l'écran), ou choisissez une disposition.</p>
+  <section class="panel pnl" id="p-tree" aria-labelledby="h-sk">
     <div class="ph"><h2 id="h-sk">Arbre de compétences</h2>
       <div class="row"><span class="lbl">172 compétences · 59 nœuds d'attribut · 12 départs</span>
       <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div></div>
-    <div class="pb">
+    <div class="pbody" id="pb-tree"><div class="pb">
       <div class="treehead">
         <!-- Tuiles Points et Flamme (1.17.0) : le nombre de points à attribuer et le niveau de la Flamme en grand, aussi à 400 px -->
         <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
@@ -97,55 +97,54 @@
         <div class="pips" id="pips"></div>
         <div class="nodes" id="nodes" style="margin-top:10px"></div>
       </div>
-    </div>
+    </div></div>
   </section>
 
-    <section class="panel" id="p-eq" role="tabpanel" aria-labelledby="t-eq" tabindex="0" hidden>
+    <section class="panel pnl" id="p-eq" aria-labelledby="h-eq">
       <div class="ph"><h2 id="h-eq">Équipement</h2><span class="lbl" id="eqCount"></span></div>
-      <div class="pb">
+      <div class="pbody" id="pb-eq"><div class="pb">
         <div class="upg">
           <label for="upg" class="lbl">Améliorations</label>
           <input type="range" id="upg" min="0" max="5" step="1">
           <span id="upgTxt" style="font-family:var(--f-mono);font-size:.85rem"></span>
         </div>
         <div id="slots" class="pb" style="padding:0"></div>
-      </div>
-    </section>
+      </div></div>
+  </section>
 
-  <section class="panel" id="p-calc" role="tabpanel" aria-labelledby="t-calc" tabindex="0" hidden>
+  <section class="panel pnl" id="p-calc" aria-labelledby="h-opt">
     <div class="ph"><h2 id="h-opt">Calculateur d'optimisation</h2><span class="lbl" id="optFor"></span></div>
-    <div class="pb">
-      <!-- Choix de la cible : déplacé dans l'onglet Build optimal quand celui-ci s'ouvre (showSec) -->
+    <div class="pbody" id="pb-calc"><div class="pb">
+      <!-- Choix de la cible : ici si le Calculateur est affiché, sinon dans Build optimal (placeBar, 10-ui.js) -->
       <div id="optTarget"><div class="optbar" id="optBar">
         <label>Ennemi ciblé<select id="oEnemy"></select></label>
         <label>Arme analysée<select id="oSlot"><option value="w1">Arme 1</option><option value="w2">Arme 2</option></select></label>
         <label class="ofam">Armes à classer<select id="oFam"></select></label>
       </div></div>
       <div id="optBody" style="display:flex;flex-direction:column;gap:12px"></div>
-    </div>
+    </div></div>
   </section>
 
-  <section class="panel" id="p-bo" role="tabpanel" aria-labelledby="t-bo" tabindex="0" hidden>
+  <section class="panel pnl" id="p-bo" aria-labelledby="h-bo">
     <div class="ph"><h2 id="h-bo">Build optimal</h2><span class="lbl" id="boFor"></span></div>
-    <div class="pb"><div class="ptiles" id="boTiles" role="group" aria-label="Points et Flamme du calcul"></div><div id="boTarget"></div><div id="boBody"></div></div>
+    <div class="pbody" id="pb-bo"><div class="pb"><div class="ptiles" id="boTiles" role="group" aria-label="Points et Flamme du calcul"></div><div id="boTarget"></div><p class="meta2" id="boTgtNote" hidden></p><div id="boBody"></div></div></div>
   </section>
 
-  <section class="panel" id="p-def" role="tabpanel" aria-labelledby="t-def" tabindex="0" hidden>
+  <section class="panel pnl" id="p-def" aria-labelledby="h-def">
     <div class="ph"><h2 id="h-def">Défense : combien de coups encaissez-vous ?</h2><span class="lbl" id="defFor"></span></div>
-    <div class="pb" id="defBody"></div>
+    <div class="pbody" id="pb-def"><div class="pb" id="defBody"></div></div>
   </section>
 
-  <section class="panel" id="p-tab" role="tabpanel" aria-labelledby="t-tab" tabindex="0" hidden>
+  <section class="panel pnl" id="p-tab" aria-labelledby="h-tab">
     <div class="ph"><h2 id="h-tab">Tables et formules</h2></div>
-    <div class="pb" id="tabBody"></div>
+    <div class="pbody" id="pb-tab"><div class="pb" id="tabBody"></div></div>
+  </section>
+
+  <section class="panel pnl stats" id="p-fiche" aria-labelledby="h-st">
+    <div class="ph"><h2 id="h-st">Fiche du personnage</h2><span class="lbl" id="stMode"></span></div>
+    <div class="pbody" id="pb-fiche"><div class="pb" id="stats"></div></div>
   </section>
   </div>
-
-  <!-- Fiche : à droite des onglets Arbre et Équipement (sous le contenu en dessous de 1000 px), cachée ailleurs -->
-  <aside class="panel stats" id="ficheAside" aria-labelledby="h-st">
-    <div class="ph"><h2 id="h-st">Fiche du personnage</h2><span class="lbl" id="stMode"></span></div>
-    <div class="pb" id="stats"></div>
-  </aside>
   </div>
 
   <p class="foot">
@@ -157,6 +156,9 @@
     Projet de fan, sans lien avec Keen Games.
   </p>
 </div>
+<!-- Barre basse (< 640 px) : raccourcis vers les panneaux ; « Plus » ouvre la liste des autres -->
+<nav class="bbar" id="bbar" aria-label="Raccourcis des panneaux"></nav>
+<div class="bmore" id="bmore" hidden></div>
 <!-- Messages (toast) : empilés, lus par les lecteurs d'écran -->
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 

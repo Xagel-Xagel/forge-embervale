@@ -85,13 +85,14 @@ function mxRows(){const q=oMxQ.trim();
   return mx.map(([e,i])=>`<tr${i===oEnemy?' class="cur"':''}><th><button class="lnk" data-en="${i}">${nmH(e)}</button><small>${FACTIONS[e.f]}${e.lv!=='—'?' · niv. '+e.lv:''}</small></th>${e.m.map(v=>`<td ${heat(v)}>${v===0?'0':fmt(v/100,2)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="9" class="empty">Aucun ennemi.</td></tr>'}
 let optT=null;
 function renderOpt(){if(optT)clearTimeout(optT);optT=setTimeout(renderOptNow,25)}
-/* Seul l'onglet ouvert est rendu (Calculateur, Build optimal, Défense ou Tables) ; showSec (10-ui.js) rend un onglet à son ouverture */
+/* Seuls les panneaux du calculateur ouverts et dépliés sont rendus (Calculateur, Build optimal, Défense, Tables) ; paintLayout (10-ui.js) rend un panneau qui apparaît */
 function renderOptNow(){optT=null;
   const b=B(),en=ENEMIES[oEnemy];
-  // build, cible ou réglages changés pendant le calcul du build optimal, quel que soit l'onglet ouvert ; hors de son onglet, un message le dit
-  if(BO.busy&&BO.key!==boKey(b)){boStopRun();if(sec!=='bo')toast('Calcul du build optimal arrêté : réglages changés, relancez-le')}
-  const f={calc:optCalc,bo:optBo,def:optDef,tab:optTab}[sec];if(f)f(b,compute(b),en)}
-/* Onglet Calculateur : faiblesses, armes contre la cible, classement des armes, où placer les points */
+  // build, cible ou réglages changés pendant le calcul du build optimal, quel que soit le panneau affiché ; panneau Build optimal caché : un message le dit
+  if(BO.busy&&BO.key!==boKey(b)){boStopRun();if(!inView('bo'))toast('Calcul du build optimal arrêté : réglages changés, relancez-le')}
+  const on=OPT_PANELS.filter(shown);if(!on.length)return;const o=compute(b);
+  for(const k of on)({calc:optCalc,bo:optBo,def:optDef,tab:optTab})[k](b,o,en)}
+/* Panneau Calculateur : faiblesses, armes contre la cible, classement des armes, où placer les points */
 function optCalc(b,o,en){
   const root=$('#optBody');if(!root)return;
   $('#optFor').textContent='Build '+'AB'[cur]+' · '+b.name;
@@ -144,7 +145,7 @@ function optCalc(b,o,en){
   // événements
   root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(nmT(ITEMS[bt.dataset.eq])+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
   root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});
-  /* Plan « Répartir au mieux » : gardé (planMem) tant que l'emplacement A/B, la cible, l'arme analysée et le build ne changent pas ; changer d'onglet ne l'efface plus */
+  /* Plan « Répartir au mieux » : gardé (planMem) tant que l'emplacement A/B, la cible, l'arme analysée et le build ne changent pas ; replier, fermer ou rouvrir un panneau ne l'efface pas */
   const pk=planKey(b),showPlan=(out,P,N)=>{
     if(!P||!P.steps.length){out.innerHTML='<p class="empty">Aucun point ne peut augmenter les dégâts de cette arme contre cette cible.</p>';return}
     let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
@@ -155,12 +156,13 @@ function optCalc(b,o,en){
     if(planMem&&planMem.k===pk)showPlan(root.querySelector('#planOut'),planMem.P,planMem.N)}
 }
 const planKey=b=>[cur,oEnemy,oSlot,JSON.stringify(b)].join('|');
-/* Onglet Build optimal (21-buildopt.js) : même cible et même arme analysée que le calculateur */
+/* Panneau Build optimal (21-buildopt.js) : même cible et même arme analysée que le calculateur */
 function optBo(b,o,en){const root=$('#boBody');if(!root)return;
   $('#boFor').textContent='Build '+'AB'[cur]+' · '+b.name;
   $('#oSlot').value=oSlot;$('#oEnemy').value=String(oEnemy);
+  $('#boTgtNote').textContent='Cible : '+nmT(en)+' (choisie dans le panneau Calculateur, affiché)';
   boTiles();root.innerHTML=boCard(b,en);boBind(root)}
-/* Onglet Défense : coup reçu, armure et résistances → dégâts subis et coups avant K.O. (réglages gardés dans DEF) */
+/* Panneau Défense : coup reçu, armure et résistances → dégâts subis et coups avant K.O. (réglages gardés dans DEF) */
 function optDef(b,o){const root=$('#defBody');if(!root)return;
   $('#defFor').textContent='Build '+'AB'[cur]+' · '+fmt(o.hp)+' PV';
   root.innerHTML=`<div class="dform">
@@ -178,7 +180,7 @@ function optDef(b,o){const root=$('#defBody');if(!root)return;
   root.querySelector('#dType').onchange=e=>{DEF.type=e.target.value;upd()};
   root.querySelector('#dCrowd').onchange=e=>{DEF.crowd=e.target.checked;upd()};
   root.querySelector('#dAura').onchange=e=>{DEF.aura=e.target.checked;upd()}}
-/* Onglet Tables : matrice des faiblesses (ouverte par défaut) et formules ; un nom cliqué devient la cible et ouvre le calculateur.
+/* Panneau Tables : matrice des faiblesses (ouverte par défaut) et formules ; un nom cliqué devient la cible et ouvre le calculateur (goPanel).
    Ne dépend que de la cible (ligne surlignée) : rendue une fois par cible (tabEn), la table garde son défilement quand le build change */
 let mxOpen=true,fOpen=false,tabEn=null;
 function optTab(){const root=$('#tabBody');if(!root||tabEn===oEnemy)return;tabEn=oEnemy;
@@ -204,7 +206,7 @@ function optTab(){const root=$('#tabBody');if(!root||tabEn===oEnemy)return;tabEn
     <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Arcs et bâtons : le type affiché est indicatif (la flèche ou le sort porte la répartition, absente des fichiers de l'arme) ; les autres perks d'arme (« Lourd (Feu) » : +10 % des dégâts de base, « Sans pitié » et « Opportuniste » contre une cible trempée…), la surcharge des baguettes et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>
   </div></details>`;
   root.innerHTML=cMx+cF;
-  root.querySelector('#mxBody').onclick=e=>{const bt=e.target.closest('button[data-en]');if(!bt)return;oEnemy=+bt.dataset.en;showSec('calc');$('#t-calc').focus({preventScroll:true});toast('Cible : '+nmT(ENEMIES[oEnemy]))};
+  root.querySelector('#mxBody').onclick=e=>{const bt=e.target.closest('button[data-en]');if(!bt)return;oEnemy=+bt.dataset.en;renderOptNow();goPanel('calc');toast('Cible : '+nmT(ENEMIES[oEnemy]))};
   root.querySelector('#mxBox').ontoggle=e=>{mxOpen=e.target.open};
   root.querySelector('#fBox').ontoggle=e=>{fOpen=e.target.open};
   root.querySelector('#mxF').onchange=e=>{oMxF=e.target.value;$('#mxBody').innerHTML=mxRows()};

@@ -13,7 +13,7 @@ L'utilisateur (Vincent) parle français : **réponses, interface, commentaires e
 npm run build      # src/ → dist/index.html (site GitHub Pages) + dist/forge-embervale.html (format Artifact)
 npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0 échec
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
-npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par onglet) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
+npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par disposition : Théoricien, Combat, Minimal, Tout ; + mode Organiser, menu « Plus ») dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
 npm run check      # build + tests
 npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
 ```
@@ -34,10 +34,10 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
   07-noms.js         FR_ITEMS, FR_SETS, FR_ENEMIES (noms français, clés = id / nom anglais) ; nmH, nmF, nmT, nmMatch (affichage et recherche)
-  10-ui.js           état (builds, cur, compare, sec…), onglets des parties (SECS, showSec), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
-  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que l'onglet ouvert (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
-  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, onglet « Build optimal » (boCard, boStart)
-  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.wake à l'ouverture de l'onglet Arbre)
+  10-ui.js           état (builds, cur, compare…), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
+  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que les panneaux affichés, ouverts et dépliés (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
+  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, panneau « Build optimal » (boCard, boStart)
+  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.wake quand le panneau Arbre apparaît ; ResizeObserver de #gwrap, qui suit la taille du panneau)
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
 scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)
@@ -55,8 +55,8 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 - Pas de `<!doctype>`, `<html>`, `<head>`, `<body>` dans `src/page.html` ni dans `dist/forge-embervale.html` (claude.ai ajoute le squelette ; `dist/index.html` le reçoit du build). Le build le vérifie.
 - Ressources externes : polices **Google Fonts uniquement** ; scripts seulement depuis cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, unpkg.com (version exacte épinglée). Tout le reste est bloqué sans erreur visible : pas de fetch, pas d'images distantes, pas d'iframe.
 - `alert`, `confirm`, `prompt`, `window.print()` ne marchent pas : utiliser `toast()` et `modal()` de 10-ui.js.
-- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch, clé en paramètre). Il ne sert qu'aux builds enregistrés localement et à l'onglet ouvert (décision du 2026-11-06).
-- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage) : aucune navigation dans le hash (les onglets sont des boutons, l'onglet ouvert vit dans `localStorage`).
+- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch, clé en paramètre). Il ne sert qu'aux builds enregistrés localement et à la disposition des panneaux (clé `forge-embervale-panneaux`, `{v:1, preset, order, size, folded, closed, acc, mine}` ; illisible → Théoricien) (décision du 2026-11-06, HISTORY n° 25).
+- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage) : aucune navigation dans le hash (les panneaux s'ouvrent par des boutons, leur disposition vit dans `localStorage`).
 - Couleurs : uniquement via les jetons CSS de `:root`, redéfinis dans les deux blocs sombres (`@media (prefers-color-scheme: dark)` avec `:root:not([data-theme="light"])`, et `:root[data-theme="dark"]`). Jamais de couleur littérale dans un composant, sauf les raretés de gemmes (RAR).
 - Largeur téléphone (~400 px) : aucun défilement horizontal de la page ; les tableaux larges vont dans `.oscroll`. La gouttière latérale `max(16px, env(safe-area-inset-*))` est sur `body`.
 - Pas de nouvelle dépendance si on peut l'éviter.
@@ -94,7 +94,7 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 ## Flux de travail attendu
 1. Lire `docs/ROADMAP.md` (travaux en attente) et `docs/HISTORY.md` (demandes et décisions passées) avant une évolution importante.
 2. Modifier `src/`, ajouter ou adapter un test dans `tests/`.
-3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px).
+3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px, une par disposition).
 4. Mettre à jour `CHANGELOG.md` (et `docs/FORMULAS.md` / `docs/DATA_SOURCES.md` si besoin), incrémenter la version dans `package.json`.
 5. Publier : commit puis `git push` sur `main` → GitHub Actions teste, construit et met à jour la branche `gh-pages` ; GitHub Pages republie ensuite le site en 1 à 2 minutes (vérifier le run avec `gh run list` / `gh run watch`). Pour un travail en cours, utiliser une branche et une pull request (le workflow `tests.yml` la vérifie : tests Node, build, test navigateur Playwright ; captures dans l'artefact « captures-e2e » du run). Optionnel : si l'outil Artifact est disponible, republier aussi `dist/forge-embervale.html` sur l'URL Artifact.
 
