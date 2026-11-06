@@ -1,6 +1,7 @@
 // Test navigateur (optionnel) : nécessite Playwright.
 //   npm i -D playwright && npx playwright install chromium
 //   node tests/e2e.mjs            → captures dans tests/screenshots/
+//   E2E_LONGTASK_MS=500 node tests/e2e.mjs   → seuil des tâches longues (200 ms par défaut ; 500 ms en CI, machines plus lentes)
 import {build} from '../scripts/build.mjs';
 import {mkdirSync} from 'node:fs';
 import {join, dirname} from 'node:path';
@@ -14,6 +15,7 @@ mkdirSync(join(root, 'tests/screenshots'), {recursive: true});
 const url = pathToFileURL(join(root, 'dist/index.html')).href;
 const browser = await chromium.launch();
 let fail = 0;
+const LONGTASK = +process.env.E2E_LONGTASK_MS || 200;
 const SEC = ['tree', 'eq', 'calc', 'bo', 'def', 'tab'];
 const tab = async (page, k) => { await page.click('#t-' + k); await page.waitForTimeout(80); };
 const overflow = async (page, w, what, errs) => { const sw = await page.evaluate(() => document.documentElement.scrollWidth); if (sw > w) errs.push(`débordement horizontal (${what}) : ${sw}px > ${w}px`); };
@@ -93,7 +95,7 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   else {
     const st = await page.evaluate(() => ({n: document.querySelectorAll('#boOut [data-boap]').length, skip: BO.out.res.filter(r => r.skip).length, lt: window.__lt && Math.max(0, ...window.__lt)}));
     if (st.lt === null) errs.push('build optimal : tâches longues non mesurables (PerformanceObserver « longtask » absent)');
-    else if (st.lt > 200) errs.push(`build optimal : tâche longue de ${Math.round(st.lt)} ms (page figée)`);
+    else if (st.lt > LONGTASK) errs.push(`build optimal : tâche longue de ${Math.round(st.lt)} ms (page figée)`);
     if (st.n + st.skip !== 6 || st.n < 1) errs.push(`build optimal : ${st.n} résultats, ${st.skip} familles non calculées`);
     console.log(`  build optimal (${w} px, ${scheme}) : ${Date.now() - t0} ms, plus longue tâche ${Math.round(st.lt || 0)} ms${st.skip ? `, ${st.skip} familles sautées (temps)` : ''}`);
     await page.click('#boOut details summary');

@@ -3,7 +3,7 @@
 Simulateur de stuff pour **Enshrouded 1.0** (équipement, gemmes, arbre de compétences, comparaison A/B, partage, calculateur d'optimisation contre les ennemis).
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
-- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 14 au 2026-11-06).
+- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 15 au 2026-11-06).
 
 L'utilisateur (Vincent) parle français : **réponses, interface, commentaires et messages de commit en français.**
 
@@ -13,7 +13,7 @@ L'utilisateur (Vincent) parle français : **réponses, interface, commentaires e
 npm run build      # src/ → dist/index.html (site GitHub Pages) + dist/forge-embervale.html (format Artifact)
 npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0 échec
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
-npm run test:e2e   # Playwright (optionnel) : 4 captures clair/sombre × 1300/400 px dans tests/screenshots/
+npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par onglet) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
 npm run check      # build + tests
 npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
 ```
@@ -95,6 +95,6 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 2. Modifier `src/`, ajouter ou adapter un test dans `tests/`.
 3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px).
 4. Mettre à jour `CHANGELOG.md` (et `docs/FORMULAS.md` / `docs/DATA_SOURCES.md` si besoin), incrémenter la version dans `package.json`.
-5. Publier : commit puis `git push` sur `main` → GitHub Actions teste, construit et met à jour la branche `gh-pages` ; GitHub Pages republie ensuite le site en 1 à 2 minutes (vérifier le run avec `gh run list` / `gh run watch`). Pour un travail en cours, utiliser une branche et une pull request (le workflow `tests.yml` la vérifie). Optionnel : si l'outil Artifact est disponible, republier aussi `dist/forge-embervale.html` sur l'URL Artifact.
+5. Publier : commit puis `git push` sur `main` → GitHub Actions teste, construit et met à jour la branche `gh-pages` ; GitHub Pages republie ensuite le site en 1 à 2 minutes (vérifier le run avec `gh run list` / `gh run watch`). Pour un travail en cours, utiliser une branche et une pull request (le workflow `tests.yml` la vérifie : tests Node, build, test navigateur Playwright ; captures dans l'artefact « captures-e2e » du run). Optionnel : si l'outil Artifact est disponible, republier aussi `dist/forge-embervale.html` sur l'URL Artifact.
 
 Voir `/livrer` (.claude/commands/livrer.md) pour la check-list complète.

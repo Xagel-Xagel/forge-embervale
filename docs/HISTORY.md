@@ -61,6 +61,8 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - mémoire : **« oui, dans ce navigateur »** (lsGet/lsSet ; règle de CLAUDE.md élargie).
     Ajouts pendant le codage, signalés : seul l'onglet ouvert du calculateur est rendu ; `scroll-padding-top` pour que les onglets collés ne cachent pas le focus clavier ; cases à cocher de la Défense corrigées (défaut antérieur). Après la revue QA : messages quand le build optimal s'arrête ou se termine hors de son onglet, plan « Répartir au mieux » gardé d'un onglet à l'autre, messages empilés et lus par les lecteurs d'écran.
 
+21. (Claude Code, 2026-11-06) QCM « Suite » après la livraison de 1.15.0 : **« PR : CLAUDE.md v15 + e2e en CI »** — la revue QA avait relevé que la CI ne lançait pas le test navigateur ; non retenus : correction de CLAUDE.md seule, rien.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

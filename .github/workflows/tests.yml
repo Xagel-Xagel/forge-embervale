@@ -16,3 +16,20 @@ jobs:
           node-version: 22
       - run: node tests/run.mjs
       - run: node scripts/build.mjs
+      # Test navigateur (Playwright, Chromium) : rendu réel des onglets, du graphe, du calculateur, à 1300 et 400 px, clair et sombre.
+      # Version épinglée sur celle utilisée en local ; machines de CI plus lentes : seuil des tâches longues relevé à 500 ms.
+      - name: Test navigateur (Playwright)
+        env:
+          E2E_LONGTASK_MS: 500
+        run: |
+          npm i --no-save --no-audit --no-fund playwright@1.64.1
+          npx playwright install --with-deps chromium
+          node tests/e2e.mjs
+      - name: Captures du test navigateur
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: captures-e2e
+          path: tests/screenshots/
+          retention-days: 7
+          if-no-files-found: ignore
