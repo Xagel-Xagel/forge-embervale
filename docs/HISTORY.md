@@ -63,9 +63,16 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 
 21. (Claude Code, 2026-11-06) QCM « Suite » après la livraison de 1.15.0 : **« PR : CLAUDE.md v15 + e2e en CI »** — la revue QA avait relevé que la CI ne lançait pas le test navigateur ; non retenus : correction de CLAUDE.md seule, rien.
 
+22. (Claude Code, 2026-11-06) « Traduire en français l'anglais qui reste à l'écran (objets, ennemis, factions, termes, restes d'interface) ; QCM une question à la fois ; liste validée avant d'écrire » → 1.16.0 (reprend la décision « noms en anglais » de CLAUDE.md §5). Vérifié en ligne : le jeu a une interface française officielle (Steam) ; MetaBot (fr_FR) affiche les noms des tables de textes du jeu pour les objets et les 20 boss ; PinDrop et enshrouded.tools n'ont plus de français ; le wiki FR est communautaire et incohérent. QCM de l'utilisateur :
+    - périmètre : **objets, ennemis et factions, restes d'interface** (non retenu : termes de jeu comme « Shroud ») ;
+    - source : **MetaBot + traduction du simulateur signalée** (non retenus : MetaBot seul, tout traduire) ;
+    - affichage : **français + anglais en italique** (non retenus : français seul, bascule FR/EN) ; recherche : **français et anglais** ;
+    - liste (`docs/etudes/traductions-noms-2026-11-06.md`, PR n° 10) : objets, factions, ennemis (dont 5 corrections d'erreurs de MetaBot) et interface **validés tels quels**.
+    Ajouts pendant le codage, signalés : dans les listes déroulantes, français seul (pas d'italique possible dans une option) et l'anglais dans la carte en dessous ; recherche insensible aux accents.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
-- Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.
+- Noms d'objets et d'ennemis en français (officiels via MetaBot, sinon traduits et marqués °), compétences traduites ; le nom anglais suit en italique et reste la clé interne (décision n° 22, qui remplace « noms en anglais »).
 - Code de partage dans le hash (`#b3-…`), lisible sans serveur ; tables figées `FZ` (ajout en fin seulement) pour que réordonner ou ajouter des données ne casse aucun lien.
 - Tracé de l'arbre = fichiers du jeu (PinDrop) ; la Flamme est un nœud logique non dessiné ; coût identique à chaque rang et liaisons non orientées signalés comme déductions.
 - Les estimations sont signalées comme telles dans l'interface (note « Comment lire ces chiffres », panneau « Formules utilisées »).

@@ -1,7 +1,8 @@
 /* Ennemis 1.0 : multiplicateurs de dégâts subis (%), ordre tranchant, perçant, contondant, poison, feu, glace, Shroud, foudre. 0 = immunisé.
    Source : PinDrop (fichiers du jeu 1.0) ; Hollow Damned et Hollow Wretch : enshrouded.tools (fichiers 1.0). */
 const DTYPES=[['cut','Tranchant','phys'],['pierce','Perçant','phys'],['blunt','Contondant','phys'],['poison','Poison','poison'],['fire','Feu','mag'],['ice','Glace','mag'],['shroud','Shroud','mag'],['shock','Foudre','mag']];
-const FACTIONS={fell:'Fell',hollow:'Hollow',scav:'Charognards (Scavengers)',vukah:'Vukah',drak:'Drak',wild:'Faune',ancient:'Constructs anciens'};
+/* Noms de factions : officiels (MetaBot, voir 07-noms.js), sauf Vukah (aucun nom français trouvé) et Faune */
+const FACTIONS={fell:'Déchus',hollow:'Creux',scav:'Maraudeurs',vukah:'Vukah',drak:'Drak\'Dal',wild:'Faune',ancient:'Anciens'};
 const ENEMIES=[];
 function EN(f,list){list.forEach(([n,lv,m,boss,src])=>ENEMIES.push({n,f,lv,m,boss:!!boss,src:src||'PinDrop'}))}
 const FELL_BASE=[100,100,100,100,120,100,0,100],FELL_ARM=[100,100,100,120,120,100,0,120];

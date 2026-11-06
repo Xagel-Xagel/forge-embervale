@@ -98,7 +98,7 @@ const boDef=(b,k)=>k==='N'?Math.max(0,Math.min(212,budget(b))):Math.max(1,Math.m
 const boN=b=>BO.N[cur]??boDef(b,'N'),boF=b=>BO.F[cur]??boDef(b,'F');
 const boKey=b=>[cur,oEnemy,oSlot,boN(b),boF(b),b.upg].join('|');
 function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat" id="boCard">
-  <p class="meta2">Pour chaque famille d'arme, l'optimiseur part d'un arbre vide et choisit l'arme, les armures, les anneaux et l'arbre qui font le plus de dégâts contre <b>${esc(en.n)}</b> ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
+  <p class="meta2">Pour chaque famille d'arme, l'optimiseur part d'un arbre vide et choisit l'arme, les armures, les anneaux et l'arbre qui font le plus de dégâts contre <b>${nmF(en)}</b> ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
   <div class="row"><label class="chk">Points disponibles <input type="number" id="boN" min="0" max="212" value="${boN(b)}" style="width:5rem"${dis}></label>
     <label class="chk">Niveau de Flamme <input type="number" id="boF" min="1" max="11" value="${boF(b)}" style="width:4rem"${dis}></label>
     <button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button></div>
@@ -121,11 +121,11 @@ function boCards(o,partial){const b=B(),en=ENEMIES[o.en],cw=compute(b).weapons[o
     if(r.none)return box('Aucune arme de cette famille dans les données.');
     const m=boMerge(r,b,o),c=compute(m),wc=c.weapons[o.slot==='w1'?0:1],ms=boScore(m,o.slot,en),free=o.N-r.used;
     const vs=cf===fk&&cs?`<p class="meta2">Par rapport à votre build : ${cs.d>0?`<b class="${ms.d>cs.d?'d-up':ms.d<cs.d?'d-dn':'d-0'}">${ms.d>=cs.d?'+':''}${fmt((ms.d/cs.d-1)*100,1)} %</b> de dégâts`:'vous ne faites aucun dégât à cette cible'}, ${ms.hp>=cs.hp?'+':''}${fmt(ms.hp-cs.hp)} PV.</p>`:'';
-    const imm=ms.d===0?`<p class="meta2">${esc(en.n)} est immunisé ${fk==='bow'||fk==='staff'?'au type indicatif (selon la flèche ou le sort)':'aux types de dégâts'} de toutes les armes de cette famille : seuls les PV sont optimisés.</p>`:'';
-    const gear=SLOTS.map(([sl,lab])=>{const it=ITEMS[m.gear[sl]];const note=sl===o.slot?'':sl[0]==='w'?' (inchangée)':r.b.gear[sl]?'':it?' (conservée : aucune pièce ne change dégâts ni PV)':' (au choix : aucune pièce ne change dégâts ni PV)';return `<li>${lab} : ${it?esc(it.n):'—'}${note}</li>`}).join('');
+    const imm=ms.d===0?`<p class="meta2">${nmF(en)} est immunisé ${fk==='bow'||fk==='staff'?'au type indicatif (selon la flèche ou le sort)':'aux types de dégâts'} de toutes les armes de cette famille : seuls les PV sont optimisés.</p>`:'';
+    const gear=SLOTS.map(([sl,lab])=>{const it=ITEMS[m.gear[sl]];const note=sl===o.slot?'':sl[0]==='w'?' (inchangée)':r.b.gear[sl]?'':it?' (conservée : aucune pièce ne change dégâts ni PV)':' (au choix : aucune pièce ne change dégâts ni PV)';return `<li>${lab} : ${it?nmH(it):'—'}${note}</li>`}).join('');
     const g=GEMI[(m.gem||{})[o.slot]],g0=GEMI[(b.gem||{})[o.slot]];
     const gem=`<li>Gemme : ${g?esc(g.fr)+' (conservée)':g0?`à choisir (${esc(g0.fr)} retirée : type de dégâts non utilisé par cette arme ; effet non chiffré)`:'à choisir (effet non chiffré)'}</li>`;
-    return `<div class="wrow${cf===fk?' sel':''}"><div class="wl">${fl}${cf===fk?' · famille de votre arme':''}</div><div><b>${esc(r.w.n)}</b> <small class="meta2">${wc.catName} · ${wtypeTxt(r.w)}</small></div>
+    return `<div class="wrow${cf===fk?' sel':''}"><div class="wl">${fl}${cf===fk?' · famille de votre arme':''}</div><div><b>${nmH(r.w)}</b> <small class="meta2">${wc.catName} · ${wtypeTxt(r.w)}</small></div>
       <div class="big"><div><b>${fmt(ms.d)}</b><span>${wc.unit==='Puissance'?'puissance moyenne':'dégâts moyens'} / coup</span></div><div><b>${fmt(ms.hp)}</b><span>PV</span></div><div><b>${r.used}</b><span>points sur ${o.N}</span></div></div>${imm}${vs}
       <details class="why" data-fk="${fk}"${BO.open.has(fk)?' open':''}><summary>Équipement et compétences</summary><ul>${gear}${gem}<li>Attributs : ${PIPS.map(p=>p[2]+' '+c.attr[p[0]]).join(' · ')}</li>${boRoles(m,o.slot,en)}
         ${free>0?`<li>${free} point${free>1?'s':''} libre${free>1?'s':''} : aucun achat repéré (seul ou par paire) n'augmente encore les dégâts ni les PV.</li>`:''}</ul></details>
@@ -153,7 +153,7 @@ function boApply(fk){if(BO.busy){toast('Attendez la fin du calcul (ou arrêtez-l
   const o=BO.out,r=o&&o.res.find(x=>x&&x.fk===fk);if(!r||r.skip||r.none){toast('Cette famille n\'a pas de résultat à appliquer');return}
   if(BO.key!==boKey(B())){toast('Réglages changés depuis le calcul : relancez-le');return}
   const m=boMerge(r,B(),o),over=spentPoints(m)-budget(m);builds[cur]=m;BO.key=boKey(m);renderAll();
-  toast(`Build optimal appliqué : ${r.fl}, ${r.w.n} (${r.used} pts, Flamme ${o.F})${over>0?` ; dépasse le budget du build de ${over} pts`:''}`)}
+  toast(`Build optimal appliqué : ${r.fl}, ${nmT(r.w)} (${r.used} pts, Flamme ${o.F})${over>0?` ; dépasse le budget du build de ${over} pts`:''}`)}
 /* Saisie : vide → valeur du build ; hors bornes ou décimale → ramenée, le champ montre la valeur retenue et un message le dit */
 function boRead(e,k){const b=B(),mn=k==='N'?0:1,mx=k==='N'?212:11,d=boDef(b,k),raw=String(e.value).trim(),v=Number(raw);
   const c=raw===''||!Number.isFinite(v)?d:Math.round(Math.max(mn,Math.min(mx,v)));

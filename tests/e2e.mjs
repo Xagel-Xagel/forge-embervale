@@ -55,7 +55,8 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   await tab(page, 'tree');
   await page.selectOption('#preset', {label: 'Barbare deux mains'});
   await tab(page, 'calc');
-  await page.selectOption('#oEnemy', {label: 'Hollow Hound'});
+  await page.selectOption('#oEnemy', String(await page.evaluate(() => ENEMIES.findIndex(e => e.n === 'Hollow Hound'))));
+  if (!/Chien Creux.*Hollow Hound/.test(await page.textContent('#p-calc .ocard h3').catch(() => ''))) errs.push('Calculateur : nom français + anglais absent de la carte de la cible');
   await page.waitForTimeout(100);
   const buy = await page.$('[data-inv="0"]'); if (buy) await buy.click();
   if (!await page.isVisible('#p-calc .ofam')) errs.push('« Armes à classer » absent du calculateur');
