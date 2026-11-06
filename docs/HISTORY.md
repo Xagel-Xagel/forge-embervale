@@ -68,7 +68,7 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - source : **MetaBot + traduction du simulateur signalée** (non retenus : MetaBot seul, tout traduire) ;
     - affichage : **français + anglais en italique** (non retenus : français seul, bascule FR/EN) ; recherche : **français et anglais** ;
     - liste (`docs/etudes/traductions-noms-2026-11-06.md`, PR n° 10) : objets, factions, ennemis (dont 5 corrections d'erreurs de MetaBot) et interface **validés tels quels**.
-    Ajouts pendant le codage, signalés : dans les listes déroulantes, français seul (pas d'italique possible dans une option) et l'anglais dans la carte en dessous ; recherche insensible aux accents.
+    Ajouts pendant le codage, signalés : dans les listes déroulantes, français seul (pas d'italique possible dans une option) et l'anglais dans la carte en dessous ; recherche insensible aux accents. Après la revue QA : nom anglais affiché (marqué °) si un nom français manque, au lieu d'une page vide ; message « équipée » en français ; tests de chaque vue (13 mutations tuées sur 13).
 
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
