@@ -60,7 +60,7 @@ test('presets : points perdus en liaisons plafonnés (revue 1.10.0)', () => {
   const MAX = {'Mage de bataille': 5, 'Rôdeur archer': 11, 'Guerrier épée et bouclier': 6, 'Barbare deux mains': 5, 'Assassin aux dagues': 9, 'Soigneur de groupe': 8, 'Sadi Fourbe': 22,
     'Sorcier de feu': 8, 'Mage de foudre (baguette)': 8, 'Mage de glace (contrôle)': 12, 'Nécromancien invocateur': 12, 'Arcaniste du bâton (critiques)': 12, 'Paladin soigneur': 15,
     'Gardien du Shroud (soutien)': 12, 'Prêtre du feu (soin offensif)': 10,
-    'Mage critique (baguette)': 24};
+    'Mage critique (baguette)': 24}; // 24 : Précision fatale est en zone Rôdeur (choix « chance d'abord » de l'utilisateur, HISTORY n° 19) ; aucun ajout ne raccourcit le chemin (mesuré)
   for (const p of PRESETS) { const perte = spentPoints(fromPreset(p)) - spentPoints({sk: p.sk, pip: p.pip});
     assert.ok(p.name in MAX, p.name + ' : plafond à définir'); assert.ok(perte <= MAX[p.name], `${p.name} : ${perte} points de liaison (plafond ${MAX[p.name]})`); }
 });

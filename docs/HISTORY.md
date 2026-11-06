@@ -51,7 +51,7 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - objectif : **« chance puis dégâts critiques »** ; ennemi : **aucun** ;
     - anneaux : **66 % / 123 %** (Ether + Ancients) plutôt que 67 % / 104 % (Ether + Ring of Stamina) ;
     - utilitaires : **aucune** (les 2 CON de la décision n° 13 restent, exigées par le test des presets mage) ; points restants : **dégâts + effets critiques** ;
-    - baguette : « pas de préférence, il faut faire le plus de dégâts » → Wand Of Bloodflow (428,7 contre 414,5 pour Ancient Drak Wand) ; arme 2 : **bâton** (Violet Storm, à égalité avec Staff Of The Moor, retenu pour la foudre de Coup en chaîne) ; nom : **« Mage critique (baguette) »**.
+    - baguette : « pas de préférence, il faut faire le plus de dégâts » → Wand Of Bloodflow (428,7 contre 414,5 pour Ancient Drak Wand) ; arme 2 : **bâton** (Violet Storm, 392,0 de Puissance contre 350,2 pour Staff Of The Moor grâce à Tonnerre) ; nom : **« Mage critique (baguette) »**.
 
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
