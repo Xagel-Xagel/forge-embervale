@@ -3,6 +3,7 @@
 Classés par valeur pour l'utilisateur. Chaque point indique ce qui bloque et comment le débloquer.
 
 ## Priorité haute
+0. **Harmonisation de l'interface — direction B « Panneaux » validée (2026-11-06).** Étude et plan : `docs/etudes/harmonisation-interface-2026-11-06.md` (3 phases, une PR chacune ; phase 1 = coque des panneaux, mode Organiser, dispositions, accordéon à 400 px). Maquettes : canevas Claude Design (lien dans l'étude).
 1. **Presets : liaisons restantes.** Revue 1.10.0 faite (277 → 155 points de liaison). Reste : Sadi Fourbe (22, build de l'utilisateur, non touché) et les liaisons structurelles (ex. Rôdeur archer : Esprit calme, Lames venimeuses, Mithridatisé) ; envisager de rendre utiles les liaisons obligatoires (rang 3 si l'effet sert le rôle).
 2. **Perks élémentaires des armes.** Les répartitions 1.0 sont intégrées (1.11.0) ; les 5 emplacements de perks de chaque arme aussi, chance et dégâts de coup critique comptés (1.17.0). Reste à savoir comment le jeu ajoute « Feu magique +10 % des dégâts de base » (PinDrop) : vérification en jeu ou nouvelle extraction ; aujourd'hui hors calcul.
 3. **Valeurs d'armure par pièce — BLOQUÉ (2026-11-06).** PinDrop (https://pindrop.gg/enshrouded/armor) : pour les sets 1.0 (Emberguard, Crestflame…), « the game files do not store the number » ; seules les pièces d'avant la 1.0 ont une valeur (wiki). Déblocage : relevé en jeu par l'utilisateur. En attendant, le calculateur de défense prend l'armure de la fiche en jeu (saisie manuelle).

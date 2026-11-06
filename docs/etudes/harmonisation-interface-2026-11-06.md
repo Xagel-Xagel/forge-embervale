@@ -125,7 +125,68 @@ QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recomma
 
 - QCM 5 · 400 px : **accordéon + barre d'icônes collée en bas** — un panneau ouvert à la fois, les autres en une ligne (titre + résumé) ; barre Réglages · Arbre · Équipement · Cible · Plus (non retenus : liste repliable à plusieurs ouverts, onglets 3 × 2 gardés sur téléphone).
 
-_(suite à compléter)_
+- QCM 6 · Calculateur : **éclaté en 3 panneaux** — Cible & faiblesses (avec vos armes contre la cible), Classement des armes, Prochains points ; la cible choisie est partagée par tous les panneaux qui en dépendent (non retenus : un seul panneau « Contre une cible », 2 panneaux).
 
-## 6. Plan d'implémentation
-_(à compléter après les QCM)_
+Décidé sans QCM (socle, section 2), à contester si besoin : aides en « ? » renvoyant au panneau Aide ; pied « Sources » dans Tables et Aide ; fiche-résumé = PV, dégâts / coup et moyenne de l'arme 1, chance de critique, armure physique des objets, points restants ; un seul bouton primaire par panneau (celui de l'action du panneau), « Partager » primaire dans l'en-tête.
+
+## 6. Plan d'implémentation (direction B, pour une session de code)
+
+### 6.1 Cible
+- **Plus d'onglets de parties.** La page = en-tête collé (titre, build A/B, Charger ▾, Enregistrer, Partager, Disposition ▾, Organiser) + rail d'icônes à gauche + grille de panneaux. Le hash reste réservé au code de partage (aucune navigation dans l'adresse).
+- **11 panneaux** (identifiant · contenu · ce qui change selon la taille S / M / L) :
+
+| Id | Panneau | S | M | L (sur 2 colonnes) |
+|---|---|---|---|---|
+| `reg` | Réglages | Niveau, Exploration, Flamme, Améliorations (4 tuiles) | + points dépensés / budget, effet de la Flamme | = M |
+| `tree` | Arbre | points à attribuer + zones (pas de graphe) | graphe 340 px, recherche | graphe 520 px, vue Liste disponible |
+| `eq` | Équipement | une ligne de résumé | 9 lignes compactes (nom + 1 puce) | tout : puces, perks, gemmes, curseur |
+| `fiche` | Fiche | 6 tuiles (résumé) | + 2 cartes d'arme | 35 statistiques, comparaison A / B |
+| `cible` | Cible & faiblesses | liste des ennemis + phrase de verdict | + 8 cases + vos armes contre la cible | = M |
+| `rank` | Classement des armes | 3 lignes | 5 lignes + « n autres » | 12 lignes, boutons Arme 1 / Arme 2, choix de famille |
+| `pts` | Prochains points | 3 lignes | 10 lignes + « Répartir au mieux » | + plan détaillé |
+| `bo` | Build optimal | dernier résultat en une ligne + Calculer | 6 cartes | + détails ouverts |
+| `def` | Défense | 3 grands chiffres + coup / type | formulaire + table des 8 types | = M |
+| `tab` | Tables | filtres + 10 lignes | table complète (défilement interne) | + formules + sources |
+| `aide` | Aide | sommaire | textes d'aide regroupés (note de la fiche, graphe, perks, heuristique, limites, conventions de nommage) | = M |
+
+- **État d'un panneau** : ouvert / fermé (fermé = absent de la grille, réouvrable depuis le rail), replié / déplié, taille. **Mode Organiser** (bouton global, `aria-pressed`) : affiche dans chaque en-tête Taille S / M / L, Monter, Descendre, Fermer ; « Terminé » le quitte. En lecture : un seul bouton Replier / Déplier par en-tête.
+- **Dispositions** (menu) : Ma disposition (mémorisée), Théoricien, Combat, Minimal, Tout — définitions figées dans le code (ordre, tailles, repliés, fermés) ; tout changement manuel bascule sur « Ma disposition ». Première visite : Théoricien.
+- **Grille** : 3 colonnes ≥ 1 000 px, 2 colonnes de 640 à 999 px (L = toute la largeur), 1 colonne < 640 px en **accordéon** (un seul déplié ; déplier replie les autres) + **barre d'icônes collée en bas** (Réglages · Arbre · Équipement · Cible · Plus → les autres) ; `scroll-padding-bottom` pour que la barre ne couvre jamais le focus.
+- **Mémoire** (`lsGet` / `lsSet`, clé `forge-embervale-panneaux`) : `{v:1, preset, order, size, folded, closed, acc}` ; illisible ou absent → Théoricien (test « stockage bloqué » à garder). CLAUDE.md §1 à élargir : `localStorage` sert aux builds enregistrés, à la disposition des panneaux (remplace « l'onglet ouvert »).
+- **Rendu** : ne rendre que les panneaux ouverts et dépliés (comme `renderOptNow` ne rend aujourd'hui que l'onglet ouvert) ; `G.wake` / `G.resize` sur un `ResizeObserver` du panneau Arbre (taille S ↔ M ↔ L, accordéon) ; un calcul de build optimal en cours survit au repli / à l'ouverture (état `BO`, messages existants).
+- **Accessibilité** : panneau = `<section aria-labelledby>` ; bouton Replier `aria-expanded` + `aria-controls` ; rail = `<nav aria-label="Panneaux">` à boutons `aria-pressed` ; en Organiser, groupes `role="group"` étiquetés ; cibles ≥ 44 px à 400 px ; focus visible ; contraste du texte des boutons primaires en sombre à corriger (aujourd'hui `#fff` sur `--ember` `#f08a48` ≈ 2,3 : 1 → encre sombre sur braise).
+
+### 6.2 Phases (une PR par phase, GO avant merge)
+
+**Phase 1 — coque des panneaux** (les 7 blocs actuels deviennent des panneaux : Arbre, Équipement, Fiche, Calculateur, Build optimal, Défense, Tables ; tailles S = replié, M = normal, L = 2 colonnes).
+- `src/page.html` : en-tête collé, rail, grille ; chaque `section.panel` reçoit un en-tête de panneau ; `#ficheAside` devient le panneau `fiche`.
+- `src/styles.css` : `.pgrid`, `.pnl`, `.rail`, mode Organiser, accordéon < 640 px, barre basse, jetons seulement.
+- `src/js/10-ui.js` : remplacer `SECS` / `showSec` / `initSec` par le gestionnaire de panneaux (`PANELS`, `DISPOS`, `layout`, `applyDispo`, `movePanel`, `setSize`, `fold`, `closePanel`, `openPanel`, `saveLayout`, `loadLayout`) ; `renderOptNow` rend les panneaux calculateur visibles ; `--navh` mesuré sur l'en-tête collé.
+- `src/js/30-graph.js` : `G.wake` sur ResizeObserver du panneau.
+- Tests : `tests/nav.test.js` → fonctions du gestionnaire (dispositions, ordre, taille, repli, fermeture, mémoire illisible) ; `tests/e2e.mjs` → rail, Organiser, 4 dispositions sans débordement horizontal (1 300 / 400 px), accordéon à un seul déplié, barre basse, focus non couvert, captures **par disposition** (clair / sombre × 1 300 / 400) ; `tests/ui.test.js` → chaque preset dans chaque disposition.
+- Docs : CLAUDE.md (§1 localStorage, commandes des captures, organisation), CHANGELOG, HISTORY n° 24, version 1.18.0.
+- Indicateur : **R1 K1 A2** (logique avec `showSec` pour modèle · interface et état · zones disjointes : balisage, styles, 10-ui, graphe, trois fichiers de tests).
+
+**Phase 2 — en-tête, Réglages, fiche-résumé**
+- En-tête regroupé (S3) : Charger ▾ (presets, mes builds, importer un code), menu ⋯ (Copier vers l'autre, Vider, Supprimer) ; à 400 px, Partager + ⋯ seulement visibles.
+- Panneau `reg` : Niveau, Exploration, Flamme, Améliorations retirés d'Arbre et d'Équipement ; les tuiles de Build optimal ne gardent que « réglé ici » (N, F du calcul).
+- Fiche : taille S = 6 tuiles, M = + armes, L = table complète ; note « Comment lire ces chiffres » déplacée dans Aide.
+- Indicateur : **R1 K1 A1**.
+
+**Phase 3 — calculateur éclaté, aides, densités**
+- `20-optimizer.js` : `optCalc` scindé en `optCible`, `optRank`, `optPts` (un panneau chacun, cible partagée `oEnemy`) ; barre de cible plus déplacée (chaque panneau affiche « contre <cible> · changer »).
+- Textes d'aide : une phrase visible au plus par panneau, « ? » → panneau Aide (ouvre et défile jusqu'au sujet) ; pied « Sources » dans Tables (L) et Aide ; avertissement « Heuristique » en une ligne + lien.
+- Densités S / M / L de chaque panneau selon la table 6.1 (Équipement M = lignes compactes, Classement S / M / L, etc.).
+- Indicateur : **R1 K1 A2**.
+
+### 6.3 Invariants et garde-fous
+- Aucune donnée ne change : tables figées `FZ`, codes b1 / b2 / b3, `share.test.js` intacts ; règle de l'arbre (`canBuy` / `prune` / `normalize`) intacte.
+- Contraintes de la page : jetons de couleur dans les deux blocs sombres, Google Fonts seulement, aucune dépendance, 400 px sans défilement horizontal (tables larges dans `.oscroll`), `alert` / `confirm` interdits (toast / modal), hash réservé au partage.
+- `npm run check` à 0 échec et `npm run test:e2e` regardé (captures par disposition) avant chaque PR ; `/livrer` pour publier (site Pages, Artifact).
+
+### 6.4 Risques signalés
+- Plusieurs panneaux calculateur ouverts = plus de rendus par modification : garder le débounce de `renderOpt`, ne rendre que le visible, surveiller « plus longue tâche » du test e2e.
+- Le graphe canvas dans une grille redimensionnable : s'appuyer sur `G.resize` (déjà testé « canvas recalé après redimensionnement caché »).
+- Les tests actuels nomment `#t-calc`, `#p-calc`, `#secTabs` : à réécrire, pas à contourner.
+- Rendu des planches Claude Design non vérifié par Claude (règle de l'outil) : les planches sont des maquettes statiques, pas la référence pixel ; la référence reste le socle 6.1.
+
