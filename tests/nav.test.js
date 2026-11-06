@@ -1,37 +1,332 @@
-// Onglets des parties (1.15.0) : liste, onglet retenu dans ce navigateur (lsGet/lsSet, try/catch), repli sur Arbre,
-// adresse jamais touchée (le hash est le code de partage), seul l'onglet ouvert du calculateur est rendu.
+// Panneaux (1.18.0, HISTORY n° 25) : dispositions figées, ordre, taille, repli, fermeture, accordéon (< 640 px), mémoire (lsGet/lsSet, try/catch),
+// adresse jamais touchée (le hash est le code de partage), seuls les panneaux du calculateur affichés sont rendus.
+// Oracles littéraux : les listes attendues sont écrites ici, pas recalculées depuis DISPOS.
 const fakeLs = (get, set) => ({getItem: get, setItem: set || (() => {})});
 const withLs = (ls, fn) => { const keep = globalThis.localStorage; globalThis.localStorage = ls; try { return fn(); } finally { globalThis.localStorage = keep; } };
 const spyOn = (names, fn) => { const keep = names.map(n => globalThis[n]), calls = []; names.forEach(n => { globalThis[n] = (...a) => { calls.push(n); }; });
-  try { fn(calls); } finally { names.forEach((n, i) => { globalThis[n] = keep[i]; }); } };
+  try { return fn(calls); } finally { names.forEach((n, i) => { globalThis[n] = keep[i]; }); } };
+const noLs = fn => withLs(fakeLs(() => null), fn);
+const withLay = (l, fn) => { const keep = lay, keepO = org; lay = l; try { return fn(); } finally { lay = keep; org = keepO; } };
+const withMq = (phone, fn) => { const keep = globalThis.matchMedia; globalThis.matchMedia = () => ({matches: phone, addEventListener() {}}); try { return fn(); } finally { globalThis.matchMedia = keep; } };
+const OPT = ['optCalc', 'optBo', 'optDef', 'optTab'];
+const visible = () => lay.order.filter(isOpen), shownList = () => lay.order.filter(shown);
 
-test('onglets : les six parties retenues au QCM, dans l\'ordre, identifiants distincts', () => {
-  assert.deepEqual(SECS.map(s => s[1]), ['Arbre', 'Équipement', 'Calculateur', 'Build optimal', 'Défense', 'Tables']);
-  assert.equal(new Set(SECS.map(s => s[0])).size, 6);
+test('panneaux : les sept blocs d\'avant, dans l\'ordre, identifiants distincts ; cinq dispositions au menu', () => {
+  assert.deepEqual(PANELS.map(p => p[0]), ['tree', 'eq', 'fiche', 'calc', 'bo', 'def', 'tab']);
+  assert.deepEqual(PANELS.map(p => p[1]), ['Arbre', 'Équipement', 'Fiche', 'Calculateur', 'Build optimal', 'Défense', 'Tables']);
+  assert.deepEqual(PANELS.map(p => p[2]), ['h-sk', 'h-eq', 'h-st', 'h-opt', 'h-bo', 'h-def', 'h-tab'], 'titres (aria-labelledby)');
+  assert.deepEqual(Object.entries(DISPOS).map(([k, d]) => [k, d.l]), [['theo', 'Théoricien'], ['combat', 'Combat'], ['mini', 'Minimal'], ['all', 'Tout']]);
 });
 
-test('onglet retenu : relu s\'il est connu, Arbre sinon (absent, inconnu, illisible, pas une chaîne, stockage bloqué)', () => {
-  const asked = [];
-  assert.equal(withLs(fakeLs(k => { asked.push(k); return JSON.stringify('bo'); }), secSaved), 'bo');
-  assert.deepEqual(asked, [LS_SEC], 'clé lue');
-  for (const [why, get] of [['absent', () => null], ['inconnu', () => '"zz"'], ['illisible', () => '{oups'], ['nombre', () => '3'], ['vide', () => ''],
-    ['stockage bloqué', () => { throw new Error('SecurityError'); }]])
-    assert.equal(withLs(fakeLs(get), secSaved), 'tree', why);
+test('dispositions figées : panneaux ouverts dans l\'ordre, tailles, repliés, panneau déplié de l\'accordéon', () => {
+  const want = {
+    theo: {open: ['tree', 'fiche', 'eq', 'calc'], L: ['tree'], S: [], acc: 'tree'},
+    combat: {open: ['calc', 'def'], L: ['calc'], S: [], acc: 'calc'},
+    mini: {open: ['eq', 'fiche', 'tree'], L: [], S: ['tree'], acc: 'eq'},
+    all: {open: ['tree', 'eq', 'fiche', 'calc', 'bo', 'def', 'tab'], L: ['tree'], S: [], acc: 'tree'}};
+  for (const [k, w] of Object.entries(want)) withLay(mkDispo(k), () => {
+    assert.equal(lay.v, 1); assert.equal(lay.preset, k);
+    assert.deepEqual(visible(), w.open, k + ' : ouverts');
+    assert.deepEqual(PIDS.filter(p => lay.size[p] === 'L'), w.L, k + ' : taille L');
+    assert.deepEqual(PIDS.filter(p => lay.size[p] === 'S'), w.S, k + ' : taille S'); assert.deepEqual(lay.folded, w.S, k + ' : S = replié');
+    assert.equal(lay.acc, w.acc, k + ' : accordéon');
+    assert.deepEqual(shownList(), w.open.filter(p => !w.S.includes(p)), k + ' : affichés (bureau)');
+  });
+  const a = mkDispo('theo'); a.order.reverse(); a.closed.push('tree'); assert.deepEqual(mkDispo('theo').order, ['tree', 'fiche', 'eq', 'calc', 'bo', 'def', 'tab'], 'une copie modifiée ne touche pas la définition');
 });
 
-test('ouvrir un onglet le retient (clé propre, JSON) ; stockage plein ou bloqué : aucune exception ; onglet inconnu → Arbre', () => {
-  const keep = sec;
+test('première visite, mémoire illisible ou d\'un autre format, stockage bloqué → Théoricien', () => {
+  const asked = []; withLs(fakeLs(k => { asked.push(k); return null; }), loadLayout);
+  assert.deepEqual(asked, ['forge-embervale-panneaux'], 'clé lue'); assert.notEqual(LS_PNL, LS, 'la disposition ne doit pas écraser les builds enregistrés');
+  for (const [why, get] of [['absent', () => null], ['vide', () => ''], ['illisible', () => '{oups'], ['nombre', () => '3'], ['chaîne', () => '"theo"'], ['tableau', () => '[]'],
+    ['version 2', () => '{"v":2,"preset":"combat"}'], ['sans version', () => '{"preset":"combat"}'], ['disposition inconnue', () => '{"v":1,"preset":"zz"}'],
+    ['« Ma disposition » sans état', () => '{"v":1,"preset":"mine"}'], ['ordre pas une liste', () => '{"v":1,"preset":"mine","order":"tree","size":{},"folded":[],"closed":[]}'],
+    ['stockage bloqué', () => { throw new Error('SecurityError'); }]]) {
+    const l = withLs(fakeLs(get), loadLayout);
+    assert.equal(l.preset, 'theo', why); assert.deepEqual(l.order.filter(k => !l.closed.includes(k)), ['tree', 'fiche', 'eq', 'calc'], why);
+  }
+});
+
+test('mémoire lisible : disposition prête reprise du code ; « Ma disposition » relue, nettoyée (inconnus ignorés, absents ajoutés, S = replié)', () => {
+  const rd = o => withLs(fakeLs(() => JSON.stringify(o)), loadLayout);
+  let l = rd({v: 1, preset: 'combat', order: ['tab'], size: {calc: 'S'}, folded: [], closed: [], acc: 'def'});
+  assert.deepEqual([l.preset, l.order.filter(k => !l.closed.includes(k)), l.size.calc, l.acc], ['combat', ['calc', 'def'], 'L', 'def'], 'Combat : définition du code, accordéon relu');
+  assert.equal(rd({v: 1, preset: 'combat', acc: 'tree'}).acc, 'calc', 'accordéon sur un panneau fermé → premier ouvert');
+  assert.equal(rd({v: 1, preset: 'combat', acc: null}).acc, null, 'accordéon tout replié : gardé');
+  l = rd({v: 1, preset: 'mine', order: ['tab', 'zz', 'eq', 'tab'], size: {tab: 'L', eq: 'S', def: 'XL'}, folded: ['bo', 'zz'], closed: ['tree', 'qq'], acc: 'eq',
+    mine: {order: ['def'], size: {}, folded: [], closed: []}});
+  assert.equal(l.preset, 'mine');
+  assert.deepEqual(l.order, ['tab', 'eq', 'tree', 'fiche', 'calc', 'bo', 'def'], 'inconnus et doublons ignorés, panneaux absents ajoutés à la fin');
+  assert.deepEqual([l.size.tab, l.size.eq, l.size.def, l.size.fiche], ['L', 'S', 'M', 'M'], 'taille inconnue → M');
+  assert.deepEqual(l.folded, ['bo', 'eq'], 'S implique replié'); assert.deepEqual(l.closed, ['tree']); assert.equal(l.acc, 'eq');
+  assert.deepEqual(l.mine.order, ['def', 'tree', 'eq', 'fiche', 'calc', 'bo', 'tab'], '« Ma disposition » gardée à part, nettoyée');
+  assert.equal(rd({v: 1, preset: 'theo', mine: 'oups'}).mine, undefined, '« Ma disposition » illisible : ignorée, la disposition prête reste');
+});
+
+test('enregistrement : clé propre, JSON relisible ; stockage plein ou bloqué : aucune exception', () => withLay(mkDispo('combat'), () => {
+  const wrote = []; assert.equal(withLs(fakeLs(() => null, (k, v) => wrote.push([k, v])), saveLayout), true);
+  assert.equal(wrote.length, 1); assert.equal(wrote[0][0], 'forge-embervale-panneaux');
+  const back = JSON.parse(wrote[0][1]); assert.deepEqual([back.v, back.preset, back.acc], [1, 'combat', 'calc']);
+  assert.deepEqual(withLs(fakeLs(() => wrote[0][1]), loadLayout), lay, 'relu tel quel');
+  assert.equal(withLs(fakeLs(() => null, () => { throw new Error('QuotaExceededError'); }), saveLayout), false);
+}));
+
+test('changement manuel → « Ma disposition » (retenue à part) ; une disposition prête la garde ; « Ma disposition » la rend', () => withLay(mkDispo('theo'), () => noLs(() => {
+  assert.equal(applyDispo('mine'), false, 'aucune disposition personnelle encore');
+  assert.equal(setSize('eq', 'L'), true); assert.equal(lay.preset, 'mine'); assert.equal(lay.mine.size.eq, 'L');
+  assert.equal(applyDispo('combat'), true); assert.deepEqual([lay.preset, visible()], ['combat', ['calc', 'def']]); assert.equal(lay.mine.size.eq, 'L', 'gardée');
+  assert.equal(applyDispo('mine'), true); assert.deepEqual([lay.preset, visible(), lay.size.eq], ['mine', ['tree', 'fiche', 'eq', 'calc'], 'L']);
+  lay.size.eq = 'M'; assert.equal(lay.mine.size.eq, 'L', 'copie, pas une référence partagée');
+  assert.equal(applyDispo('zz'), false); assert.equal(lay.preset, 'mine');
+  for (const [why, act] of [['taille', () => setSize('fiche', 'S')], ['ordre', () => movePanel('fiche', 1)], ['repli', () => foldPanel('eq')], ['fermeture', () => closePanel('calc')], ['ouverture', () => openPanel('bo')]]) {
+    applyDispo(why === 'ouverture' ? 'theo' : 'all'); assert.equal(act(), true, why); assert.equal(lay.preset, 'mine', why + ' : pas basculé sur « Ma disposition »');
+  }
+})));
+
+test('Monter / Descendre : échange avec le voisin ouvert (les fermés ne comptent pas), refusé aux bornes', () => withLay(mkDispo('theo'), () => noLs(() => {
+  assert.equal(movePanel('eq', -1), true); assert.deepEqual(visible(), ['tree', 'eq', 'fiche', 'calc']);
+  assert.equal(movePanel('tree', -1), false, 'premier'); assert.equal(movePanel('calc', 1), false, 'dernier ouvert (bo, def, tab fermés après lui)');
+  assert.equal(movePanel('bo', -1), false, 'panneau fermé'); assert.equal(movePanel('zz', 1), false);
+  assert.equal(movePanel('tree', 1), true); assert.deepEqual(visible(), ['eq', 'tree', 'fiche', 'calc']);
+  applyDispo('all'); closePanel('fiche'); assert.equal(movePanel('calc', -1), true);
+  assert.deepEqual(visible(), ['tree', 'calc', 'eq', 'bo', 'def', 'tab'], 'saute le panneau fermé');
+  assert.deepEqual(lay.order, ['tree', 'calc', 'fiche', 'eq', 'bo', 'def', 'tab'], 'le fermé garde sa place');
+})));
+
+test('tailles et repli (bureau) : S = replié, M / L dépliés ; déplier un S le passe en M ; replier garde la taille', () => withLay(mkDispo('all'), () => noLs(() => {
+  setSize('def', 'S'); assert.deepEqual([lay.size.def, isFolded('def'), shown('def')], ['S', true, false]);
+  setSize('def', 'L'); assert.deepEqual([lay.size.def, isFolded('def'), shown('def')], ['L', false, true]);
+  assert.equal(setSize('def', 'XL'), false); assert.equal(setSize('zz', 'M'), false); assert.equal(lay.size.def, 'L');
+  foldPanel('def'); assert.deepEqual([lay.size.def, isFolded('def')], ['L', true], 'replier garde la taille L');
+  foldPanel('def'); assert.deepEqual([lay.size.def, isFolded('def')], ['L', false]);
+  setSize('tab', 'S'); foldPanel('tab', false); assert.deepEqual([lay.size.tab, isFolded('tab')], ['M', false], 'déplier un S → M');
+  foldPanel('tab', true); foldPanel('tab', true); assert.deepEqual(lay.folded.filter(k => k === 'tab'), ['tab'], 'replié une seule fois');
+})));
+
+test('fermer / ouvrir : absent de la grille, plus rendu ; l\'accordéon passe au premier ouvert ; refusé deux fois', () => withLay(mkDispo('theo'), () => noLs(() => {
+  assert.equal(closePanel('tree'), true); assert.deepEqual([visible(), shown('tree'), lay.acc], [['fiche', 'eq', 'calc'], false, 'fiche']);
+  assert.equal(closePanel('tree'), false); assert.equal(openPanel('tree'), true); assert.equal(openPanel('tree'), false);
+  assert.deepEqual(visible(), ['tree', 'fiche', 'eq', 'calc'], 'rouvert à sa place');
+  for (const k of [...visible()]) closePanel(k);
+  assert.deepEqual([visible(), lay.acc], [[], null], 'tout fermé');
+})));
+
+test('accordéon (< 640 px) : un seul panneau déplié ; déplier replie les autres ; ni la disposition ni les tailles ne changent', () => withMq(true, () => withLay(mkDispo('all'), () => noLs(() => {
+  assert.deepEqual(shownList(), ['tree']);
+  foldPanel('def'); assert.deepEqual([shownList(), lay.acc, lay.preset], [['def'], 'def', 'all']);
+  foldPanel('def'); assert.deepEqual([shownList(), lay.acc], [[], null], 'replier le panneau ouvert : tous repliés');
+  setSize('tab', 'S'); lay.preset = 'all'; foldPanel('tab'); assert.deepEqual(shownList(), ['tab'], 'un S se déplie en accordéon'); assert.equal(lay.size.tab, 'S', 'taille gardée pour le bureau');
+  closePanel('tab'); assert.equal(lay.acc, 'tree', 'panneau déplié fermé → premier ouvert');
+  const wrote = []; withLs(fakeLs(() => null, (k, v) => wrote.push(k)), () => foldPanel('eq')); assert.deepEqual(wrote, ['forge-embervale-panneaux'], 'panneau déplié retenu');
+}))));
+
+// ---- Faux éléments persistants : le faux DOM de dom-stub.cjs ne garde rien ; $ passe par document.querySelector,
+// remplacé le temps d'un test par une table id → élément qui garde attributs, hidden, disabled, classes, parent, enfants (grille) et innerHTML.
+function fakeDom(fn) {
+  const keep = document.querySelector, els = {}, any = () => keep('#rien');
+  const el = id => els[id] || (els[id] = mkEl(id));
+  function mkEl(id) {
+    const a = {}, e = {id, hidden: false, disabled: false, tabIndex: 0, parent: null, kids: [], cls: new Set(), innerHTML: '', textContent: '', top: 300, bottom: 340, scrolls: 0, focused: 0, offsetParent: {},
+      get parentElement() { return e.parent; },
+      setAttribute(k, v) { a[k] = String(v); }, getAttribute(k) { return k in a ? a[k] : null; },
+      classList: {toggle(c, on) { if (on) e.cls.add(c); else e.cls.delete(c); }},
+      appendChild(c) { if (c.parent && c.parent.kids) { const i = c.parent.kids.indexOf(c); if (i >= 0) c.parent.kids.splice(i, 1); } c.parent = e; e.kids.push(c); return c; },
+      getBoundingClientRect() { return {top: e.top, bottom: e.bottom, left: 0, right: 0, width: 1000, height: 40}; },
+      scrollIntoView() { e.scrolls++; }, focus() { e.focused++; }, querySelector(s) { return /^#[\w-]+$/.test(s) ? el(s.slice(1)) : any(); },
+      querySelectorAll(s) { return s === '.pnl' ? e.kids.slice() : []; }, insertAdjacentHTML() {}};
+    return new Proxy(e, {get: (o, k) => k in o ? o[k] : any()[k]});
+  }
+  el('optTarget').appendChild(el('optBar'));
+  document.querySelector = s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : keep(s);
+  try { return fn(el); } finally { document.querySelector = keep; }
+}
+const grid = el => el('pgrid').kids.map(p => p.id);
+
+test('paintLayout (DOM observé) : ordre de la grille, fermés cachés, repliés (aria-expanded), tailles, rail, bornes Monter / Descendre, Organiser', () => fakeDom(el => noLs(() => withLay(mkDispo('theo'), () => spyOn(OPT, () => {
+  paintLayout();
+  assert.deepEqual(grid(el), ['p-tree', 'p-fiche', 'p-eq', 'p-calc', 'p-bo', 'p-def', 'p-tab'], 'ordre de la grille (et du focus)');
+  assert.deepEqual(PIDS.filter(k => el('p-' + k).hidden), ['bo', 'def', 'tab'], 'fermés cachés');
+  assert.deepEqual(PIDS.map(k => el('r-' + k).getAttribute('aria-pressed')), ['true', 'true', 'true', 'true', 'false', 'false', 'false'], 'rail : aria-pressed = ouvert');
+  assert.deepEqual(PIDS.map(k => el('p-' + k).getAttribute('data-size')), ['L', 'M', 'M', 'M', 'M', 'M', 'M']);
+  assert.deepEqual([el('pu-tree').disabled, el('pd-tree').disabled, el('pu-calc').disabled, el('pd-calc').disabled, el('pu-eq').disabled, el('pd-eq').disabled], [true, false, false, true, false, false]);
+  assert.deepEqual([el('dispo').value, el('dispoMine').disabled, el('pEmpty').hidden], ['theo', true, true]);
+  assert.deepEqual([el('org').getAttribute('aria-pressed'), el('orgDone').hidden, el('po-eq').hidden, el('pf-eq').hidden], ['false', true, true, false], 'lecture : seul Replier');
+  setSize('eq', 'S');
+  assert.deepEqual([el('pb-eq').hidden, el('pf-eq').getAttribute('aria-expanded'), el('pf-eq').textContent, el('p-eq').cls.has('folded')], [true, 'false', 'Déplier', true]);
+  assert.deepEqual([el('ps-eq-S').getAttribute('aria-pressed'), el('ps-eq-M').getAttribute('aria-pressed'), el('dispo').value, el('dispoMine').disabled], ['true', 'false', 'mine', false]);
+  foldPanel('eq'); assert.deepEqual([el('pb-eq').hidden, el('pf-eq').getAttribute('aria-expanded'), el('pf-eq').textContent], [false, 'true', 'Replier']);
+  movePanel('calc', -1); assert.deepEqual(grid(el).slice(0, 4), ['p-tree', 'p-fiche', 'p-calc', 'p-eq']);
+  setOrg(true); assert.deepEqual([el('org').getAttribute('aria-pressed'), el('orgDone').hidden, el('orgHint').hidden, el('po-eq').hidden, el('pf-eq').hidden, el('pgrid').cls.has('org')], ['true', false, false, false, true, true], 'Organiser');
+  withMq(true, paintLayout); assert.equal(el('pf-eq').hidden, false, 'accordéon : Replier reste en Organiser');
+  setOrg(false); assert.deepEqual([el('po-eq').hidden, el('pf-eq').hidden], [true, false]);
+  for (const k of PIDS) closePanel(k); assert.equal(el('pEmpty').hidden, false, 'tout fermé : message');
+})))));
+
+test('rendu : seuls les panneaux du calculateur ouverts et dépliés ; un panneau qui apparaît est rendu, un panneau déjà affiché non', () => fakeDom(() => noLs(() => spyOn(OPT, calls => {
+  const run = () => { calls.length = 0; renderOptNow(); return calls.slice(); };
+  for (const [k, want] of [['theo', ['optCalc']], ['combat', ['optCalc', 'optDef']], ['mini', []], ['all', ['optCalc', 'optBo', 'optDef', 'optTab']]])
+    withLay(mkDispo(k), () => assert.deepEqual(run(), want, k));
+  withMq(true, () => withLay(mkDispo('all'), () => { lay.acc = 'def'; assert.deepEqual(run(), ['optDef'], 'accordéon : le seul déplié'); lay.acc = null; assert.deepEqual(run(), []); }));
+  withLay(mkDispo('theo'), () => {
+    paintLayout(); calls.length = 0; openPanel('def'); assert.deepEqual(calls, ['optCalc', 'optDef'], 'Défense ouverte : rendue');
+    calls.length = 0; foldPanel('eq'); foldPanel('eq'); assert.deepEqual(calls, [], 'Équipement : rien du calculateur');
+    calls.length = 0; setSize('def', 'L'); assert.deepEqual(calls, [], 'déjà affiché : pas de nouveau rendu');
+    calls.length = 0; foldPanel('calc'); assert.deepEqual(calls, [], 'replié : rien');
+    calls.length = 0; foldPanel('calc'); assert.deepEqual(calls, ['optCalc', 'optDef'], 'déplié : rendu');
+    calls.length = 0; paintLayout(true); closePanel('calc'); openPanel('calc'); assert.deepEqual(calls, ['optCalc', 'optDef']);
+  });
+}))));
+
+test('graphe : G.wake quand le panneau Arbre apparaît (vue Graphe seulement), pas quand il reste affiché', () => fakeDom(() => noLs(() => withLay(mkDispo('theo'), () => {
+  const keepW = G.wake, keepV = view; let n = 0; G.wake = () => { n++; };
   try {
-    const wrote = [];
-    withLs(fakeLs(() => null, (k, v) => wrote.push([k, v])), () => showSec('def'));
-    assert.equal(sec, 'def'); assert.deepEqual(wrote, [[LS_SEC, '"def"']]);
-    assert.notEqual(LS_SEC, LS, 'l\'onglet ne doit pas écraser les builds enregistrés');
-    withLs(fakeLs(() => null, () => { throw new Error('QuotaExceededError'); }), () => showSec('tab'));
-    assert.equal(sec, 'tab');
-    withLs(fakeLs(() => null), () => showSec('nope')); assert.equal(sec, 'tree');
-    const wrote2 = []; withLs(fakeLs(() => null, (k, v) => wrote2.push(k)), () => showSec('calc', true));
-    assert.equal(sec, 'calc'); assert.deepEqual(wrote2, [], 'au démarrage (quiet), rien n\'est écrit');
-  } finally { withLs(fakeLs(() => null), () => showSec(keep, true)); }
+    paintLayout(); foldPanel('tree'); assert.equal(n, 0); foldPanel('tree'); assert.equal(n, 1, 'déplié : wake');
+    setSize('tree', 'M'); assert.equal(n, 1, 'déjà affiché : l\'observateur de taille s\'en charge');
+    closePanel('tree'); openPanel('tree'); assert.equal(n, 2);
+    view = 'list'; closePanel('tree'); openPanel('tree'); assert.equal(n, 2, 'vue Liste : pas de canvas à recaler');
+  } finally { G.wake = keepW; view = keepV; }
+}))));
+
+test('choix de la cible : dans le Calculateur s\'il est affiché, sinon dans Build optimal (qui dit sinon d\'où vient sa cible)', () => fakeDom(el => noLs(() => withLay(mkDispo('all'), () => spyOn(OPT, () => {
+  paintLayout(); assert.deepEqual([el('optBar').parent.id, el('boTgtNote').hidden], ['optTarget', false], 'les deux affichés');
+  foldPanel('calc'); assert.deepEqual([el('optBar').parent.id, el('boTgtNote').hidden], ['boTarget', true]);
+  foldPanel('calc'); assert.deepEqual([el('optBar').parent.id, el('boTgtNote').hidden], ['optTarget', false], 'retour dans le Calculateur');
+  closePanel('bo'); assert.deepEqual([el('optBar').parent.id, el('boTgtNote').hidden], ['optTarget', true]);
+  closePanel('calc'); assert.equal(el('optBar').parent.id, 'optTarget', 'aucun des deux : la barre ne bouge pas');
+})))));
+
+test('panneaux : l\'adresse (code de partage) n\'est jamais touchée', () => {
+  const keepH = location.hash, keepR = history.replaceState; let calls = 0;
+  location.hash = '#b3-abc'; history.replaceState = () => { calls++; };
+  try {
+    fakeDom(() => noLs(() => withLay(mkDispo('theo'), () => spyOn(OPT, () => {
+      for (const k of ['combat', 'mini', 'all', 'theo']) applyDispo(k);
+      setSize('eq', 'L'); movePanel('eq', -1); foldPanel('fiche'); closePanel('calc'); openPanel('calc'); setOrg(true); setOrg(false); goPanel('def'); withMq(true, () => foldPanel('tab'));
+    }))));
+    assert.equal(location.hash, '#b3-abc'); assert.equal(calls, 0);
+  } finally { location.hash = keepH; history.replaceState = keepR; }
+});
+
+test('démarrage : disposition retenue relue et appliquée au DOM (sans écriture ni rendu) ; illisible → Théoricien', () => {
+  for (const [stored, preset, hid] of [['{"v":1,"preset":"combat"}', 'combat', ['tree', 'eq', 'fiche', 'bo', 'tab']], ['{oups', 'theo', ['bo', 'def', 'tab']], [null, 'theo', ['bo', 'def', 'tab']]])
+    fakeDom(el => withLay(lay, () => spyOn([...OPT, 'lsSet'], calls => {
+      withLs(fakeLs(() => stored), initPanels);
+      assert.equal(lay.preset, preset, 'disposition retenue ' + stored); assert.deepEqual(calls, [], 'au démarrage : ni écriture ni rendu (renderAll suit)');
+      assert.deepEqual(PIDS.filter(k => el('p-' + k).hidden), hid); assert.equal(el('dispo').value, preset);
+    })));
+});
+
+test('commandes (DOM observé) : Replier, S / M / L, Monter (focus gardé), Fermer (focus sur le rail, message), rail, menu Disposition, Organiser / Terminé', () => {
+  const said = [], keepT = globalThis.toast;
+  try {
+    globalThis.toast = t => said.push(t);
+    fakeDom(el => noLs(() => withLay(lay, () => spyOn(OPT, () => {
+      initPanels(); applyDispo('theo');
+      el('pf-eq').onclick(); assert.equal(isFolded('eq'), true); el('pf-eq').onclick(); assert.equal(isFolded('eq'), false);
+      el('ps-fiche-L').onclick(); assert.equal(lay.size.fiche, 'L');
+      const f0 = el('pu-eq').focused; el('pu-eq').onclick(); assert.deepEqual(visible(), ['tree', 'eq', 'fiche', 'calc']); assert.equal(el('pu-eq').focused, f0 + 1, 'focus rendu à Monter');
+      const d0 = el('pd-eq').focused; el('pu-eq').onclick(); assert.equal(visible()[0], 'eq'); assert.equal(el('pd-eq').focused, d0 + 1, 'borne atteinte (Monter désactivé) : focus sur Descendre');
+      const u1 = el('pu-eq').focused, d1 = el('pd-eq').focused; el('pu-eq').onclick(); assert.deepEqual([el('pu-eq').focused, el('pd-eq').focused, visible()[0]], [u1, d1, 'eq'], 'Monter refusé : rien ne bouge');
+      const r0 = el('r-calc').focused; el('px-calc').onclick(); assert.equal(isOpen('calc'), false); assert.equal(el('r-calc').focused, r0 + 1, 'focus sur le rail');
+      assert.ok(said.some(t => t.includes('« Calculateur » fermé')), 'message de fermeture absent');
+      el('r-calc').onclick(); assert.equal(isOpen('calc'), true, 'rail : rouvre'); el('r-calc').onclick(); assert.equal(isOpen('calc'), false, 'rail : masque');
+      el('dispo').value = 'combat'; el('dispo').onchange({target: el('dispo')}); assert.equal(lay.preset, 'combat'); assert.ok(said.includes('Disposition : Combat'));
+      el('org').onclick(); assert.equal(org, true); const o0 = el('org').focused; el('orgDone').onclick(); assert.equal(org, false); assert.equal(el('org').focused, o0 + 1, 'Terminé : focus sur Organiser');
+    }))));
+  } finally { globalThis.toast = keepT; }
+});
+
+test('téléphone (DOM observé) : barre basse Réglages · Arbre · Équipement · Cible · Plus ; ouvre et déplie le panneau, focus au bon endroit', () => withMq(true, () => fakeDom(el => noLs(() => withLay(lay, () => spyOn(OPT, () => {
+  initPanels(); applyDispo('theo');
+  assert.deepEqual(BBAR.map(b => b[1]), ['Réglages', 'Arbre', 'Équipement', 'Cible']); assert.deepEqual(BMORE, ['fiche', 'bo', 'def', 'tab']);
+  for (const [b, k, f] of [['bb-eq', 'eq', 'pf-eq'], ['bb-reg', 'tree', 'lvl'], ['bb-cible', 'calc', 'oEnemy'], ['bb-tree', 'tree', 'pf-tree']]) {
+    const f0 = el(f).focused, s0 = el('p-' + k).scrolls; el(b).onclick();
+    assert.deepEqual(shownList(), [k], b); assert.equal(el(f).focused, f0 + 1, b + ' : focus sur #' + f); assert.equal(el('p-' + k).scrolls, s0 + 1, b + ' : panneau ramené');
+  }
+  assert.equal(lay.preset, 'theo', 'déplier en accordéon ne change pas la disposition');
+  const m0 = el('bm-fiche').focused; el('bb-plus').onclick(); assert.deepEqual([el('bmore').hidden, el('bb-plus').getAttribute('aria-expanded'), el('bm-fiche').focused], [false, 'true', m0 + 1]);
+  el('bm-def').onclick(); assert.deepEqual([el('bmore').hidden, shownList(), isOpen('def'), lay.preset], [true, ['def'], true, 'mine'], 'Plus → Défense (fermée) : ouverte, dépliée');
+  el('bb-plus').onclick(); el('bmore').onkeydown({key: 'Escape'}); assert.equal(el('bmore').hidden, true, 'Échap ferme « Plus »');
+  el('bb-plus').onclick(); const p0 = el('bb-plus').focused; el('bb-plus').onkeydown({key: 'Escape'}); assert.deepEqual([el('bmore').hidden, el('bb-plus').focused], [true, p0 + 1], 'Échap depuis « Plus »');
+  el('bb-plus').onclick(); el('bmore').onkeydown({key: 'a'}); assert.equal(el('bmore').hidden, false, 'autre touche : reste ouvert'); el('bb-plus').onclick(); assert.equal(el('bmore').hidden, true, '« Plus » rebascule');
+}))))));
+
+test('build optimal en cours : replier, fermer, rouvrir ou changer de disposition ne l\'arrête pas ; passer de A à B l\'arrête et, panneau caché, le dit', () => {
+  const keepBO = {busy: BO.busy, key: BO.key}, keepCur = cur;
+  try {
+    fakeDom(() => noLs(() => withLay(mkDispo('all'), () => spyOn(['boStopRun', 'toast', ...OPT], calls => {
+      BO.busy = true; BO.key = boKey(B());
+      foldPanel('bo'); foldPanel('bo'); closePanel('bo'); openPanel('bo'); setSize('bo', 'S'); applyDispo('theo'); applyDispo('all'); withMq(true, () => foldPanel('def'));
+      assert.ok(!calls.includes('boStopRun'), 'un changement de panneau a arrêté le calcul');
+      calls.length = 0; applyDispo('theo'); cur = 1 - cur; renderOptNow();
+      assert.ok(calls.includes('boStopRun'), 'build A → B : calcul non arrêté'); assert.ok(calls.includes('toast'), 'arrêt, panneau Build optimal caché : aucun message');
+      calls.length = 0; cur = keepCur; BO.busy = true; BO.key = 'périmée'; applyDispo('all'); calls.length = 0; renderOptNow();
+      assert.ok(calls.includes('boStopRun') && !calls.includes('toast'), 'panneau Build optimal affiché : la carte le montre, pas de message en plus');
+      calls.length = 0; BO.key = boKey(B()); BO.busy = true; renderOptNow(); assert.ok(!calls.includes('boStopRun'), 'clé valable : le calcul continue');
+      calls.length = 0; BO.busy = false; BO.key = 'périmée'; renderOptNow(); assert.ok(!calls.includes('boStopRun'), 'aucun calcul en cours : rien à arrêter');
+    }))));
+  } finally { cur = keepCur; Object.assign(BO, keepBO); }
+});
+
+test('build optimal terminé, panneau caché : un message le dit ; affiché : pas de message', async () => {
+  const keepRun = globalThis.boRun, keepToast = globalThis.toast, keepL = lay, said = [];
+  const quick = function* (slot, en, N, F) { yield; return {res: BO_FAM.map(f => ({fk: f[0], fl: f[1], skip: true})), ms: 1, N, F, slot, en: ENEMIES.indexOf(en)}; };
+  const done = async () => { const t0 = Date.now(); while (BO.busy) { if (Date.now() - t0 > 2000) throw new Error('calcul non terminé'); await new Promise(r => setTimeout(r, 3)); } };
+  try {
+    globalThis.boRun = quick; globalThis.toast = t => said.push(t);
+    lay = mkDispo('all'); boStart(); lay = mkDispo('theo'); await done(); // calcul lancé, puis panneau fermé (disposition Théoricien)
+    assert.ok(said.some(t => t === 'Build optimal calculé : résultats dans le panneau Build optimal'), 'aucun message à la fin du calcul, panneau caché');
+    said.length = 0; lay = mkDispo('all'); boStart(); await done();
+    assert.ok(!said.some(t => /Build optimal calculé/.test(t)), 'message inutile, panneau affiché');
+  } finally { globalThis.boRun = keepRun; globalThis.toast = keepToast; lay = keepL; Object.assign(BO, {busy: false, out: null, part: null, key: '', stop: false, err: ''}); }
+});
+
+test('Tables : rendue une fois par cible (défilement gardé quand le build change), de nouveau quand la cible change', () => {
+  const keepE = oEnemy, keepT = tabEn;
+  try {
+    fakeDom(el => withLay(mkDispo('all'), () => {
+      tabEn = null; renderOptNow(); assert.ok(el('tabBody').innerHTML.includes('Table complète'), 'Tables non rendue');
+      el('tabBody').innerHTML = 'repère'; builds[cur].lvl = builds[cur].lvl > 1 ? builds[cur].lvl - 1 : 2; renderOptNow();
+      assert.equal(el('tabBody').innerHTML, 'repère', 'build changé : la table ne dépend pas du build, elle ne doit pas être refaite');
+      oEnemy = (oEnemy + 1) % ENEMIES.length; renderOptNow(); assert.ok(el('tabBody').innerHTML.includes('Table complète'), 'cible changée : la ligne surlignée doit suivre');
+    }));
+  } finally { oEnemy = keepE; tabEn = keepT; builds[0] = fromPreset(PRESETS[0]); builds[1] = fromPreset(PRESETS[3]); }
+});
+
+test('plan « Répartir au mieux » : gardé quand on replie ou ferme le Calculateur, oublié dès que le build, la cible ou l\'arme analysée change', () => {
+  const keepM = planMem, keepE = oEnemy, keepSl = oSlot;
+  try {
+    builds[0] = blankBuild('Plan'); builds[0].gear.w1 = WEAPONS[0][0]; cur = 0; oSlot = 'w1'; // arbre vide : 5 points s'investissent (un preset est déjà au plafond)
+    fakeDom(el => noLs(() => withLay(mkDispo('theo'), () => {
+      paintLayout(true); foldPanel('calc');
+      planMem = {k: planKey(B()), P: planPoints(B(), oSlot, ENEMIES[oEnemy], 5), N: 5};
+      assert.ok(planMem.P && planMem.P.steps.length, 'plan de test vide');
+      foldPanel('calc'); assert.ok(el('planOut').innerHTML.includes('Appliquer le plan'), 'plan perdu en dépliant le Calculateur');
+      el('planOut').innerHTML = ''; closePanel('calc'); openPanel('calc'); assert.ok(el('planOut').innerHTML.includes('Appliquer le plan'), 'plan perdu en rouvrant le Calculateur');
+      for (const [why, ch, back] of [['build', () => { B().lvl--; }, () => { B().lvl++; }], ['cible', () => { oEnemy = (oEnemy + 1) % ENEMIES.length; }, () => { oEnemy = keepE; }],
+        ['arme analysée', () => { oSlot = 'w2'; }, () => { oSlot = 'w1'; }]]) {
+        el('planOut').innerHTML = ''; ch(); renderOptNow(); assert.equal(el('planOut').innerHTML, '', 'plan périmé affiché (' + why + ' changé)'); back();
+      }
+      el('planOut').innerHTML = ''; renderOptNow(); assert.ok(el('planOut').innerHTML.includes('Appliquer le plan'), 'réglages remis : le plan revient');
+      const want = clone(planMem.P.t); el('planApply').onclick(); assert.equal(planMem, null, 'plan appliqué : oublié');
+      assert.deepEqual(JSON.parse(JSON.stringify(B().sk)), want.sk, '« Appliquer le plan » n\'a pas appliqué le plan');
+    })));
+  } finally { planMem = keepM; oEnemy = keepE; oSlot = keepSl; builds[0] = fromPreset(PRESETS[0]); builds[1] = fromPreset(PRESETS[3]); cur = 0; }
+});
+
+test('clic sur un ennemi de Tables : cible changée, Calculateur ouvert et déplié (même fermé), focus sur son bouton Replier, message', () => {
+  const keepE = oEnemy, keepT = tabEn, keepToast = globalThis.toast, said = [];
+  try {
+    globalThis.toast = t => said.push(t);
+    fakeDom(el => noLs(() => withLay(mkDispo('mini'), () => {
+      openPanel('tab'); tabEn = null; renderOptNow(); const i = ENEMIES.findIndex(e => e.n === 'Hollow Hound'); assert.notEqual(i, oEnemy); // fr ≠ anglais, traduction (°)
+      const f0 = el('pf-calc').focused;
+      el('mxBody').onclick({target: {closest: s => s === 'button[data-en]' ? {dataset: {en: String(i)}} : null}});
+      assert.equal(oEnemy, i, 'cible'); assert.equal(shown('calc'), true, 'Calculateur non affiché'); assert.equal(el('pf-calc').focused, f0 + 1, 'focus non posé sur le Calculateur');
+      assert.equal(el('optBar').parent.id, 'optTarget'); assert.ok(said.some(t => t.includes(nmT(ENEMIES[i])) && t.includes('°')), 'message de la nouvelle cible absent');
+      const n = said.length; el('mxBody').onclick({target: {closest: () => null}}); assert.equal(said.length, n, 'clic hors d\'un nom : rien');
+    })));
+  } finally { globalThis.toast = keepToast; oEnemy = keepE; tabEn = keepT; }
 });
 
 test('builds enregistrés : lsGet / lsSet sans clé gardent leur comportement (liste vide si absent ou illisible)', () => {
@@ -43,35 +338,6 @@ test('builds enregistrés : lsGet / lsSet sans clé gardent leur comportement (l
   const wrote = []; assert.equal(withLs(fakeLs(() => null, (k, v) => wrote.push([k, v])), () => lsSet([1])), true);
   assert.deepEqual(wrote, [[LS, '[1]']]);
   assert.equal(withLs(fakeLs(() => null, () => { throw new Error('x'); }), () => lsSet([1])), false);
-});
-
-test('onglets : l\'adresse (code de partage) n\'est jamais touchée', () => {
-  const keepH = location.hash, keepR = history.replaceState, keepS = sec; let calls = 0;
-  location.hash = '#b3-abc'; history.replaceState = () => { calls++; };
-  try { withLs(fakeLs(() => null), () => { for (const [k] of SECS) showSec(k); }); assert.equal(location.hash, '#b3-abc'); assert.equal(calls, 0); }
-  finally { location.hash = keepH; history.replaceState = keepR; withLs(fakeLs(() => null), () => showSec(keepS, true)); }
-});
-
-test('renderOptNow ne rend que l\'onglet ouvert ; Arbre et Équipement : aucun rendu du calculateur', () => {
-  const keep = sec, want = {tree: [], eq: [], calc: ['optCalc'], bo: ['optBo'], def: ['optDef'], tab: ['optTab']};
-  try {
-    spyOn(['optCalc', 'optBo', 'optDef', 'optTab'], calls => {
-      for (const [k] of SECS) { calls.length = 0; showSec(k, true); renderOptNow(); assert.deepEqual(calls, want[k], 'onglet ' + k); }
-      calls.length = 0; withLs(fakeLs(() => null), () => showSec('def')); assert.deepEqual(calls, ['optDef'], 'ouvrir un onglet du calculateur le rend aussitôt');
-      calls.length = 0; withLs(fakeLs(() => null), () => showSec('eq')); assert.deepEqual(calls, [], 'Équipement : rien à rendre');
-    });
-  } finally { showSec(keep, true); }
-});
-
-test('build optimal en cours : un réglage changé l\'arrête, quel que soit l\'onglet ouvert', () => {
-  const keep = sec, keepBO = {busy: BO.busy, key: BO.key};
-  try {
-    spyOn(['boStopRun', 'optCalc', 'optBo', 'optDef', 'optTab'], calls => {
-      for (const [k] of SECS) { calls.length = 0; showSec(k, true); BO.busy = true; BO.key = 'périmée'; renderOptNow(); assert.ok(calls.includes('boStopRun'), 'onglet ' + k); }
-      calls.length = 0; BO.key = boKey(B()); renderOptNow(); assert.ok(!calls.includes('boStopRun'), 'clé valable : le calcul continue');
-      calls.length = 0; BO.busy = false; BO.key = 'périmée'; renderOptNow(); assert.ok(!calls.includes('boStopRun'), 'aucun calcul en cours : rien à arrêter');
-    });
-  } finally { Object.assign(BO, keepBO); showSec(keep, true); }
 });
 
 test('graphe : G.wake suit la taille (cachée = largeur 0, puis nouvelle taille) sans changer le cadrage ; G.resize recadre', () => {
@@ -86,168 +352,7 @@ test('graphe : G.wake suit la taille (cachée = largeur 0, puis nouvelle taille)
   } finally { globalThis.__rect = null; area = keepA; G.wake(); G.resize(); }
 });
 
-// ---- Faux éléments persistants : le faux DOM de dom-stub.cjs ne garde rien ; $ passe par document.querySelector,
-// remplacé le temps d'un test par une table id → élément qui garde attributs, hidden, tabIndex, classes, parent et innerHTML.
-function fakeDom(fn) {
-  const keep = document.querySelector, els = {}, any = () => keep('#rien');
-  const el = id => els[id] || (els[id] = mkEl(id));
-  function mkEl(id) {
-    const a = {}, e = {id, hidden: false, tabIndex: 0, parent: null, cls: new Set(), innerHTML: '', top: 300, bottom: 340, scrolls: 0, focused: 0,
-      setAttribute(k, v) { a[k] = String(v); }, getAttribute(k) { return k in a ? a[k] : null; },
-      classList: {toggle(c, on) { if (on) e.cls.add(c); else e.cls.delete(c); }},
-      appendChild(c) { c.parent = e; return c; }, getBoundingClientRect() { return {top: e.top, bottom: e.bottom, left: 0, right: 0, width: 1000, height: 40}; },
-      scrollIntoView() { e.scrolls++; }, focus() { e.focused++; }, querySelector(s) { return /^#[\w-]+$/.test(s) ? el(s.slice(1)) : any(); }, querySelectorAll() { return []; }};
-    return new Proxy(e, {get: (o, k) => k in o ? o[k] : any()[k]});
-  }
-  el('optBar').parent = el('optTarget');
-  document.querySelector = s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : keep(s);
-  try { return fn(el); } finally { document.querySelector = keep; }
-}
-const noLs = fn => withLs(fakeLs(() => null), fn);
-const PARENT = {calc: 'optTarget', bo: 'boTarget'};
-
-test('showSec (DOM observé) : un seul onglet sélectionné, tabindex itinérant, un seul panneau, fiche et barre de cible au bon endroit', () => {
-  const keep = sec;
-  try {
-    fakeDom(el => noLs(() => spyOn(['optCalc', 'optBo', 'optDef', 'optTab'], () => {
-      let bar = 'optTarget';
-      // tree → bo → calc → bo → tab → calc : la barre de cible revient bien dans le Calculateur après Build optimal
-      for (const k of ['tree', 'bo', 'calc', 'bo', 'tab', 'def', 'calc', 'eq']) {
-        showSec(k);
-        for (const [j] of SECS) {
-          assert.equal(el('t-' + j).getAttribute('aria-selected'), String(j === k), `aria-selected de t-${j} (ouvert : ${k})`);
-          assert.equal(el('t-' + j).tabIndex, j === k ? 0 : -1, `tabIndex de t-${j} (ouvert : ${k})`);
-          assert.equal(el('p-' + j).hidden, j !== k, `panneau p-${j} (ouvert : ${k})`);
-        }
-        const side = k === 'tree' || k === 'eq';
-        assert.equal(el('ficheAside').hidden, !side, 'fiche dans ' + k); assert.equal(el('secLay').cls.has('side'), side, 'colonne de la fiche dans ' + k);
-        if (PARENT[k]) bar = PARENT[k];
-        assert.equal(el('optBar').parent.id, bar, 'barre de cible dans ' + k);
-      }
-    })));
-  } finally { noLs(() => showSec(keep, true)); }
-});
-
-test('showSec (DOM observé) : page défilée → haut de la partie ramené sous les onglets ; sinon rien ne bouge ; même onglet : ni rendu ni écriture', () => {
-  const keep = sec;
-  try {
-    fakeDom(el => spyOn(['optCalc', 'optBo', 'optDef', 'optTab', 'lsSet'], calls => {
-      showSec('def', true); el('secBar').bottom = 60;
-      el('p-calc').top = 20; showSec('calc'); assert.equal(el('p-calc').scrolls, 1, 'partie cachée sous les onglets : ramenée');
-      assert.deepEqual(calls, ['lsSet', 'optCalc']);
-      calls.length = 0; el('p-calc').top = 400; showSec('calc'); assert.equal(el('p-calc').scrolls, 1, 'partie déjà visible : pas de défilement');
-      assert.deepEqual(calls, [], 'onglet déjà ouvert : ni écriture ni rendu');
-      el('p-calc').top = 10; showSec('calc'); assert.equal(el('p-calc').scrolls, 2, 'clic sur l\'onglet ouvert, page défilée : retour en haut de la partie');
-    }));
-  } finally { noLs(() => showSec(keep, true)); }
-});
-
-test('build optimal en cours : changer d\'onglet ne l\'arrête pas ; passer de A à B l\'arrête et, hors de son onglet, le dit', () => {
-  const keep = sec, keepBO = {busy: BO.busy, key: BO.key}, keepCur = cur;
-  try {
-    fakeDom(() => noLs(() => spyOn(['boStopRun', 'toast', 'optCalc', 'optBo', 'optDef', 'optTab'], calls => {
-      showSec('tree', true); BO.busy = true; BO.key = boKey(B());
-      for (const [k] of SECS) showSec(k);
-      assert.ok(!calls.includes('boStopRun'), 'un changement d\'onglet a arrêté le calcul');
-      calls.length = 0; showSec('def', true); cur = 1 - cur; renderOptNow();
-      assert.ok(calls.includes('boStopRun'), 'build A → B : calcul non arrêté'); assert.ok(calls.includes('toast'), 'arrêt hors de l\'onglet Build optimal : aucun message');
-      calls.length = 0; cur = keepCur; BO.busy = true; BO.key = 'périmée'; showSec('bo', true); renderOptNow();
-      assert.ok(calls.includes('boStopRun') && !calls.includes('toast'), 'dans l\'onglet Build optimal, la carte le montre : pas de message en plus');
-    })));
-  } finally { cur = keepCur; Object.assign(BO, keepBO); noLs(() => showSec(keep, true)); }
-});
-
-test('build optimal terminé hors de son onglet : un message le dit ; dans son onglet : pas de message', async () => {
-  const keep = sec, keepRun = globalThis.boRun, keepToast = globalThis.toast, said = [];
-  const quick = function* (slot, en, N, F) { yield; return {res: BO_FAM.map(f => ({fk: f[0], fl: f[1], skip: true})), ms: 1, N, F, slot, en: ENEMIES.indexOf(en)}; };
-  const done = async () => { const t0 = Date.now(); while (BO.busy) { if (Date.now() - t0 > 2000) throw new Error('calcul non terminé'); await new Promise(r => setTimeout(r, 3)); } };
-  try {
-    globalThis.boRun = quick; globalThis.toast = t => said.push(t);
-    showSec('calc', true); boStart(); await done();
-    assert.ok(said.some(t => /Build optimal calculé/.test(t)), 'aucun message à la fin du calcul hors de son onglet');
-    said.length = 0; showSec('bo', true); boStart(); await done();
-    assert.ok(!said.some(t => /Build optimal calculé/.test(t)), 'message inutile dans l\'onglet Build optimal');
-  } finally { globalThis.boRun = keepRun; globalThis.toast = keepToast; Object.assign(BO, {busy: false, out: null, part: null, key: '', stop: false, err: ''}); showSec(keep, true); }
-});
-
-test('Tables : rendue une fois par cible (défilement gardé quand le build change), de nouveau quand la cible change', () => {
-  const keepE = oEnemy, keepT = tabEn, keepS = sec;
-  try {
-    fakeDom(el => {
-      showSec('tab', true); tabEn = null; renderOptNow(); assert.ok(el('tabBody').innerHTML.includes('Table complète'), 'Tables non rendue');
-      el('tabBody').innerHTML = 'repère'; builds[cur].lvl = builds[cur].lvl > 1 ? builds[cur].lvl - 1 : 2; renderOptNow();
-      assert.equal(el('tabBody').innerHTML, 'repère', 'build changé : la table ne dépend pas du build, elle ne doit pas être refaite');
-      oEnemy = (oEnemy + 1) % ENEMIES.length; renderOptNow(); assert.ok(el('tabBody').innerHTML.includes('Table complète'), 'cible changée : la ligne surlignée doit suivre');
-    });
-  } finally { oEnemy = keepE; tabEn = keepT; showSec(keepS, true); builds[0] = fromPreset(PRESETS[0]); builds[1] = fromPreset(PRESETS[3]); }
-});
-
-test('plan « Répartir au mieux » : gardé d\'un onglet à l\'autre, oublié dès que le build, la cible ou l\'arme analysée change', () => {
-  const keepS = sec, keepM = planMem, keepE = oEnemy, keepSl = oSlot;
-  try {
-    builds[0] = blankBuild('Plan'); builds[0].gear.w1 = WEAPONS[0][0]; cur = 0; oSlot = 'w1'; // arbre vide : 5 points s'investissent (un preset est déjà au plafond)
-    fakeDom(el => noLs(() => {
-      showSec('tree', true);
-      planMem = {k: planKey(B()), P: planPoints(B(), oSlot, ENEMIES[oEnemy], 5), N: 5};
-      assert.ok(planMem.P && planMem.P.steps.length, 'plan de test vide');
-      showSec('calc'); assert.ok(el('planOut').innerHTML.includes('Appliquer le plan'), 'plan perdu en rouvrant le Calculateur');
-      for (const [why, ch, back] of [['build', () => { B().lvl--; }, () => { B().lvl++; }], ['cible', () => { oEnemy = (oEnemy + 1) % ENEMIES.length; }, () => { oEnemy = keepE; }],
-        ['arme analysée', () => { oSlot = 'w2'; }, () => { oSlot = 'w1'; }]]) {
-        el('planOut').innerHTML = ''; ch(); renderOptNow(); assert.equal(el('planOut').innerHTML, '', 'plan périmé affiché (' + why + ' changé)'); back();
-      }
-      el('planOut').innerHTML = ''; renderOptNow(); assert.ok(el('planOut').innerHTML.includes('Appliquer le plan'), 'réglages remis : le plan revient');
-      const want = clone(planMem.P.t); el('planApply').onclick(); assert.equal(planMem, null, 'plan appliqué : oublié');
-      assert.deepEqual(JSON.parse(JSON.stringify(B().sk)), want.sk, '« Appliquer le plan » n\'a pas appliqué le plan');
-    }));
-  } finally { planMem = keepM; oEnemy = keepE; oSlot = keepSl; builds[0] = fromPreset(PRESETS[0]); builds[1] = fromPreset(PRESETS[3]); cur = 0; showSec(keepS, true); }
-});
-
-test('démarrage : l\'onglet retenu est relu et appliqué au DOM (sans écriture ni rendu) ; illisible → Arbre', () => {
-  const keep = sec;
-  try {
-    for (const [stored, want] of [['"def"', 'def'], ['"bo"', 'bo'], ['{oups', 'tree'], [null, 'tree']])
-      fakeDom(el => spyOn(['optCalc', 'optBo', 'optDef', 'optTab', 'lsSet'], calls => {
-        withLs(fakeLs(() => stored), initSec);
-        assert.equal(sec, want, 'onglet retenu ' + stored); assert.deepEqual(calls, [], 'au démarrage : ni écriture ni rendu (renderAll suit)');
-        assert.equal(el('t-' + want).getAttribute('aria-selected'), 'true'); assert.equal(el('p-' + want).hidden, false, 'panneau de l\'onglet retenu caché');
-        for (const [j] of SECS) if (j !== want) assert.equal(el('p-' + j).hidden, true, 'panneau ' + j + ' visible au démarrage');
-        assert.equal(el('optBar').parent.id, want === 'bo' ? 'boTarget' : 'optTarget', 'barre de cible au démarrage');
-      }));
-  } finally { showSec(keep, true); }
-});
-
-test('clavier : ← → en boucle, Début, Fin, focus sur l\'onglet atteint ; Alt, Ctrl, Cmd et autres touches laissés au navigateur', () => {
-  const keep = sec;
-  try {
-    fakeDom(el => noLs(() => spyOn(['optCalc', 'optBo', 'optDef', 'optTab'], () => {
-      showSec('tree', true);
-      const press = (key, from, mod) => { const e = Object.assign({key, target: {id: from}, pd: 0, preventDefault() { e.pd++; }}, mod || {}); secKey(e); return e; };
-      for (const [key, from, want] of [['End', 't-tree', 'tab'], ['ArrowRight', 't-tab', 'tree'], ['ArrowLeft', 't-tree', 'tab'], ['Home', 't-tab', 'tree'], ['ArrowRight', 't-tree', 'eq']]) {
-        const f0 = el('t-' + want).focused, e = press(key, from);
-        assert.equal(sec, want, key + ' depuis ' + from); assert.equal(el('t-' + want).focused, f0 + 1, 'focus sur t-' + want); assert.equal(e.pd, 1, 'défilement de la page empêché');
-      }
-      for (const mod of [{altKey: true}, {ctrlKey: true}, {metaKey: true}]) { const e = press('ArrowRight', 't-eq', mod); assert.equal(sec, 'eq', JSON.stringify(mod)); assert.equal(e.pd, 0); }
-      const e = press('a', 't-eq'); assert.equal(sec, 'eq'); assert.equal(e.pd, 0, 'touche ordinaire : rien d\'empêché');
-    })));
-  } finally { showSec(keep, true); }
-});
-
-test('clic : sur un onglet, focus posé dessus ; sur un ennemi de Tables, cible changée, Calculateur ouvert, focus sur son onglet, message', () => {
-  const keepS = sec, keepE = oEnemy, keepT = tabEn, keepToast = globalThis.toast, said = [];
-  try {
-    globalThis.toast = t => said.push(t);
-    fakeDom(el => noLs(() => {
-      showSec('tree', true); secClick('def'); assert.equal(sec, 'def'); assert.equal(el('t-def').focused, 1, 'focus non posé sur l\'onglet cliqué');
-      tabEn = null; showSec('tab'); const i = ENEMIES.findIndex(e => e.n === 'Hollow Hound'); assert.notEqual(i, oEnemy); // fr ≠ anglais, traduction (°)
-      el('mxBody').onclick({target: {closest: s => s === 'button[data-en]' ? {dataset: {en: String(i)}} : null}});
-      assert.equal(oEnemy, i, 'cible'); assert.equal(sec, 'calc', 'Calculateur non ouvert'); assert.equal(el('t-calc').focused, 1, 'focus non posé sur l\'onglet Calculateur');
-      assert.equal(el('optBar').parent.id, 'optTarget'); assert.ok(said.some(t => t.includes(nmT(ENEMIES[i])) && t.includes('°')), 'message de la nouvelle cible absent');
-      const n = said.length; el('mxBody').onclick({target: {closest: () => null}}); assert.equal(said.length, n, 'clic hors d\'un nom : rien');
-    }));
-  } finally { globalThis.toast = keepToast; oEnemy = keepE; tabEn = keepT; showSec(keepS, true); }
-});
-
-// Tuiles Points et Flamme (1.17.0, HISTORY n° 23) : en tête des onglets Arbre et Build optimal, le nombre de points et la Flamme en grand.
+// Tuiles Points et Flamme (1.17.0, HISTORY n° 23) : en tête des panneaux Arbre et Build optimal, le nombre de points et la Flamme en grand.
 test('tuiles de l\'Arbre (DOM observé) : points à attribuer, points en trop, Flamme −/+ bornée, effet des nœuds de Flamme', () => {
   const keep = [builds[0], cur, view];
   try {

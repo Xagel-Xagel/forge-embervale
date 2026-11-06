@@ -2,6 +2,18 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.18.0 — 2026-11-06 · Panneaux (phase 1 de l'harmonisation)
+- **Plus d'onglets** : la page est une **grille de panneaux** — Arbre, Équipement, Fiche, Calculateur, Build optimal, Défense, Tables (direction « Panneaux » choisie par QCM, étude `docs/etudes/harmonisation-interface-2026-11-06.md`).
+- Chaque panneau a un en-tête (titre + **Replier / Déplier**) et une taille : **S** (replié), **M**, **L** (deux colonnes). Grille de 3 colonnes (≥ 1 000 px), 2 colonnes (640 à 999 px), 1 colonne en dessous.
+- **Rail d'icônes** à gauche : afficher ou masquer chaque panneau (un panneau fermé se rouvre ici).
+- **Dispositions** (menu, en haut, collé pendant le défilement) : Théoricien (1re visite : arbre en grand, fiche, équipement, calculateur), Combat (calculateur en grand, défense), Minimal (équipement, fiche, arbre replié), Tout ; tout changement manuel passe sur **« Ma disposition »**, retenue dans ce navigateur (une disposition prête ne l'efface pas).
+- Bouton **Organiser** : taille S / M / L, Monter, Descendre, Fermer dans chaque en-tête, puis « Terminé ». Pas de glisser-déposer.
+- **Téléphone (< 640 px)** : accordéon (un seul panneau déplié) et **barre d'icônes en bas** : Réglages (niveau, exploration, Flamme), Arbre, Équipement, Cible, Plus (Fiche, Build optimal, Défense, Tables). Ni la barre du haut ni celle du bas ne cachent l'élément qui a le focus.
+- Le choix de la cible est dans le Calculateur s'il est affiché, sinon dans Build optimal (qui dit d'où vient sa cible). Un ennemi cliqué dans Tables ouvre et déplie le Calculateur.
+- Plus rapide : seuls les panneaux du calculateur ouverts et dépliés sont calculés ; un calcul de build optimal continue quand on replie, ferme ou change de disposition ; le graphe se recale quand le panneau Arbre change de taille, sans perdre le zoom.
+- Accessibilité : panneaux étiquetés par leur titre, `aria-expanded` sur Replier, rail `nav` « Panneaux » à boutons `aria-pressed`, cibles d'au moins 44 px au téléphone ; **texte des boutons primaires en thème sombre** passé en encre sombre sur braise (blanc : ≈ 2,3 : 1, illisible ; maintenant ≈ 7 : 1).
+- L'ancien onglet retenu (1.15.0) n'est plus lu : première ouverture sur Théoricien. Aucune donnée de jeu ni aucun lien de partage touché.
+
 ## 1.17.0 — 2026-11-06 · Perks d'arme, Mage critique refait, Points et Flamme en grand
 - **Perks d'arme 1.0** : chaque arme a ses **5 emplacements** dans l'ordre des fichiers du jeu (PinDrop), avec leur valeur, sous leur nom officiel français (MetaBot) ; un emplacement se débloque par amélioration (curseur Améliorations), comme pour les armures. Vérifié en ligne : les perks sont **fixes** par arme (pas de reforge) ; la **gemme**, elle, se choisit (Forge à gemmes) si l'arme a un emplacement.
 - **Comptés dans les dégâts** : « Chance de coup critique » et « Dégâts de coup critique », pour l'arme qui les porte (fiche : chance et dégâts critiques par arme ; ✓ sur les puces de l'Équipement). Les autres perks (Lourd, Sans pitié, Opportuniste, vols…) et la **surcharge** des baguettes sont affichés, non comptés.
