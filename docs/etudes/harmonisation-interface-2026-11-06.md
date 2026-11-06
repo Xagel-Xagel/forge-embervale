@@ -121,6 +121,8 @@ QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recomma
 
 - QCM 3 · réordonner (mode Organiser) : **boutons Monter / Descendre** seulement — clavier et doigt, même geste partout, pas de glisser-déposer (non retenus : glisser + boutons, glisser seul).
 
+- QCM 4 · dispositions prêtes : **les quatre** — Théoricien (arbre en grand, fiche-résumé, équipement, classement), Combat (cible, vos armes, prochains points, défense), Minimal (réglages, équipement, fiche-résumé), Tout (les 10 panneaux dans l'ordre des onglets actuels) ; plus « Ma disposition » (mémorisée dans ce navigateur).
+
 _(suite à compléter)_
 
 ## 6. Plan d'implémentation
