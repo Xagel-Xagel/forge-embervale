@@ -35,5 +35,9 @@
 - Graphe (30-graph.js) : chaque nœud est ancré à sa position réelle ; ressorts à la longueur réelle et rappel constant vers l'ancre, sans répulsion ni pré-chauffage : au repos, le tracé est exactement celui du jeu. Glisser un nœud l'étire (élastique), il revient à sa place (immédiatement si mouvement réduit). Libellés GUERRIER / RÔDEUR / MAGE au bord extérieur de chaque zone ; noms placés sans chevauchement par priorité (sélection, survol, recherche, acquis). Halos en sprites mis en cache ; survol avec fondu et hystérésis ; `G.refresh(o)` à chaque rendu, `G.focus(zone)`, `G.resize()`.
 - Couleurs du canvas lues depuis les jetons CSS (`--g-*`, `--war`, `--rng`, `--mag`, `--core`), relues quand le thème change.
 
+## Build optimal (21-buildopt.js)
+- Générateurs (`function*`) : `boRun` → `boFamily` (une par famille de `BO_FAM`) → `boWeapon` (armes non dominées de `boWeapons`, alternance `boTree` ↔ `boGear`) → `boFinish` (arme gagnante : arbre avec PV, `boLocal`, équipement revu). `boFill` rend la main après chaque achat ; `boDrain` termine d'un coup (tests).
+- `boStart` exécute le générateur par tranches de 30 ms (`setTimeout`), affiche la progression et les familles terminées ; `BO.key` (build A/B, cible, arme analysée, points, Flamme, améliorations) invalide les résultats périmés ; `boMerge` produit le build appliqué (nom, niveau, exploration, autre arme et gemmes repris du build courant).
+
 ## Tests
-`tests/run.mjs` exécute les scripts de `src/js` dans un contexte Node avec un faux DOM (Proxy qui accepte tout), puis les `*.test.js`. Les tests d'interface ne vérifient donc que « pas d'exception » ; le rendu réel se vérifie avec `tests/e2e.mjs` (Playwright) et les captures.
+`tests/run.mjs` exécute les scripts de `src/js` dans un contexte Node avec un faux DOM (Proxy qui accepte tout), puis les `*.test.js`. Les tests d'interface ne vérifient donc que « pas d'exception » ; le rendu réel se vérifie avec `tests/e2e.mjs` (Playwright) et les captures (dont la carte « Build optimal », avec mesure des tâches longues).

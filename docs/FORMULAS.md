@@ -42,6 +42,17 @@ sur cible = coup × multiplicateur du type × (1 + bonus contre la famille)   vs
 ## Optimiseur multi-points (simulateur)
 `planPoints(b, arme, ennemi, N)` (20-optimizer.js) : à chaque étape, liste les achats possibles (`investments`, chemin compris) dont le coût tient dans le reste des N points ; deux gloutons (meilleur gain par point, meilleur gain brut), puis amélioration locale (retirer une étape, re-remplir) tant que les dégâts moyens montent (1,5 s au plus). **Heuristique** : pas de preuve d'optimalité.
 
+## Optimiseur de build complet (simulateur, 1.13.0)
+`boRun(arme analysée, ennemi, N, Flamme, améliorations)` (21-buildopt.js) : pour chaque famille d'arme (mêlée une main, mêlée deux mains, dagues, arcs, baguettes, bâtons), cherche l'arme, les 5 pièces d'armure, 2 anneaux **différents** et l'arbre (depuis un arbre vide, N points) qui maximisent les dégâts moyens contre la cible (`vsEnemy`, comme le reste du calculateur). **Objectif lexicographique** : dégâts d'abord (tolérance relative 1e-9), puis PV.
+1. Armes : une seule par catégorie et répartition des dégâts, la base la plus haute (les autres ne peuvent pas gagner : perks d'arme non comptés).
+2. Arbre : deux gloutons (gain de dégâts par point, gain brut ; chemin le moins cher compris, comme `investments`) ; quand plus rien n'augmente les dégâts, gain de PV par point. Si aucun achat seul ne rapporte (Essences de vie sans Intelligence…), on regarde l'achat d'après et on prend le premier achat de la meilleure paire.
+3. Équipement, arbre fixé : chaque pièce tour à tour, puis les 91 paires d'anneaux ; alternance arbre ↔ équipement jusqu'à ce que l'équipement ne change plus (5 tours au plus ; la phase PV ne tourne que pour l'arme gagnante de la famille).
+4. Budget serré (un achat utile ne tient plus) : amélioration locale, retirer un rang ou un nœud d'attribut et re-remplir ; 300 re-remplissages au plus, pour un résultat identique sur toutes les machines. Mesure : jusqu'à +6 % de dégâts (Fell Black Knight, deux mains, 40 points).
+5. Calcul découpé (générateurs) : la page reste fluide ; au-delà de 10 s, les familles restantes sont signalées « non calculées ».
+
+**Heuristique** : pas une preuve d'optimalité. Contrôles (tests) : aucune des 32 768 combinaisons d'armures ne fait mieux sur 3 cas ; aucun achat seul ne tient dans les points restants ; chaque preset est égalé ou battu à budget et Flamme égaux.
+**Hypothèses et limites** : deux anneaux différents (doublon en jeu non vérifié) ; niveau requis des objets non vérifié (contenu de fin de jeu) ; pas de classement entre familles (« Dégâts » / « Puissance », vitesse d'attaque non comptée) ; gemmes non choisies (aucun effet chiffré) ; perks élémentaires, armure des pièces, attaques des ennemis, points faibles, attaques impitoyables et furtives non comptés (ROADMAP 2 à 5, 8).
+
 ## Faiblesses des ennemis (fichiers)
 Chaque ennemi a un multiplicateur caché par type : tranchant, perçant, contondant, poison, feu, glace, Shroud, foudre.
 `1,2` = +20 % de dégâts subis, `0,8` = −20 %, `0` = immunisé. Tous les Fell sont immunisés au Shroud.

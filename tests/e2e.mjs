@@ -34,8 +34,22 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   await page.fill('#dHit', '900');
   const txt = await page.textContent('#defOut');
   if (!/coups avant K\.O\./.test(txt)) errs.push('bloc défense vide');
+  // Build optimal : calcul découpé (aucune tâche longue), un résultat par famille, détail ouvert pour la capture
+  await page.evaluate(() => { window.__lt = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__lt.push(e.duration))).observe({type: 'longtask'}); } catch (e) { window.__lt = null; } });
+  const t0 = Date.now(); await page.click('#boGo');
+  await page.waitForFunction(() => document.querySelectorAll('#boOut [data-boap]').length === 6, null, {timeout: 30000}).catch(() => errs.push('build optimal : résultats absents après 30 s'));
+  const lt = await page.evaluate(() => window.__lt && Math.max(0, ...window.__lt));
+  if (lt > 200) errs.push(`build optimal : tâche longue de ${Math.round(lt)} ms (page figée)`);
+  console.log(`  build optimal (${w} px, ${scheme}) : ${Date.now() - t0} ms, plus longue tâche ${lt === null ? 'non mesurée' : Math.round(lt) + ' ms'}`);
+  await page.click('#boOut details summary');
+  const swo = await page.evaluate(() => document.documentElement.scrollWidth);
+  if (swo > w) errs.push(`débordement horizontal avec le build optimal : ${swo}px > ${w}px`);
   const name = `tests/screenshots/${w}-${scheme}.png`;
   await page.screenshot({path: join(root, name), fullPage: true});
+  // « Appliquer » (famille Mêlée deux mains) : l'arme 1 du build devient celle du résultat
+  const want = await page.evaluate(() => BO.out.res.find(r => r.fk === 'm2').w.id);
+  await page.click('#boOut [data-boap="m2"]'); await page.waitForTimeout(100);
+  if (await page.inputValue('#slot-w1') !== want) errs.push('« Appliquer » n\'a pas équipé l\'arme du build optimal');
   console.log(errs.length ? '✗' : '✓', name, errs.join(' | '));
   fail += errs.length; await page.close();
 }

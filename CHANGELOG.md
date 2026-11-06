@@ -2,6 +2,14 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.13.0 — 2026-11-06 · Build optimal (équipement + arbre)
+- Calculateur, nouvelle carte **« Build optimal contre <ennemi> »** : pour des **points disponibles** et un **niveau de Flamme** donnés, l'optimiseur part d'un arbre vide et choisit l'arme, les 5 pièces d'armure, 2 anneaux et l'arbre qui maximisent les dégâts moyens contre la cible ; les PV départagent les égalités et reçoivent les points restants. Bouton **« Appliquer »** par résultat.
+- **Un résultat par famille** (mêlée une main, mêlée deux mains, dagues, arcs, baguettes, bâtons), sans classement entre familles : « Dégâts » et « Puissance » ne se comparent pas et la vitesse d'attaque n'est pas comptée.
+- Méthode : chaque arme non dominée est essayée ; arbre par deux gloutons (avec un regard à deux achats quand un achat seul ne rapporte rien, ex. Essences de vie sans Intelligence) ; équipement pièce par pièce + meilleure paire d'anneaux ; alternance jusqu'à stabilité ; amélioration locale quand le budget manque. Affiché « heuristique, pas une preuve d'optimalité ».
+- Mesures : 0,6 à 3,5 s pour les 6 familles selon le budget (Node), aucune tâche de plus de 50 ms dans le navigateur (calcul découpé, bouton « Arrêter ») ; plafond de 10 s. Contrôles : aucune des 32 768 combinaisons d'armures ne fait mieux sur 3 cas, chaque preset est égalé ou battu à budget égal.
+- Gemmes non choisies (aucun effet chiffré) : la gemme actuelle reste si elle est compatible avec la nouvelle arme ; l'autre arme, le nom, le niveau et l'exploration du build ne changent pas.
+- CLAUDE.md : l'Artifact claude.ai est en version 12 (et non 11).
+
 ## 1.12.0 — 2026-11-06 · Optimiseur multi-points
 - Calculateur, carte « Où placer vos prochains points » : **« Répartir au mieux N points »** donne le plan d'achat (nœuds, coûts, cumul) qui maximise les dégâts moyens de l'arme analysée contre la cible, chemins d'accès compris ; bouton « Appliquer le plan ».
 - Méthode : deux gloutons (gain par point, gain brut) puis amélioration locale (retirer une étape et re-remplir) ; affichée comme non garantie optimale. Le plan s'arrête quand plus rien n'augmente les dégâts.
