@@ -105,7 +105,9 @@ Au-dessus des onglets, sur chaque écran : en-tête + barre des builds (12 contr
 
 Idée en réserve (D, non dessinée) : « Feuille de personnage » — l'écran d'inventaire du jeu au centre (silhouette à 9 emplacements, attributs, 6 chiffres), tiroir latéral pour choisir une pièce, arbre en plein écran, calculateurs en cartes-verdicts sous la feuille.
 
-## 4. Brief pour Claude Design (`/design`, à lancer par l'utilisateur)
+## 4. Brief pour Claude Design (`/design`, lancé par l'utilisateur)
+
+Canevas publié (privé, 12 planches + 3 notes « masqué / déplacé / fusionné ») : https://claude.ai/artifact/BiCNLFQ1CVyRCXk2XmePVd — rangée A : Simple / Expert, rangée B : Panneaux, rangée C : Parcours ; chaque rangée : bureau clair, bureau sombre, 400 px clair, 400 px sombre. Les planches sombres importent la planche claire avec le réglage « dark » (Tweaks) ; rendu non vérifié par Claude (règle de l'outil).
 - Produit : Forge d'Embervale, simulateur de stuff Enshrouded 1.0, page unique, interface en français.
 - Jetons à reprendre tels quels (`src/styles.css`) : fond `#e9ecef` / surface `#f7f8f9` / encre `#1b2029` / braise `#b8501a` / Shroud `#5d4594` (clair) ; `#10131a` / `#171b24` / `#e7e4dd` / `#f08a48` / `#a991e3` (sombre) ; zones Guerrier `#b03a35`, Rôdeur `#2f7a49`, Mage `#2f5fa8`. Polices : Alegreya SC (titres), Alegreya Sans (texte), IBM Plex Mono (chiffres).
 - Contenu réel à montrer : build « Barbare deux mains » (Marteau de la chèvre *Goat Hammer*, 377 / 696, 60 % critique, 1 778 PV, 62 points à attribuer, Flamme 11) contre Chien Creux *Hollow Hound* (×1,5 contondant).
