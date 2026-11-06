@@ -83,71 +83,85 @@ const RINGS = [
 ];
 RINGS.forEach(([id,n,lv,cls,base,perks])=>{ITEMS[id]={id,n,slot:'ring',lv,cls,base,perks,kind:'ring'}});
 
-/* Armes : [id, nom, catégorie, niveau, dégâts/puissance, type, perks] */
+/* Armes : [id, nom, catégorie, niveau, dégâts/puissance, type, perks]
+   perks : les 5 emplacements dans l'ordre des fichiers du jeu 1.0 (PinDrop, build serveur 1285601), [clé de WPERK, valeur] ou ['k', compétence, rangs] ;
+   débloqués un par amélioration (curseur Améliorations), comme ceux des armures. Dégâts/puissance : estimation du wiki d'avant la 1.0 au niveau requis,
+   SAUF baguettes (91) et bâtons (77) : les fichiers 1.0 donnent le même multiplicateur à toute la famille (×1, ×0,5), d'où une base commune
+   = la plus haute valeur du wiki de la famille (décision du 2026-11-06, HISTORY n° 23) ; autres familles : ROADMAP. */
 const CAT = {sw1:['Épée à une main','melee',1],ax1:['Hache à une main','melee',1],cl1:['Masse à une main','melee',1],dag:['Dagues','dagger',1],gs:['Espadon','melee',2],ax2:['Hache à deux mains','melee',2],hm2:['Marteau à deux mains','melee',2],cl2:['Masse à deux mains','melee',2],bow:['Arc','bow',0],wand:['Baguette','wand',0],staff:['Bâton','staff',0]};
 const WTYPE = {cut:'tranchant',pierce:'perçant',blunt:'contondant',fire:'feu',ice:'glace',shock:'foudre',shroud:'Shroud'};
-const WPERK = {precise:'Précis',merciless:'Impitoyable',brutal:'Brutal',vicious:'Vicieux',renewal:'Renouveau',hleech:'Vol de vie',mleech:'Vol de mana',sleech:'Vol de vigueur',retaliation:'Représailles',spiritual:'Spirituel',sneaky:'Sournois',headseeker:'Chasseur de têtes',reaping:'Moisson',opportunistic:'Opportuniste',ruthless:'Sans pitié',sacred:'Sacré',vital:'Vital',venom:'Lames venimeuses',dragon:'Force du dragon',dCut:'Dégâts tranchants',dPierce:'Dégâts perçants',dBlunt:'Dégâts contondants',dPoison:'Dégâts de poison',mFire:'Feu magique',mIce:'Glace magique',mShock:'Foudre magique',mShroud:'Shroud magique'};
+/* Perks d'arme : nom officiel français (MetaBot fr_FR, tables de textes du jeu ; ° = traduction du simulateur, absent de MetaBot) */
+const WPERK = {precise:'Chance de coup critique',brutal:'Dégâts de coup critique',ruthless:'Sans pitié',opportunistic:'Opportuniste',merciless:'Dégâts d\'Attaque impitoyable',backstab:'Dégâts dans le dos',
+  mFire:'Lourd (Feu)',mIce:'Lourd (Glace)',mShock:'Lourd (Foudre)',mShroud:'Lourd (Brume)',dCut:'Lourd (Tranchant)°',dPierce:'Lourd (Perforation)',dBlunt:'Lourd (Contondant)',dPoison:'Lourd (Poison)',
+  allFire:'Tous les dégâts magiques de feu',allIce:'Tous les dégâts magiques de glace',allShock:'Tous les dégâts magiques de choc',allShroud:'Tous les dégâts magiques de Shroud',
+  vsFell:'Dégâts infligés aux Déchus',vsWild:'Dégâts contre la faune',vsScav:'Dégâts infligés aux maraudeurs',dragon:'Force du dragon',retaliation:'Représailles',headseeker:'Chercheur de tête',
+  hleech:'Vol de vie',hleechF:'Vol de vie',mleech:'Absorption de mana',mleechF:'Absorption de mana',sleech:'Vol d\'endurance',reaping:'Sombre moisson',renewal:'Renouvellement',venom:'Lames venimeuses'};
+/* Unité de la valeur (par défaut %) ; perks comptés dans les dégâts : chance et dégâts de coup critique de CETTE arme (02-calc.js) ; les autres sont affichés, non comptés */
+const WPU = {hleechF:'',mleechF:'',reaping:'',renewal:'',headseeker:''};
+const WPC = {precise:'cc',brutal:'cd'};
+/* Surcharge des baguettes (fichiers 1.0, PinDrop) : « dégâts bonus jusqu'au pourcentage de surcharge », loi de tirage inconnue → affichée, non comptée */
+const WOC = {w_bloodflow:27,w_ancdrak:27,w_totem:27,w_mythic:24,w_polymath:24,w_apprentice:12,w_frostw:24,w_twisting:21};
 const WEAPONS = [
- ['w_aurora','Aurora Sword','sw1',50,109,'cut',['precise','mIce','dPierce']],
- ['w_wailing','Wailing Blade','sw1',40,98,'cut',['mFire','dCut','renewal']],
- ['w_fang','Fang Blade','sw1',40,98,'cut',['dPierce','precise','dCut']],
- ['w_apex','Apex Machete','sw1',45,91,'cut',['dPierce','precise','ruthless']],
- ['w_dragsw','Dragon Sword','sw1',40,91,'cut',['dPierce','mFire','renewal']],
- ['w_graven','Graven Idol Axe','ax1',50,109,'cut',['dCut','merciless','mShock']],
- ['w_skull','Skull Splitter Axe','ax1',45,98,'cut',['dCut','merciless','mShock']],
- ['w_lfaxe','Lightforged Axe','ax1',40,98,'cut',['dCut','mFire','dPierce']],
- ['w_jez','Jezmina\'s Apotheosis','ax1',40,91,'cut',['mFire','dCut','hleech']],
- ['w_dimh','Dimweald Hammer','cl1',35,92,'blunt',['dBlunt','dPierce','mShock']],
- ['w_meat','Meat Chopper','cl1',40,91,'cut',['dCut','brutal']],
- ['w_flesh','Fleshgrinder','cl1',40,84,'blunt',['brutal','dPierce','hleech']],
- ['w_adorned','Adorned Drakling Daggers','dag',45,91,'pierce',['precise','merciless','dCut']],
- ['w_oath','Oath Breaker','dag',40,70,'pierce',['dCut','dPierce','mFire']],
- ['w_horn','Horn Daggers','dag',40,65,'pierce',['dCut','precise','mIce']],
- ['w_lfdag','Lightforged Daggers','dag',40,61,'pierce',['dCut','dPierce','mFire']],
- ['w_valor','Valor Heart Daggers','dag',40,51,'pierce',['precise','merciless','dCut']],
- ['w_gotn','Guard of the North Sword','gs',40,84,'cut',['mShock','precise','brutal']],
- ['w_spiked','Spiked Greatsword','gs',41,78,'cut',['dPierce','retaliation','precise']],
- ['w_darkwood','Darkwood Axe','ax2',43,155,'cut',['mIce','renewal','dCut']],
- ['w_boreal','Boreal Axe','ax2',40,145,'cut',['mIce','renewal','dCut']],
- ['w_thunderb','Greater Thunderblast Axe','ax2',40,135,'cut',['brutal','mShock','dCut']],
- ['w_warhero','Golden War Hero Axe','ax2',40,125,'cut',['hleech','mFire','renewal']],
- ['w_ram','Battering Ram Hammer','hm2',50,175,'blunt',['dBlunt','mIce','brutal']],
- ['w_aero','Aerostriker','hm2',40,145,'blunt',['mShock','brutal']],
- ['w_goat','Goat Hammer','hm2',40,145,'blunt',['dBlunt','mIce','brutal']],
- ['w_rot','Rotblood','hm2',40,145,'blunt',['mShroud','dPoison','dBlunt']],
- ['w_chief','Chieftain\'s Hammer','hm2',50,101,'blunt',['dBlunt','vicious','precise']],
- ['w_star','Ancestral Star','cl2',40,155,'blunt',['dBlunt','mFire','mShroud']],
- ['w_sunh','Sun Hammer','cl2',40,145,'blunt',['dBlunt','mFire','vital']],
- ['w_drak','Drak Whistle Bow','bow',45,77,'pierce',['reaping','brutal','mShock']],
- ['w_tomb','Tomb Raider\'s Bow','bow',45,77,'pierce',['dBlunt','precise','vicious']],
- ['w_rattle','Rattlesnake Bow','bow',43,74,'pierce',['reaping','brutal','mShock']],
- ['w_temple','Temple Keeper\'s Bow','bow',42,73,'pierce',['mShock','precise','vicious']],
- ['w_talion','Talion\'s Bow','bow',40,70,'pierce',['mShock','hleech','sleech']],
- ['w_winged','Winged Shadow','bow',40,70,'pierce',['mShroud','precise','headseeker']],
- ['w_ignited','Ignited Bow','bow',40,38,'pierce',['precise','mFire','reaping']],
- ['w_bloodflow','Wand Of Bloodflow','wand',45,91,'fire',['renewal','mFire','mleech','brutal']],
- ['w_ancdrak','Ancient Drak Wand','wand',43,88,'shock',['mleech','precise','mShock','ruthless']],
- ['w_totem','Totem Wand','wand',40,84,'fire',['renewal','mFire','mleech','brutal']],
- ['w_mythic','Mythic Wand','wand',40,54,'shock',['mShock','mleech','precise']],
- ['w_polymath','Polymath\'s Wand','wand',50,34,'fire',['mFire','brutal']],
- ['w_moor','Staff Of The Moor','staff',45,77,'shroud',['hleech','mShroud','mleech']],
- ['w_violet','Violet Storm','staff',45,77,'shock',['mShock','precise','spiritual']],
- ['w_storm','Stormbound Staff','staff',40,70,'shock',['mShock','precise','spiritual']],
- ['w_oracle','Oracle\'s Everblue','staff',40,70,'shroud',['spiritual','mShroud','mleech']],
- ['w_reeds','Staff Of Reeds','staff',40,70,'shroud',['hleech','mShroud','mleech']],
- ['w_guidance','Staff of Guidance','staff',40,35,'fire',['mFire','brutal']],
- ['w_apprentice','Apprentice Wand','wand',40,58,'ice',['mIce','renewal','mleech']],
- ['w_frostw','Frost Wand','wand',40,54,'ice',['mIce','renewal','mleech','precise']],
- ['w_twisting','Twisting Wand','wand',40,54,'shroud',['mShroud','mleech','hleech','spiritual']],
- ['w_deceiving','Deceiving Staff','staff',40,35,'ice',['spiritual','vicious','mIce']],
- ['w_mirage','Mirage','staff',40,35,'ice',['spiritual','vicious','mIce']]
+ ['w_aurora','Aurora Sword','sw1',50,109,'cut',[['precise',6],['mIce',10],['mIce',10],['mIce',10],['precise',6]]],
+ ['w_wailing','Wailing Blade','sw1',40,98,'cut',[['mFire',10],['dCut',10],['mFire',10],['renewal',1],['mFire',10]]],
+ ['w_fang','Fang Blade','sw1',40,98,'cut',[['dCut',10],['precise',5],['dCut',10],['mleechF',5],['dCut',10]]],
+ ['w_apex','Apex Machete','sw1',45,91,'cut',[['mShock',10],['precise',6],['mShock',10],['ruthless',32],['vsWild',10]]],
+ ['w_dragsw','Dragon Sword','sw1',40,91,'cut',[['dCut',10],['mFire',10],['dCut',10],['renewal',1],['precise',5]]],
+ ['w_graven','Graven Idol Axe','ax1',50,109,'cut',[['dCut',10],['merciless',22],['dCut',10],['merciless',22],['mShock',10]]],
+ ['w_skull','Skull Splitter Axe','ax1',45,98,'cut',[['mShock',10],['merciless',22],['dCut',10],['merciless',22],['mShock',10]]],
+ ['w_lfaxe','Lightforged Axe','ax1',40,98,'cut',[['dCut',10],['merciless',18],['mFire',10],['precise',5],['mFire',10]]],
+ ['w_jez','Jezmina\'s Apotheosis','ax1',40,91,'cut',[['mFire',10],['dCut',10],['mFire',10],['hleech',3],['brutal',16]]],
+ ['w_dimh','Dimweald Hammer','cl1',35,92,'blunt',[['brutal',20],['mShock',10],['dBlunt',10],['mShock',10],['brutal',20]]],
+ ['w_meat','Meat Chopper','cl1',40,91,'cut',[['dCut',10],['brutal',16],['dCut',10],['merciless',16],['brutal',16]]],
+ ['w_flesh','Fleshgrinder','cl1',40,84,'blunt',[['brutal',16],['dPierce',10],['hleech',3],['renewal',1],['dPierce',10]]],
+ ['w_adorned','Adorned Drakling Daggers','dag',45,91,'pierce',[['precise',8],['mleech',3],['dPierce',10],['mShock',10],['mShock',10]]],
+ ['w_oath','Oath Breaker','dag',40,70,'pierce',[['precise',7],['mFire',10],['mFire',10],['precise',7],['mFire',10]]],
+ ['w_horn','Horn Daggers','dag',40,65,'pierce',[['dPierce',10],['precise',8],['mIce',10],['mIce',10],['precise',8]]],
+ ['w_lfdag','Lightforged Daggers','dag',40,61,'pierce',[['precise',7],['dPierce',10],['mFire',10],['precise',7],['mFire',10]]],
+ ['w_valor','Valor Heart Daggers','dag',40,51,'pierce',[['precise',6],['merciless',14],['dPierce',10],['merciless',14],['retaliation',20]]],
+ ['w_gotn','Guard of the North Sword','gs',40,84,'cut',[['mShock',10],['precise',6],['brutal',22],['mShock',10],['precise',6]]],
+ ['w_spiked','Spiked Greatsword','gs',41,78,'cut',[['dCut',10],['retaliation',20],['precise',6],['retaliation',20],['dCut',10]]],
+ ['w_darkwood','Darkwood Axe','ax2',43,155,'cut',[['mIce',10],['renewal',1],['mIce',10],['brutal',20],['mIce',10]]],
+ ['w_boreal','Boreal Axe','ax2',40,145,'cut',[['mIce',10],['renewal',1],['dCut',10],['brutal',20],['mIce',10]]],
+ ['w_thunderb','Greater Thunderblast Axe','ax2',40,135,'cut',[['brutal',18],['mShock',10],['dCut',10],['mShock',10],['precise',5]]],
+ ['w_warhero','Golden War Hero Axe','ax2',40,125,'cut',[['hleech',3],['mFire',10],['renewal',1],['mFire',10],['vsFell',10]]],
+ ['w_ram','Battering Ram Hammer','hm2',50,175,'blunt',[['mIce',10],['mIce',10],['brutal',20],['hleech',3],['mIce',10]]],
+ ['w_aero','Aerostriker','hm2',40,145,'blunt',[['mShock',10],['mShock',10],['brutal',16],['mShock',10],['vsScav',7]]],
+ ['w_goat','Goat Hammer','hm2',40,145,'blunt',[['dBlunt',10],['mIce',10],['brutal',20],['hleech',3],['mIce',10]]],
+ ['w_rot','Rotblood','hm2',40,145,'blunt',[['mShroud',10],['renewal',1],['dPoison',10],['brutal',18],['dPoison',10]]],
+ ['w_chief','Chieftain\'s Hammer','hm2',50,101,'blunt',[['brutal',22],['mShock',10],['ruthless',32],['mShock',10],['mShock',10]]],
+ ['w_star','Ancestral Star','cl2',40,155,'blunt',[['precise',6],['mFire',10],['precise',6],['mFire',10],['retaliation',20]]],
+ ['w_sunh','Sun Hammer','cl2',40,145,'blunt',[['mFire',10],['dPierce',10],['mFire',10],['sleech',2],['hleech',3]]],
+ ['w_drak','Drak Whistle Bow','bow',45,77,'pierce',[['reaping',60],['mShock',10],['mShock',10],['mShock',10],['opportunistic',12]]],
+ ['w_tomb','Tomb Raider\'s Bow','bow',45,77,'pierce',[['dPierce',10],['backstab',22],['dragon',25],['precise',6],['dPierce',10]]],
+ ['w_rattle','Rattlesnake Bow','bow',43,74,'pierce',[['reaping',60],['ruthless',32],['mShock',10],['mShock',10],['opportunistic',12]]],
+ ['w_temple','Temple Keeper\'s Bow','bow',42,73,'pierce',[['dPierce',10],['dPierce',10],['dragon',25],['precise',6],['dPierce',10]]],
+ ['w_talion','Talion\'s Bow','bow',40,70,'pierce',[['mShock',10],['hleechF',4],['mShock',10],['sleech',3],['mShock',10]]],
+ ['w_winged','Winged Shadow','bow',40,70,'pierce',[['mShroud',10],['precise',7],['headseeker',10],['mShroud',10],['dragon',25]]],
+ ['w_ignited','Ignited Bow','bow',40,38,'pierce',[['precise',5],['mFire',10],['mFire',10],['reaping',40],['brutal',18]]],
+ ['w_bloodflow','Wand Of Bloodflow','wand',45,91,'fire',[['renewal',1],['mFire',10],['mleech',3],['mFire',10],['brutal',22]]],
+ ['w_ancdrak','Ancient Drak Wand','wand',43,91,'shock',[['mleech',3],['precise',6],['mShock',10],['mShock',10],['ruthless',32]]],
+ ['w_totem','Totem Wand','wand',40,91,'fire',[['renewal',1],['mFire',10],['mleechF',8],['mFire',10],['brutal',22]]],
+ ['w_mythic','Mythic Wand','wand',40,91,'shock',[['mShock',10],['mleech',3],['mShock',10],['precise',6],['precise',6]]],
+ ['w_polymath','Polymath\'s Wand','wand',50,91,'fire',[['mFire',10],['mFire',10],['brutal',20],['mFire',10],['brutal',20]]],
+ ['w_moor','Staff Of The Moor','staff',45,77,'shroud',[['k','necromancer',2],['mShroud',10],['mleech',3],['mShroud',10],['allShroud',10]]],
+ ['w_violet','Violet Storm','staff',45,77,'shock',[['mShock',10],['opportunistic',12],['mShock',10],['ruthless',32],['allShock',10]]],
+ ['w_storm','Stormbound Staff','staff',40,77,'shock',[['mShock',10],['opportunistic',12],['k','manaCurrents',3],['ruthless',32],['allShock',10]]],
+ ['w_oracle','Oracle\'s Everblue','staff',40,77,'shroud',[['mShroud',10],['mleech',3],['mShroud',10],['precise',7],['allShroud',10]]],
+ ['w_reeds','Staff Of Reeds','staff',40,77,'shroud',[['k','necromancer',1],['mShroud',10],['mleechF',8],['mShroud',10],['allShroud',10]]],
+ ['w_guidance','Staff of Guidance','staff',40,77,'fire',[['mFire',10],['precise',6],['mFire',10],['brutal',20],['allFire',10]]],
+ ['w_apprentice','Apprentice Wand','wand',40,91,'ice',[['mIce',10],['renewal',1],['mIce',10],['mleechF',3],['mIce',10]]],
+ ['w_frostw','Frost Wand','wand',40,91,'ice',[['mIce',10],['renewal',1],['mIce',10],['mleechF',7],['precise',6]]],
+ ['w_twisting','Twisting Wand','wand',40,91,'shroud',[['mShroud',10],['mleechF',6],['mShroud',10],['k','manaCurrents',1],['mShroud',10]]],
+ ['w_deceiving','Deceiving Staff','staff',40,77,'ice',[['mIce',10],['precise',5],['k','manaCurrents',2],['mIce',10],['allIce',10]]],
+ ['w_mirage','Mirage','staff',40,77,'ice',[['mIce',10],['precise',5],['mleech',3],['mIce',10],['allIce',10]]]
 ];
 /* Répartition des dégâts par type (fichiers du jeu 1.0 via PinDrop, build serveur 1285601) : 100 % d'un type ou 50/50. Absente = 100 % du type de WEAPONS.
    Arcs et bâtons : pas de répartition sur l'arme (la flèche ou le sort la porte) → type indicatif, signalé à l'écran (spl:false). */
 const WSPLIT = {w_aurora:[['cut',.5],['ice',.5]],w_darkwood:[['cut',.5],['ice',.5]],w_wailing:[['cut',.5],['fire',.5]],w_dragsw:[['cut',.5],['fire',.5]],w_lfaxe:[['cut',.5],['fire',.5]],w_jez:[['cut',.5],['fire',.5]],
  w_apex:[['cut',.5],['shock',.5]],w_skull:[['cut',.5],['shock',.5]],w_thunderb:[['cut',.5],['shock',.5]],w_dimh:[['blunt',.5],['shock',.5]],w_chief:[['blunt',.5],['shock',.5]],
  w_ram:[['blunt',.5],['ice',.5]],w_star:[['blunt',.5],['fire',.5]],w_rot:[['blunt',.5],['shroud',.5]],w_adorned:[['pierce',.5],['shock',.5]],w_oath:[['pierce',.5],['fire',.5]]};
-WEAPONS.forEach(([id,n,cat,lv,val,type,perks])=>{ITEMS[id]={id,n,cat,lv,val,type,wperks:perks,kind:'weapon',slot:'weapon',split:WSPLIT[id]||[[type,1]],spl:cat!=='bow'&&cat!=='staff'}});
+WEAPONS.forEach(([id,n,cat,lv,val,type,perks])=>{ITEMS[id]={id,n,cat,lv,val,type,wperks:perks,oc:WOC[id],kind:'weapon',slot:'weapon',split:WSPLIT[id]||[[type,1]],spl:cat!=='bow'&&cat!=='staff'}});
 /* Libellé du type : « tranchant 50 % + glace 50 % » ; arcs et bâtons : « foudre (selon le sort) » */
 const wtypeTxt=w=>w.split.length>1?w.split.map(([t,p])=>WTYPE[t]+' '+Math.round(p*100)+' %').join(' + '):WTYPE[w.type]+(w.spl?'':w.cat==='bow'?' (selon la flèche)':' (selon le sort)');
 
@@ -370,6 +384,7 @@ const PRESETS = [
   sk:{shroudMitigation:3,sharedMisery:3,innerFires:3,shroudResistance:3,healer:3,waterAura:3,saviour:3,healingRevive:3,lifeBurst:1,watersOfLife:1,manaCurrents:3,mageApprentice:3,wizard:3,darkArts:3,lifeEssences:3,exalted:1,arcaneConc:1,doubleJump:1,thickSkin:1},pip:{int:11,spi:11,con:2}},
  {name:'Prêtre du feu (soin offensif)',cat:'heal',gear:{head:'lif_h',chest:'lif_c',hands:'lif_g',legs:'fla_l',feet:'lif_f',w1:'w_guidance',w2:'w_bloodflow',r1:'rg_mf',r2:'rg_anc'},gem:{w1:'g_light',w2:'g_burn'},
   sk:{healer:3,righteousFire:3,divineSurge:1,radiantAura:3,arsonist:3,waterAura:3,watersOfLife:1,lifeBurst:1,wizard:3,mageApprentice:3,quickCharge:3,fireResistance:3,counterstrike:3,lifeEssences:3,exalted:1,arcaneConc:1,doubleJump:1},pip:{int:11,spi:11,con:2}},
- {name:'Mage critique (baguette)',cat:'mage',gear:{head:'fla_h',chest:'fla_c',hands:'fla_g',legs:'fla_l',feet:'fla_f',w1:'w_bloodflow',w2:'w_violet',r1:'rg_eth',r2:'rg_anc'},
-  sk:{fatalPrecision:3,wizard:3,mageApprentice:3,wandMastery:3,arsonist:3,exalted:1,spellslinger:3,thunder:3,chainHit:1,massDestr:1,terror:3,bloodletting:3,blastCast:1},pip:{int:11,con:2}}
+ /* Mage critique (baguette) : refait en 1.17.0 (HISTORY n° 23) — chance d'abord, perks d'arme comptés, niveau 25 + 61 d'exploration = 109 points, Flamme 4 */
+ {name:'Mage critique (baguette)',cat:'mage',lvl:25,exp:61,flame:4,gear:{head:'fla_h',chest:'fla_c',hands:'fla_g',legs:'fla_l',feet:'fla_f',w1:'w_mythic',w2:'w_oracle',r1:'rg_eth',r2:'rg_anc'},gem:{w1:'g_storm',w2:'g_corrupt'},
+  sk:{fatalPrecision:3,wizard:3,mageApprentice:3,wandMastery:3,thunder:3,darkArts:3,spellslinger:3,exalted:1,blastCast:1,chainHit:1,massDestr:1,terror:3,bloodletting:3},pip:{int:11,con:2}}
 ];

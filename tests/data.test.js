@@ -17,7 +17,14 @@ test('chaque compétence correspond à un seul nœud du tracé réel', () => {
   for (const [i, j] of TREE.links) assert.ok(TREE.nodes[i] && TREE.nodes[j] && i !== j, 'liaison invalide ' + i + '-' + j);
 });
 test('objets : catégories et perks connus', () => {
-  for (const w of WEAPONS) { assert.ok(CAT[w[2]], w[0] + ' : catégorie'); assert.ok(WTYPE[w[5]], w[0] + ' : type'); for (const p of w[6]) assert.ok(WPERK[p], w[0] + ' : perk ' + p); }
+  for (const w of WEAPONS) { assert.ok(CAT[w[2]], w[0] + ' : catégorie'); assert.ok(WTYPE[w[5]], w[0] + ' : type');
+    // 5 emplacements dans l'ordre des fichiers 1.0 : [perk, valeur > 0] ou ['k', compétence, rangs]
+    assert.equal(w[6].length, 5, w[0] + ' : 5 emplacements de perks');
+    for (const p of w[6]) { if (p[0] === 'k') { assert.ok(SKI[p[1]] && Number.isInteger(p[2]) && p[2] >= 1 && p.length === 3, w[0] + ' : rang ' + p); continue; }
+      assert.ok(WPERK[p[0]] && p.length === 2 && typeof p[1] === 'number' && p[1] > 0, w[0] + ' : perk ' + p); } }
+  for (const k in WPC) assert.ok(WPERK[k] && !(k in WPU), k + ' : perk compté inconnu ou sans unité %');
+  for (const k in WPU) assert.ok(WPERK[k], k + ' : unité d\'un perk inconnu');
+  for (const id in WOC) assert.equal(ITEMS[id] && ITEMS[id].cat, 'wand', id + ' : surcharge hors baguette');
   for (const it of Object.values(ITEMS)) if (it.perks) for (const p of it.perks) {
     if (p[0] === 's') assert.ok(ST[p[1]], it.id + ' : stat ' + p[1]);
     if (p[0] === 'k') assert.ok(SKI[p[1]], it.id + ' : compétence ' + p[1]);

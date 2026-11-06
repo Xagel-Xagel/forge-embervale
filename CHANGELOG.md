@@ -2,6 +2,14 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.17.0 — 2026-11-06 · Perks d'arme, Mage critique refait, Points et Flamme en grand
+- **Perks d'arme 1.0** : chaque arme a ses **5 emplacements** dans l'ordre des fichiers du jeu (PinDrop), avec leur valeur, sous leur nom officiel français (MetaBot) ; un emplacement se débloque par amélioration (curseur Améliorations), comme pour les armures. Vérifié en ligne : les perks sont **fixes** par arme (pas de reforge) ; la **gemme**, elle, se choisit (Forge à gemmes) si l'arme a un emplacement.
+- **Comptés dans les dégâts** : « Chance de coup critique » et « Dégâts de coup critique », pour l'arme qui les porte (fiche : chance et dégâts critiques par arme ; ✓ sur les puces de l'Équipement). Les autres perks (Lourd, Sans pitié, Opportuniste, vols…) et la **surcharge** des baguettes sont affichés, non comptés.
+- **Base des baguettes et des bâtons** : les fichiers 1.0 donnent le même multiplicateur à toute la famille ; toutes les baguettes passent à 91 et tous les bâtons à 77 (la plus haute valeur du wiki). Les autres familles gardent l'estimation d'avant la 1.0 (ROADMAP).
+- **Preset « Mage critique (baguette) » refait** (même place, choix de l'utilisateur, QCM) : chance d'abord ; **Baguette mythique** (Chance de coup critique +6 % ×2) et **Everblue de l'Oracle** (+7 %), gemmes Œil du cyclone et Corruption ; **niveau 25 + 61 d'exploration = 109 points, Flamme 4** ; baguette **78 % / 123 % → 436,8** (1.14.0 : 66 % / 123 % → 428,7), 95 points dépensés, 14 libres. Le lien donné pour la 1.14.0 ouvre toujours l'ancien build.
+- **Points et Flamme en grand** : en tête des onglets Arbre et Build optimal, deux tuiles côte à côte (aussi à 400 px) : points à attribuer (ou en trop) et niveau de la Flamme avec boutons −/+ et l'effet des nœuds de Flamme du build (ex. « Exalté : +2 INT »).
+- Build optimal : une arme n'est écartée que si une autre de même catégorie et même répartition a une base **et** des perks de critique au moins égaux.
+
 ## 1.16.0 — 2026-11-06 · Noms en français
 - Objets (armures, panoplies, armes, anneaux), ennemis et factions s'affichent **en français**, suivis du nom anglais en italique, comme les compétences (choix de l'utilisateur, QCM).
 - Noms d'objets et de 13 ennemis : **noms officiels du jeu** (relevés sur MetaBot). Les 88 autres ennemis : **traduction du simulateur**, marquée ° (infobulle et légende de la table, mention sur la carte de la cible).

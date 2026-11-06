@@ -44,6 +44,9 @@ function perkChip(p,on){
   if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?s.fr:p[1]} +${p[2]} rang${p[2]>1?'s':''}`,'sk '+(on?'':'off'))}
   return chip(`Armure (${ARMT[p[1]]}) +3 % de part`,on?'':'off');
 }
+/* Perk d'arme (5 emplacements dans l'ordre, fichiers 1.0) : grisé tant que l'emplacement n'est pas débloqué (améliorations) ; ✓ = compté dans les dégâts de cette arme */
+function wperkChip(p,on){if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?esc(s.fr):p[1]} +${p[2]} rang${p[2]>1?'s':''}`,'sk '+(on?'':'off'))}
+  const [k,v]=p;return chip(`${esc(WPERK[k]||k)} +${fmt(v)}${k in WPU?WPU[k]:' %'}${WPC[k]?' ✓':''}`,'tag'+(on?'':' off'))}
 /* Options d'un emplacement d'équipement : nom français (07-noms.js) */
 function slotOpts(sl){let opts='<option value="">— Aucun —</option>';
   if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
@@ -62,7 +65,8 @@ function renderSlots(){
     sel.onchange=()=>{if(sel.value)b.gear[sl]=sel.value;else delete b.gear[sl];renderAll()};
     const it=ITEMS[b.gear[sl]];if(it)n++;
     let info='';
-    if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+wtypeTxt(it))}${it.wperks.map(p=>chip(WPERK[p],'tag')).join('')}</div>`}
+    if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+wtypeTxt(it))}${it.oc?chip(`Surcharge ${it.oc} % (non comptée)`):''}${it.wperks.map((p,i)=>wperkChip(p,i<b.upg)).join('')}</div>
+      <div class="meta">Perks dans l'ordre de déblocage (une amélioration chacun) ; ✓ compté dans les dégâts : chance et dégâts de coup critique de cette arme</div>`}
     else if(it){const base=Object.entries(it.base).map(([k,v])=>chip(`${ST[k][0]} ${sign(v,ST[k][1])}`)).join('');
       info=`<div class="chips">${base}${it.perks.map((p,i)=>perkChip(p,i<b.upg)).join('')}</div><div class="meta"><span class="en">${esc(it.n)}</span> · Niv. ${it.lv} · ${esc(it.cls)}${it.src?' · '+esc(it.src):''}${it.set?' · panoplie '+esc(it.setFr):''}</div>`}
     wrap.innerHTML=`<div class="sname"><label for="slot-${sl}">${lab}</label></div>`;
@@ -87,14 +91,22 @@ function remPipNode(b,n){if(!b.pn[n.id])return;delete b.pn[n.id];syncPips(b);gon
 function addPip(b,k){const R=reach(b);const n=TOPO.pips.filter(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,R)).sort((x,y)=>x.idx-y.idx)[0];
   if(!n){toast(TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id])?"Aucun nœud de cet attribut n'est relié pour l'instant : utilisez « Acheter le chemin »":'Tous les nœuds de cet attribut sont acquis');return}addPipNode(b,n)}
 function remPip(b,k){let best=null,bc=Infinity;for(const p of TOPO.pips){if(p.attr!==k||!b.pn[p.id])continue;const t=JSON.parse(JSON.stringify(b));delete t.pn[p.id];syncPips(t);const c=prune(t).length;if(c<bc){bc=c;best=p}}if(best)remPipNode(b,best)}
+/* Effet de la Flamme sur ce build : nœuds « +1 attribut tous les 2 niveaux de Flamme » acquis (compute, 02-calc.js) */
+const FLAME_NODES=[['barbarian','FOR'],['gracefulStride','DEX'],['exalted','INT'],['arcaneConc','ESP'],['thickSkin','CON'],['enduranceFlame','END']];
+function flameFx(b,o){const h=Math.floor(Math.max(1,Math.min(11,b.flame))/2),own=FLAME_NODES.filter(([id])=>o.R(id));
+  return own.length?own.map(([id,a])=>`${SKI[id].fr} : +${h} ${a}`).join(' · '):`aucun nœud de Flamme acquis (${SKI.exalted.fr}, ${SKI.barbarian.fr}…)`}
+function stepFlame(d){const b=B();b.flame=Math.max(1,Math.min(11,b.flame+d));renderAll()}
 function renderSkills(){
   const b=B();
   $('#lvl').value=b.lvl;$('#exp').value=b.exp;$('#flame').value=b.flame;
-  const sp=spentPoints(b),bu=budget(b),over=sp>bu;
-  $('#spent').innerHTML=`<span${over?' class="over-msg"':''}>${sp} / ${bu} points dépensés</span>`;
-  $('#needLvl').innerHTML=over?`<span class="over-msg">Dépassement de ${sp-bu} pts</span>`:`Niveau requis : ${levelNeeded(b)} · reste ${bu-sp}`;
-  $('#bar').className='bar'+(over?' over':'');$('#bar').firstElementChild.style.width=Math.min(100,sp/212*100)+'%';
-  const o=compute(b);
+  // tuiles Points et Flamme (1.17.0) : points restants en grand (en trop : rouge), barre remplie jusqu'au budget du build
+  const sp=spentPoints(b),bu=budget(b),over=sp>bu,o=compute(b);
+  $('#ptLbl').textContent=over?'Points en trop':'Points à attribuer';
+  const pl=$('#ptLeft');pl.textContent=String(Math.abs(bu-sp));pl.classList.toggle('over',over);
+  $('#spent').textContent=`${sp} / ${bu} dépensés`;
+  $('#needLvl').textContent=over?`retirez-en ou montez de niveau`:`niveau requis ${levelNeeded(b)}`;
+  $('#bar').className='bar'+(over?' over':'');$('#bar').firstElementChild.style.width=Math.min(100,sp/Math.max(1,bu)*100)+'%';
+  $('#flameDn').disabled=b.flame<=1;$('#flameUp').disabled=b.flame>=11;$('#flameFx').textContent=flameFx(b,o);
   const ae=$('#areas');ae.innerHTML='';
   [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const pts=k==='all'?sp:SK.filter(s=>s.area===k).reduce((a,s)=>a+s.cost*(b.sk[s.id]||0),0)+PIPS.filter(p=>p[3]===k).reduce((a,p)=>a+(b.pip[p[0]]||0),0);
     const bt=document.createElement('button');bt.className='area';bt.style.setProperty('--ac',`var(${c})`);bt.setAttribute('aria-pressed',area===k);
@@ -143,9 +155,9 @@ function attrBlock(o,o2){
 function weaponBlock(wc,label){
   if(!wc)return `<div class="wcard"><div class="wl">${label} : aucune arme</div></div>`;
   return `<div class="wcard"><div class="wl">${label} · ${wc.catName} · ${wtypeTxt(wc.w)}</div><h3>${nmH(wc.w)}</h3>
-  <div class="big"><div><b>${fmt(wc.hit)}</b><span>${wc.unit} estimés / coup</span></div><div><b>${fmt(wc.avg)}</b><span>moyenne avec critiques</span></div><div><b>+${fmt(wc.bonus)} %</b><span>bonus cumulés</span></div><div><b>${fmt(wc.cc,1)} %</b><span>critique</span></div></div>
+  <div class="big"><div><b>${fmt(wc.hit)}</b><span>${wc.unit} estimés / coup</span></div><div><b>${fmt(wc.avg)}</b><span>moyenne avec critiques</span></div><div><b>+${fmt(wc.bonus)} %</b><span>bonus cumulés</span></div><div><b>${fmt(wc.cc,1)} %</b><span>critique</span></div><div><b>+${fmt(wc.cd)} %</b><span>dégâts critiques</span></div></div>
   ${wc.gem?`<div class="wl" style="color:var(--ink)"><span class="gdot" style="--rc:${RAR[wc.gem.r][1]}"></span>${esc(wc.gem.fr)} : ${esc(wc.gem.d)} <span style="color:var(--muted)">(effet conditionnel, non compté dans les dégâts)</span></div>`:'<div class="wl">Aucune gemme</div>'}
-  <details class="why"><summary>Détail des bonus (base ${wc.w.val})</summary><ul>${wc.parts.map(p=>`<li>${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')||'<li>Aucun bonus</li>'}${wc.cparts.map(p=>`<li>Critique · ${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')}</ul></details></div>`;
+  <details class="why"><summary>Détail des bonus (base ${wc.w.val})</summary><ul>${wc.parts.map(p=>`<li>${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')||'<li>Aucun bonus</li>'}${wc.cparts.map(p=>`<li>Critique · ${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')}${wc.cdparts.map(p=>`<li>Dégâts critiques · ${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')}</ul></details></div>`;
 }
 function gearSkills(o){const e=Object.entries(o.gearRk);if(!e.length)return '';
   return `<div><div class="lbl">Rangs de compétences apportés par l'équipement</div><div class="chips" style="grid-column:auto;margin-top:4px">${e.sort((a,b)=>b[1]-a[1]).map(([id,v])=>chip(`${SKI[id]?SKI[id].fr:id} +${v}`,'sk')).join('')}</div></div>`}
@@ -171,7 +183,7 @@ function renderStats(){
     el.innerHTML=`<div><div class="lbl">Attributs</div>${attrBlock(o)}</div>${weaponBlock(o.weapons[0],'Arme 1')}${weaponBlock(o.weapons[1],'Arme 2')}${t}${gearSkills(o)}${note()}`;
   }
 }
-function note(){return `<div class="note"><strong>Comment lire ces chiffres.</strong> La 1.0 n'a <strong>aucun bonus de panoplie</strong> : chaque pièce apporte ses propres stats, porter 5 pièces d'un même set n'ajoute rien. Les fichiers 1.0 ne publient pas les valeurs d'armure finales, d'où les pourcentages seuls. Les dégâts d'armes sont des estimations du wiki au niveau requis ; les bonus sont additionnés, ce qui reste une approximation du calcul du jeu. Les rangs donnés par l'équipement sont ajoutés à ceux de l'arbre. Les nœuds « +1 tous les 2 niveaux de Flamme » utilisent le niveau de Flamme saisi. Un nœud ne s'achète que s'il touche un point de départ (Étincelle) ou un nœud acquis qui y est relié ; le tracé de l'arbre (positions et liaisons) est celui des fichiers du jeu 1.0, relevé par PinDrop ; que chaque liaison marche dans les deux sens est une déduction de ces fichiers (comme PinDrop), pas un texte officiel. Chaque rang est supposé coûter le prix du nœud (les fichiers n'en donnent qu'un par nœud).</div>`}
+function note(){return `<div class="note"><strong>Comment lire ces chiffres.</strong> La 1.0 n'a <strong>aucun bonus de panoplie</strong> : chaque pièce apporte ses propres stats, porter 5 pièces d'un même set n'ajoute rien. Les fichiers 1.0 ne publient pas les valeurs d'armure finales, d'où les pourcentages seuls. Les dégâts d'armes sont des estimations du wiki au niveau requis, sauf baguettes et bâtons (base commune de la famille, d'après les fichiers 1.0) ; parmi les perks d'arme, seuls la chance et les dégâts de coup critique sont comptés ; les bonus sont additionnés, ce qui reste une approximation du calcul du jeu. Les rangs donnés par l'équipement sont ajoutés à ceux de l'arbre. Les nœuds « +1 tous les 2 niveaux de Flamme » utilisent le niveau de Flamme saisi. Un nœud ne s'achète que s'il touche un point de départ (Étincelle) ou un nœud acquis qui y est relié ; le tracé de l'arbre (positions et liaisons) est celui des fichiers du jeu 1.0, relevé par PinDrop ; que chaque liaison marche dans les deux sens est une déduction de ces fichiers (comme PinDrop), pas un texte officiel. Chaque rang est supposé coûter le prix du nœud (les fichiers n'en donnent qu'un par nœud).</div>`}
 function renderSaved(){const s=lsGet();$('#saved').innerHTML='<option value="">Mes builds…</option>'+s.map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join('')}
 function renderAll(){renderTabs();renderSlots();renderSkills();renderStats()}
 
@@ -184,6 +196,7 @@ $('#copyAB').onclick=()=>{builds[1-cur]=JSON.parse(JSON.stringify(B()));renderAl
 $('#reset').onclick=()=>{builds[cur]=blankBuild('Build '+'AB'[cur]);renderAll()};
 $('#upg').oninput=e=>{B().upg=+e.target.value;renderSlots();renderSkills();renderStats()};
 [['#lvl','lvl',1,50],['#exp','exp',0,114],['#flame','flame',1,11]].forEach(([s,k,mn,mx])=>{$(s).onchange=e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=mn;B()[k]=Math.max(mn,Math.min(mx,v));renderAll()}});
+$('#flameDn').onclick=()=>stepFlame(-1);$('#flameUp').onclick=()=>stepFlame(1);
 $('#q').oninput=e=>{query=e.target.value.trim();renderSkills()};
 $('#onlyOn').onchange=e=>{onlyOn=e.target.checked;renderSkills()};
 $('#vGraph').onclick=()=>{view='graph';renderSkills();if(window.G)G.resize()};

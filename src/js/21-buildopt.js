@@ -11,8 +11,11 @@ const BO_AS=['head','chest','hands','legs','feet'];
 const BO_AOPT=Object.fromEntries(BO_AS.map(sl=>[sl,Object.values(ITEMS).filter(i=>i.kind==='armor'&&i.slot===sl).map(i=>i.id)]));
 const BO_RP=[];RINGS.forEach((x,i)=>RINGS.forEach((y,j)=>{if(i<j)BO_RP.push([x[0],y[0]])})); // deux anneaux différents (doublon en jeu non vérifié)
 const BO_TMAX=10000; // au-delà, les familles restantes ne sont pas calculées (signalé)
-/* Armes d'une famille, sans les dominées : même catégorie et même répartition des dégâts → seule la base la plus haute peut gagner (perks d'arme non comptés) */
-function boWeapons(fk){const f=BO_FAM.find(x=>x[0]===fk)[2],g={};for(const [id] of WEAPONS){const w=ITEMS[id];if(!f(w.cat))continue;const k=w.cat+':'+w.split.map(x=>x.join(' ')).join('+');if(!g[k]||w.val>g[k].val)g[k]=w}return Object.values(g)}
+/* Armes d'une famille, sans les dominées : même catégorie et même répartition des dégâts → une arme ne peut pas gagner si une autre a une base au moins égale
+   et au moins autant de chance et de dégâts de coup critique par ses perks débloqués (upg premiers emplacements) ; à égalité parfaite, la première est gardée */
+const boPk=(w,upg)=>{let c=0,d=0;for(const [k,v] of w.wperks.slice(0,upg)){if(WPC[k]==='cc')c+=v;else if(WPC[k]==='cd')d+=v}return [w.val,c,d]};
+function boWeapons(fk,upg){const f=BO_FAM.find(x=>x[0]===fk)[2],u=upg??5,L=WEAPONS.map(([id])=>ITEMS[id]).filter(w=>f(w.cat)),key=w=>w.cat+':'+w.split.map(x=>x.join(' ')).join('+');
+  return L.filter((w,i)=>{const a=boPk(w,u);return !L.some((v,j)=>{if(j===i||key(v)!==key(w))return false;const b=boPk(v,u);return b.every((x,n)=>x>=a[n])&&(b.some((x,n)=>x>a[n])||j<i)})})}
 function boScore(b,slot,en){const o=compute(b),wc=o.weapons[slot==='w1'?0:1];return {d:wc?vsEnemy(wc,o,en).avg:0,hp:o.hp}}
 /* Ordre lexicographique : dégâts moyens d'abord (tolérance relative 1e-9), puis PV */
 const boGt=(x,y)=>x.d>y.d*(1+1e-9)||(x.d>=y.d*(1-1e-9)&&x.hp>y.hp+1e-9);
@@ -75,7 +78,7 @@ function* boFinish(r,slot,en,N){let b=r.b,same=false;const lim={n:300};
   if(!same)yield* tree();
   return {w:r.w,b,s:boScore(b,slot,en),used:spentPoints(b)}}
 function* boFamily(fk,slot,en,N,F,upg){const fl=BO_FAM.find(f=>f[0]===fk)[1];let best=null;
-  for(const w of boWeapons(fk)){const r=yield* boWeapon(w,slot,en,N,F,upg);if(!best||boGt(r.s,best.s))best=r}
+  for(const w of boWeapons(fk,upg)){const r=yield* boWeapon(w,slot,en,N,F,upg);if(!best||boGt(r.s,best.s))best=r}
   return best?Object.assign(yield* boFinish(best,slot,en,N),{fk,fl}):{fk,fl,none:true}}
 /* Toutes les familles (celle de l'arme analysée d'abord, toujours calculée) ; rend aussi la progression {res, fam} après chaque famille ;
    passé tmax ms de calcul (horloge clock, Date.now par défaut), les familles suivantes sont marquées skip (non calculées) */
@@ -99,12 +102,22 @@ const boN=b=>BO.N[cur]??boDef(b,'N'),boF=b=>BO.F[cur]??boDef(b,'F');
 const boKey=b=>[cur,oEnemy,oSlot,boN(b),boF(b),b.upg].join('|');
 function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat" id="boCard">
   <p class="meta2">Pour chaque famille d'arme, l'optimiseur part d'un arbre vide et choisit l'arme, les armures, les anneaux et l'arbre qui font le plus de dégâts contre <b>${nmF(en)}</b> ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
-  <div class="row"><label class="chk">Points disponibles <input type="number" id="boN" min="0" max="212" value="${boN(b)}" style="width:5rem"${dis}></label>
-    <label class="chk">Niveau de Flamme <input type="number" id="boF" min="1" max="11" value="${boF(b)}" style="width:4rem"${dis}></label>
-    <button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button></div>
+  <div class="row"><button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button><span class="meta2">avec les points et la Flamme ci-dessus</span></div>
   <div id="boProg">${boProgHtml()}</div><div id="boOut">${boOutHtml()}</div>
   <div class="meta2"><b>Heuristique, pas une preuve d'optimalité</b> : gloutons, alternance équipement / arbre et amélioration locale. Pas de classement entre familles (« Dégâts » et « Puissance » ne se comparent pas, la vitesse d'attaque n'est pas comptée).
-    Non comptés : perks élémentaires des armes, gemmes (non choisies), armure des pièces, attaques des ennemis, points faibles, attaques impitoyables et furtives. Deux anneaux différents (doublon en jeu non vérifié).</div></div>`}
+    Perks d'arme comptés : chance et dégâts de coup critique (emplacements débloqués par les améliorations du build). Non comptés : autres perks d'arme (Lourd, Sans pitié…), surcharge, gemmes (non choisies), armure des pièces, attaques des ennemis, points faibles, attaques impitoyables et furtives. Deux anneaux différents (doublon en jeu non vérifié).</div></div>`}
+/* Tuiles en tête de l'onglet (1.17.0) : points disponibles et Flamme du calcul en grand ; par build (A, B), valeurs du build tant qu'on n'y touche pas */
+function boTilesHtml(b){const dis=BO.busy?' disabled':'',F=boF(b),bN=boDef(b,'N'),bF=boDef(b,'F');
+  return `<div class="ptile"><label class="ptl" for="boN">Points disponibles</label><input type="number" class="ptn" id="boN" min="0" max="212" value="${boN(b)}"${dis}>
+    <div class="pts">${BO.N[cur]==null?`budget du build`:`réglé ici · build ${bN}`}</div></div>
+  <div class="ptile"><label class="ptl" for="boF">Niveau de la Flamme</label>
+    <div class="ptf"><button type="button" class="pstep" id="boFdn" aria-label="Baisser la Flamme du calcul d'un niveau"${dis||F<=1?' disabled':''}>−</button><input type="number" class="ptn" id="boF" min="1" max="11" value="${F}"${dis}><button type="button" class="pstep" id="boFup" aria-label="Monter la Flamme du calcul d'un niveau"${dis||F>=11?' disabled':''}>+</button></div>
+    <div class="pts">sur 11 · ${BO.F[cur]==null?'celle du build':`réglée ici · build ${bF}`}</div></div>`}
+/* Rendu et événements des tuiles ; −/+ : le focus reste sur le bouton (ou passe au champ si le bouton se désactive à la borne) */
+function boTiles(){const el=$('#boTiles');if(!el)return;el.innerHTML=boTilesHtml(B());const nE=$('#boN'),fE=$('#boF');
+  nE.onchange=()=>{boRead(nE,'N');boTiles();boPaint()};fE.onchange=()=>{boRead(fE,'F');boTiles();boPaint()};
+  const st=(d,id)=>{fE.value=String(boF(B())+d);boRead(fE,'F');boTiles();boPaint();const bt=$(id);(bt.disabled?$('#boF'):bt).focus()};
+  $('#boFdn').onclick=()=>st(-1,'#boFdn');$('#boFup').onclick=()=>st(1,'#boFup')}
 /* « Arrêter » en tête de ligne : le texte de progression, qui change de longueur, ne le déplace pas sous le curseur pendant un clic */
 function boProgHtml(){if(BO.busy)return `<p class="meta2"><button type="button" class="btn sm" id="boStop">Arrêter</button> <span id="boProgTxt" role="status">Calcul en cours… ${esc(BO.prog)}</span></p>`;
   return BO.err?`<p class="over-msg" role="alert">Erreur pendant le calcul (${esc(BO.err)}) : calcul arrêté. Relancez ; si l'erreur revient, rechargez la page.</p>`:''}
@@ -135,7 +148,8 @@ function boRoles(m,slot,en){const s0=boScore(m,slot,en),g={d:[],hp:[],l:[]};
   for(const s of SK){const r=m.sk[s.id];if(!(r>0))continue;m.sk[s.id]=r-1;const e=boScore(m,slot,en);m.sk[s.id]=r;g[e.d<s0.d*(1-1e-9)?'d':e.hp<s0.hp-1e-9?'hp':'l'].push(`${esc(s.fr)} ${r}/${s.max}`)}
   return [['d','Compétences pour les dégâts'],['hp','Pour les PV'],['l','Liaisons (chemin)']].map(([k,l])=>g[k].length?`<li>${l} : ${g[k].join(', ')}</li>`:'').join('')}
 /* boPaint : changement d'état (début, fin, arrêt, erreur) ; boProgress : une famille de plus (le bouton « Arrêter » n'est pas recréé) */
-function boPaint(){const p=$('#boProg');if(p)p.innerHTML=boProgHtml();const el=$('#boOut');if(el)el.innerHTML=boOutHtml();for(const id of ['#boGo','#boN','#boF']){const e=$(id);if(e)e.disabled=BO.busy}}
+function boPaint(){const p=$('#boProg');if(p)p.innerHTML=boProgHtml();const el=$('#boOut');if(el)el.innerHTML=boOutHtml();const F=boF(B());
+  for(const [id,lim] of [['#boGo'],['#boN'],['#boF'],['#boFdn',F<=1],['#boFup',F>=11]]){const e=$(id);if(e)e.disabled=BO.busy||!!lim}}
 function boProgress(){const t=$('#boProgTxt');if(t)t.textContent=`Calcul en cours… ${BO.prog}`;const el=$('#boOut');if(el)el.innerHTML=boOutHtml()}
 function boStart(){const b=B(),en=ENEMIES[oEnemy],N=boN(b),F=boF(b),my=++BO.run;Object.assign(BO,{key:boKey(b),busy:true,out:null,part:null,stop:false,prog:'',err:'',cpu:0});BO.open.clear();
   const cw=compute(b).weapons[oSlot==='w1'?0:1],base={N,F,slot:oSlot,en:oEnemy};let s0=0;
@@ -160,9 +174,8 @@ function boRead(e,k){const b=B(),mn=k==='N'?0:1,mx=k==='N'?212:11,d=boDef(b,k),r
   if(raw!==''&&String(c)!==raw)toast(`${k==='N'?'Points disponibles':'Niveau de Flamme'} : ${raw} ramené à ${c} (de ${mn} à ${mx})`);
   BO[k][cur]=c===d?null:c;e.value=String(c);return c}
 /* Événements de la carte (appelé par renderOptNow après chaque rendu) */
-function boBind(root){const go=root.querySelector('#boGo');if(!go)return;const nE=root.querySelector('#boN'),fE=root.querySelector('#boF');
-  go.onclick=()=>{boRead(nE,'N');boRead(fE,'F');boStart()};
-  nE.onchange=()=>{boRead(nE,'N');boPaint()};fE.onchange=()=>{boRead(fE,'F');boPaint()};
+function boBind(root){const go=root.querySelector('#boGo');if(!go)return;
+  go.onclick=()=>{boRead($('#boN'),'N');boRead($('#boF'),'F');boStart()}; // champs des tuiles (boTiles), relus au clic : les tuiles peuvent avoir été refaites
   root.querySelector('#boProg').onclick=e=>{if(e.target.closest('#boStop'))boStopRun()};
   const out=root.querySelector('#boOut');out.onclick=e=>{const ap=e.target.closest('button[data-boap]');if(ap)boApply(ap.dataset.boap)};
   out.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.fk){if(d.open)BO.open.add(d.dataset.fk);else BO.open.delete(d.dataset.fk)}},true)}
