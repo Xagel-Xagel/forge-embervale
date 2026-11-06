@@ -13,7 +13,7 @@ L'utilisateur (Vincent) parle français : **réponses, interface, commentaires e
 npm run build      # src/ → dist/index.html (site GitHub Pages) + dist/forge-embervale.html (format Artifact)
 npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0 échec
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
-npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par disposition : Théoricien, Combat, Minimal, Tout ; + mode Organiser, menu « Plus ») dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
+npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par disposition : Théoricien, Combat, Minimal, Tout ; + mode Organiser, menu « Plus », « Ma classe » : une par classe, + l'arbre au bureau) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
 npm run check      # build + tests
 npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
 ```
@@ -34,9 +34,9 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
   07-noms.js         FR_ITEMS, FR_SETS, FR_ENEMIES (noms français, clés = id / nom anglais) ; nmH, nmF, nmT, nmMatch (affichage et recherche)
-  10-ui.js           état (builds, cur, compare…), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
+  10-ui.js           état (builds, cur, compare…), « Ma classe » (CLS, CLS_OF, myCls, setCls, paintCls, zonePts, zoneTag), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
   20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que les panneaux affichés, ouverts et dépliés (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
-  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, panneau « Build optimal » (boCard, boStart)
+  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre ; fams : les deux d'une classe, BO_CLS), boMerge, panneau « Build optimal » (boCard, boStart)
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.wake quand le panneau Arbre apparaît ; ResizeObserver de #gwrap, qui suit la taille du panneau)
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)

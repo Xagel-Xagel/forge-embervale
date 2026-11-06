@@ -155,6 +155,37 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   await overflow(page, w, 'Organiser', errs);
   await page.screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-organiser.png`), fullPage: false});
   await page.click('#orgDone');
+  // « Ma classe » (1.19.0) : chaque classe dans chaque disposition — un clic : bouton pressé, Build optimal ouvert, déplié et à l'écran, focus gardé,
+  // zone de l'arbre marquée, classement du Calculateur sur la classe ; disposition Tout : calcul fini avec les deux familles de la classe (oracle littéral)
+  // et zones de l'arbre dans les résultats ; captures par classe (+ arbre au bureau) ; re-cliquer la classe la retire
+  const CF = {war: 'm1,m2', rng: 'dag,bow', mag: 'wand,staff'}, ZN = {war: 'Guerrier', rng: 'Rôdeur', mag: 'Mage'};
+  for (const d of ['theo', 'combat', 'mini', 'all']) for (const k of ['war', 'rng', 'mag']) {
+    const tag = `classe ${k} (${d})`;
+    await dispo(page, d); await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('#c-' + k); await page.waitForTimeout(120);
+    const st = await page.evaluate(() => { const r = document.querySelector('#p-bo').getBoundingClientRect();
+      return {pressed: ['war', 'rng', 'mag'].map(c => document.querySelector('#c-' + c).getAttribute('aria-pressed')).join(), bo: !document.querySelector('#p-bo').hidden && !document.querySelector('#pb-bo').hidden,
+        top: Math.round(r.top), bar: Math.round(document.querySelector('#pBar').getBoundingClientRect().bottom), vh: innerHeight, focus: document.activeElement.id,
+        zone: [...document.querySelectorAll('#areas .area')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent).join('|'), fam: document.querySelector('#oFam').value}; });
+    if (st.pressed !== ['war', 'rng', 'mag'].map(c => String(c === k)).join()) errs.push(`${tag} : boutons ${st.pressed}`);
+    if (!st.bo) errs.push(`${tag} : Build optimal pas ouvert et déplié`);
+    else if (st.top < st.bar - 1 || st.top >= st.vh) errs.push(`${tag} : Build optimal hors de l'écran (haut à ${st.top} px, barre à ${st.bar} px)`);
+    if (st.focus !== 'c-' + k) errs.push(`${tag} : focus sur ${st.focus}`);
+    if (!st.zone.startsWith(ZN[k]) || !/ma classe/i.test(st.zone)) errs.push(`${tag} : zone de l'arbre « ${st.zone} »`);
+    if (st.fam !== 'cls') errs.push(`${tag} : classement sur ${st.fam}`);
+    if (phone && (await shownList(page)).join() !== 'bo') errs.push(`${tag} : accordéon ${(await shownList(page)).join()}`);
+    await overflow(page, w, tag, errs);
+    if (d !== 'all') continue;
+    const ok = await page.waitForFunction(() => !BO.busy && BO.out, null, {timeout: 30000}).then(() => true, () => false);
+    const fk = ok ? await page.evaluate(() => [...document.querySelectorAll('#boOut [data-boap]')].map(b => b.dataset.boap).join()) : '';
+    if (fk !== CF[k]) errs.push(`${tag} : cartes ${fk || 'aucune'} au lieu de ${CF[k]}`);
+    else if (!/Arbre :/.test(await page.textContent('#boOut'))) errs.push(`${tag} : zones de l'arbre absentes des résultats`);
+    await page.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+    await page.screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-classe-${k}.png`)});
+    if (!phone) await page.locator('#p-tree').screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-classe-${k}-arbre.png`)});
+  }
+  await page.click('#c-mag'); await page.waitForTimeout(60);
+  if (await page.evaluate(() => myCls !== null || document.querySelector('#c-mag').getAttribute('aria-pressed') !== 'false' || document.querySelector('#oFam').value !== 'same')) errs.push('re-clic sur la classe : pas retirée');
   const name = `tests/screenshots/${w}-${scheme}.png`;
   console.log(errs.length ? '✗' : '✓', name, errs.join(' | '));
   fail += errs.length; await page.close();

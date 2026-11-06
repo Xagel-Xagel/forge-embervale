@@ -22,6 +22,8 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 
 L'optimiseur de build complet (1.13.0, `21-buildopt.js`) n'ajoute **aucun chiffre de jeu** : il combine les données ci-dessus ; ses réglages (tolérance, 300 re-remplissages, plafond de 10 s) sont des paramètres du simulateur, décrits dans `docs/FORMULAS.md`.
 
+« Ma classe » (1.19.0) n'ajoute **aucun chiffre de jeu** : les zones des compétences viennent de `SK` et du tracé (PinDrop) ; le rangement des familles d'arme par classe (Guerrier, Rôdeur, Mage) est une convention du simulateur, décrite dans `docs/FORMULAS.md`.
+
 ## Conflits connus entre sources
 - **Feux follets (wisps)** : valeurs différentes entre PinDrop et enshrouded.tools → **exclus**.
 - **Fell Banshee**, **Hollow Reaper** : légers écarts → valeurs PinDrop retenues.

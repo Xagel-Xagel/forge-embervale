@@ -29,8 +29,15 @@
     <button class="btn" id="import">Importer un code</button>
   </div>
 
-  <!-- Barre collée des panneaux (1.18.0) : disposition et mode Organiser ; jamais dans l'adresse (le hash est réservé au code de partage) -->
+  <!-- Barre collée des panneaux (1.18.0) : « Ma classe » (1.19.0), disposition et mode Organiser ; jamais dans l'adresse (le hash est réservé au code de partage) -->
   <div class="pbar" id="pBar">
+    <!-- « Ma classe » : un clic = Build optimal ouvert et calculé pour les deux familles d'arme de la classe, arbre centré sur sa zone (setCls, 10-ui.js) -->
+    <div class="clsg" role="group" aria-labelledby="clsLbl"><span class="dsel" id="clsLbl">Ma classe</span>
+      <button type="button" class="btn cls" id="c-war" aria-pressed="false" style="--ac:var(--war)" title="Guerrier : build optimal à la mêlée (une et deux mains), arbre centré sur la zone Guerrier">Guerrier</button>
+      <button type="button" class="btn cls" id="c-rng" aria-pressed="false" style="--ac:var(--rng)" title="Rôdeur : build optimal aux dagues et à l'arc, arbre centré sur la zone Rôdeur">Rôdeur</button>
+      <button type="button" class="btn cls" id="c-mag" aria-pressed="false" style="--ac:var(--mag)" title="Mage : build optimal à la baguette et au bâton, arbre centré sur la zone Mage">Mage</button>
+    </div>
+    <span class="sep"></span>
     <label class="dsel" for="dispo">Disposition</label>
     <select id="dispo"><option value="mine" id="dispoMine">Ma disposition</option><option value="theo">Théoricien</option><option value="combat">Combat</option><option value="mini">Minimal</option><option value="all">Tout</option></select>
     <button class="btn" id="org" aria-pressed="false" title="Taille, ordre et fermeture des panneaux">Organiser</button>

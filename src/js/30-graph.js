@@ -55,7 +55,8 @@ const G=(()=>{
   function draw(){
     dirty=false;curR=reach(b());ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,W,H);
     const ms=matchSet();const hl=hover&&hoverAmt>0?new Set([hover,...hover.nb]):null;
-    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);return a};
+    // « Ma classe » (10-ui.js) : nœuds non acquis des deux autres zones estompés (le Cœur et les nœuds acquis restent nets)
+    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);if(myCls&&n.area!==myCls&&n.area!=='core'&&!isOn(n))a=Math.min(a,.4);return a};
     ctx.setTransform(dpr*cam.k,0,0,dpr*cam.k,dpr*(W/2-cam.x*cam.k),dpr*(H/2-cam.y*cam.k));
     // liens
     for(const [p,q] of E){const on=isOn(p)&&isOn(q);const fq=Math.min(fa(p),fa(q));
@@ -87,9 +88,9 @@ const G=(()=>{
     const fade=Math.max(0,Math.min(1,(cam.k-.75)/.45));
     // zones, gardées dans le cadre ; puis les noms par priorité (sélection, survol, recherche, acquis), sans chevauchement
     const placed=[],free=x=>!placed.some(q=>x[0]<q[2]&&x[2]>q[0]&&x[1]<q[3]&&x[3]>q[1]);
-    ctx.font='700 13px "Alegreya SC", Georgia, serif';
-    for(const z of zones){const t=z.l.toUpperCase(),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
-      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+16]);ctx.globalAlpha=.85;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
+    for(const z of zones){const mine=z.k===myCls;ctx.font=`700 ${mine?16:13}px "Alegreya SC", Georgia, serif`; // zone de « Ma classe » : plus grande, marquée
+      const t=z.l.toUpperCase()+(mine?' · ma classe':''),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
+      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+(mine?19:16)]);ctx.globalAlpha=mine?1:myCls?.55:.85;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
     const lab=[];
     for(const n of V){let a=0,txt='',pr=0;
       if(n.kind==='start'){if(n===hover||n===sel){a=n===sel?1:hoverAmt;txt='Étincelle';pr=3}}

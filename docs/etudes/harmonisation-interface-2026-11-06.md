@@ -179,6 +179,10 @@ Décidé sans QCM (socle, section 2), à contester si besoin : aides en « ? » 
 - Densités S / M / L de chaque panneau selon la table 6.1 (Équipement M = lignes compactes, Classement S / M / L, etc.).
 - Indicateur : **R1 K1 A2**.
 
+**Ajout hors plan — « Ma classe » (1.19.0, HISTORY n° 26)**, à raccorder sans le refaire :
+- phase 2 : les trois boutons Guerrier · Rôdeur · Mage (`#c-war`, `#c-rng`, `#c-mag`, groupe « Ma classe ») vivent dans la barre collée ; ils rejoignent l'en-tête regroupé tels quels (toujours visibles, cibles ≥ 44 px au téléphone) ;
+- phase 3 : l'option « Ma classe » d'« Armes à classer » va dans le panneau Classement, les pastilles de zone dans Prochains points ; `setCls` ouvre aujourd'hui le Build optimal et centre l'arbre, rien à changer quand le calculateur est éclaté (état partagé `myCls`, comme la cible `oEnemy`).
+
 ### 6.3 Invariants et garde-fous
 - Aucune donnée ne change : tables figées `FZ`, codes b1 / b2 / b3, `share.test.js` intacts ; règle de l'arbre (`canBuy` / `prune` / `normalize`) intacte.
 - Contraintes de la page : jetons de couleur dans les deux blocs sombres, Google Fonts seulement, aucune dépendance, 400 px sans défilement horizontal (tables larges dans `.oscroll`), `alert` / `confirm` interdits (toast / modal), hash réservé au partage.
