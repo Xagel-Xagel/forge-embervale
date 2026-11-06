@@ -123,6 +123,8 @@ QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recomma
 
 - QCM 4 · dispositions prêtes : **les quatre** — Théoricien (arbre en grand, fiche-résumé, équipement, classement), Combat (cible, vos armes, prochains points, défense), Minimal (réglages, équipement, fiche-résumé), Tout (les 10 panneaux dans l'ordre des onglets actuels) ; plus « Ma disposition » (mémorisée dans ce navigateur).
 
+- QCM 5 · 400 px : **accordéon + barre d'icônes collée en bas** — un panneau ouvert à la fois, les autres en une ligne (titre + résumé) ; barre Réglages · Arbre · Équipement · Cible · Plus (non retenus : liste repliable à plusieurs ouverts, onglets 3 × 2 gardés sur téléphone).
+
 _(suite à compléter)_
 
 ## 6. Plan d'implémentation
