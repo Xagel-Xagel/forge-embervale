@@ -119,6 +119,8 @@ QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recomma
 
 - QCM 2 · commandes des panneaux : **mode « Organiser »** — en lecture, un seul bouton Replier par panneau ; un bouton « Organiser les panneaux » affiche poignées, taille S / M / L, monter / descendre, fermer, puis « Terminé » (non retenus : boutons toujours visibles, chevron + menu ⋯).
 
+- QCM 3 · réordonner (mode Organiser) : **boutons Monter / Descendre** seulement — clavier et doigt, même geste partout, pas de glisser-déposer (non retenus : glisser + boutons, glisser seul).
+
 _(suite à compléter)_
 
 ## 6. Plan d'implémentation
