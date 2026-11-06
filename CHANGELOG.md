@@ -11,6 +11,9 @@ Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes 
 - Clavier (motif ARIA des onglets) : ← et → en boucle, Début, Fin ; rôles `tab` / `tabpanel`, `aria-selected`.
 - Plus rapide : seul l'onglet ouvert du calculateur est calculé ; le graphe caché ne se dessine plus, et se recale (taille, premier cadrage) quand on rouvre l'onglet Arbre, sans perdre le zoom.
 - Corrigé au passage : les deux cases à cocher de la Défense étaient étirées sur toute la colonne (défaut déjà présent en 1.14.0).
+- Messages : quand le build optimal s'arrête (réglages changés) ou se termine pendant qu'on est dans un autre onglet, un message le dit ; « Comparer A et B » coché hors d'Arbre et d'Équipement dit où voir la fiche. Les messages s'empilent sans se chevaucher et sont lus par les lecteurs d'écran.
+- Le plan « Répartir au mieux » reste affiché d'un onglet à l'autre (tant que le build, la cible et l'arme analysée ne changent pas) ; la table des ennemis garde son défilement quand le build change.
+- Revue QA (code-reviewer, pr-test-analyzer, silent-failure-hunter, test-critic) : constats corrigés. Les tests Node observent maintenant l'effet des onglets sur la page (faux éléments persistants) : 23 pannes simulées, toutes détectées ; test navigateur étendu (démarrage sur chaque onglet, A/B, stockage bloqué, zoom gardé, clavier, focus avec contre-épreuve).
 - CLAUDE.md : l'Artifact claude.ai est en version 14 (et non 13) ; `localStorage` sert aussi à l'onglet ouvert.
 
 ## 1.14.0 — 2026-11-06 · Preset « Mage critique (baguette) »

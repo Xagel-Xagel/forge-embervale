@@ -59,7 +59,7 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - toujours visible : barre des builds au-dessus des onglets, **fiche à droite d'Arbre et d'Équipement** (dessous sur téléphone), pleine largeur ailleurs ;
     - 400 px : **« 2 lignes, collées en haut »** (3 × 2, la barre reste en haut pendant le défilement, partout) ;
     - mémoire : **« oui, dans ce navigateur »** (lsGet/lsSet ; règle de CLAUDE.md élargie).
-    Ajouts pendant le codage, signalés : seul l'onglet ouvert du calculateur est rendu ; `scroll-padding-top` pour que les onglets collés ne cachent pas le focus clavier ; cases à cocher de la Défense corrigées (défaut antérieur).
+    Ajouts pendant le codage, signalés : seul l'onglet ouvert du calculateur est rendu ; `scroll-padding-top` pour que les onglets collés ne cachent pas le focus clavier ; cases à cocher de la Défense corrigées (défaut antérieur). Après la revue QA : messages quand le build optimal s'arrête ou se termine hors de son onglet, plan « Répartir au mieux » gardé d'un onglet à l'autre, messages empilés et lus par les lecteurs d'écran.
 
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.

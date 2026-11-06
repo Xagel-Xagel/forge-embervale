@@ -143,7 +143,7 @@ function boStart(){const b=B(),en=ENEMIES[oEnemy],N=boN(b),F=boF(b),my=++BO.run;
   const g=boRun(oSlot,en,N,F,b.upg,cw?boFamOf(cw.w):null,BO_TMAX,clock);
   const tick=()=>{if(my!==BO.run)return;s0=Date.now();
     try{let r,ch=false;do{r=g.next();if(!r.done&&r.value){BO.part=Object.assign({res:Object.values(r.value.res)},base);BO.prog=`${Object.keys(r.value.res).length} famille(s) sur ${BO_FAM.length} (dernière : ${r.value.fam})`;ch=true}}while(!r.done&&Date.now()-s0<30);
-      BO.cpu+=Date.now()-s0;s0=0;if(r.done){BO.busy=false;BO.out=r.value;BO.part=null;boPaint()}else{if(ch)boProgress();setTimeout(tick,0)}}
+      BO.cpu+=Date.now()-s0;s0=0;if(r.done){BO.busy=false;BO.out=r.value;BO.part=null;boPaint();if(sec!=='bo')toast('Build optimal calculé : résultats dans l\'onglet Build optimal')}else{if(ch)boProgress();setTimeout(tick,0)}}
     catch(e){if(s0)BO.cpu+=Date.now()-s0;s0=0;boFail(e)}};
   boPaint();setTimeout(tick,0)}
 function boFail(e){BO.run++;BO.busy=false;BO.stop=true;BO.err=String(e&&e.message||e);BO.out=BO.part?Object.assign({},BO.part,{ms:BO.cpu,err:true}):null;BO.part=null;

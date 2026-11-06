@@ -1,5 +1,5 @@
 function mk(){const t=function(){};return new Proxy(t,{get(o,k){if(k==='value')return o._v??'';if(k==='hidden'||k==='checked')return o['_'+k]??false;if(k===Symbol.toPrimitive)return ()=>'';if(k in o)return o[k];
- if(k==='getBoundingClientRect')return ()=>({width:1000,height:600,left:0,top:0});if(k==='querySelectorAll')return ()=>[mk(),mk()];if(k==='getContext')return ()=>mk();if(k==='firstElementChild'||k==='style'||k==='classList'||k==='dataset')return mk();
+ if(k==='getBoundingClientRect')return ()=>(global.__rect||{width:1000,height:600,left:0,top:0}); /* __rect : taille réglable par un test (graphe caché, fenêtre changée) */if(k==='querySelectorAll')return ()=>[mk(),mk()];if(k==='getContext')return ()=>mk();if(k==='firstElementChild'||k==='style'||k==='classList'||k==='dataset')return mk();
  return mk()},set(o,k,v){o[k==='value'?'_v':k==='hidden'?'_hidden':k==='checked'?'_checked':k]=v;return true},apply(){return mk()}})}
 global.document=mk();global.window=global;global.location={hash:'',slice(){return ''}};location.hash='';
 global.matchMedia=()=>({matches:false,addEventListener(){}});global.getComputedStyle=()=>({getPropertyValue:()=> '#000'});

@@ -61,11 +61,19 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   await page.evaluate(() => window.scrollTo(0, 900)); await page.waitForTimeout(50);
   const top = await page.evaluate(() => Math.round(document.querySelector('#secBar').getBoundingClientRect().top));
   if (top !== 0) errs.push(`onglets non collés en haut après défilement (haut à ${top}px)`);
-  // Focus clavier : un champ atteint en remontant (Maj+Tab) n'est pas caché sous les onglets collés
-  await page.focus('#planN'); await page.evaluate(() => window.scrollBy(0, document.querySelector('#planN').getBoundingClientRect().top - 20));
-  await page.keyboard.press('Shift+Tab');
-  const hid = await page.evaluate(() => { const r = document.activeElement.getBoundingClientRect(), b = document.querySelector('#secBar').getBoundingClientRect(); return r.top < b.bottom ? document.activeElement.id || document.activeElement.tagName : ''; });
-  if (hid) errs.push('élément focalisé caché sous les onglets collés : ' + hid);
+  // Focus clavier : #oEnemy, placé sous les onglets collés (témoin), puis atteint par Maj+Tab depuis #oSlot, doit être ramené dessous ;
+  // contre-épreuve : sans scroll-padding, il resterait caché (le test sait voir la panne)
+  for (const pad of [true, false]) {
+    const was = await page.evaluate(pad => { const a = document.querySelector('#oEnemy'), bar = document.querySelector('#secBar');
+      document.documentElement.style.scrollPaddingTop = pad ? '' : '0px'; document.querySelector('#oSlot').focus(); window.scrollBy(0, a.getBoundingClientRect().top - 8);
+      return a.getBoundingClientRect().top < bar.getBoundingClientRect().bottom; }, pad);
+    await page.keyboard.press('Shift+Tab');
+    const f = await page.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(), b = document.querySelector('#secBar').getBoundingClientRect(); document.documentElement.style.scrollPaddingTop = ''; return {id: a.id, hid: r.top < b.bottom}; });
+    if (!was) errs.push('focus : témoin raté, #oEnemy n\'était pas sous les onglets');
+    else if (f.id !== 'oEnemy') errs.push('focus : Maj+Tab a atteint ' + f.id + ' au lieu de #oEnemy');
+    else if (pad && f.hid) errs.push('élément focalisé caché sous les onglets collés : #oEnemy');
+    else if (!pad && !f.hid) errs.push('focus : la contre-épreuve sans scroll-padding ne cache rien (test aveugle)');
+  }
   await page.evaluate(() => window.scrollTo(0, 0));
   await tab(page, 'tree');
   await page.click('#vList');
@@ -170,15 +178,112 @@ for (const w of [1300, 400]) {
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
   await page.goto(url); await page.waitForTimeout(600);
   if (await page.isVisible('#gcv')) errs.push('graphe visible alors que le Calculateur est retenu');
-  await tab(page, 'tree'); await page.waitForTimeout(150);
+  await tab(page, 'tree');
+  // dessiné = le pixel d'un nœud (Mage, au centre de son disque) diffère du fond (le fond seul remplit déjà tout le canvas)
+  const drawn = await page.waitForFunction(() => { const cv = document.querySelector('#gcv'), d = Math.min(2, devicePixelRatio || 1), c = cv.getContext('2d'), [x, y] = window.G.screen(window.G.nodes.find(n => n.id === 'wizard'));
+    const at = (x, y) => [...c.getImageData(Math.round(x * d), Math.round(y * d), 1, 1).data].join(); return cv.width > 0 && at(x, y) !== at(2, 2); }, null, {timeout: 3000}).then(() => true, () => false);
   const g = await page.evaluate(() => { const cv = document.querySelector('#gcv'), r = document.querySelector('#gwrap').getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
     const out = window.G.nodes.filter(n => n.kind !== 'hub').filter(n => { const [x, y] = window.G.screen(n); return x < 0 || y < 0 || x > r.width || y > r.height; }).length;
-    const px = cv.getContext('2d').getImageData(Math.floor(cv.width / 2), Math.floor(cv.height / 2), 1, 1).data[3];
-    return {cw: cv.width, want: Math.round(r.width * d), out, px}; });
+    return {cw: cv.width, want: Math.round(r.width * d), out}; });
   if (!g.cw || Math.abs(g.cw - g.want) > 1) errs.push(`canvas ${g.cw}px de large au lieu de ${g.want}px`);
   if (g.out) errs.push(`${g.out} nœuds hors du cadre à la première ouverture`);
-  if (g.px !== 255) errs.push('graphe non dessiné à la première ouverture');
+  if (!drawn) errs.push('graphe non dessiné à la première ouverture (nœud de la couleur du fond)');
   console.log(errs.length ? '✗' : '✓', `graphe caché au démarrage puis ouvert (${w} px)`, errs.join(' | '));
+  fail += errs.length; await ctx.close();
+}
+// Onglets, cas limites (revue QA) : build optimal qui survit aux changements d'onglet, barre de cible de retour dans le Calculateur, plan gardé,
+// passage A → B, cases à cocher, « Comparer » hors de la fiche, défilement de Tables gardé, clavier (modificateurs, Entrée), arrêt dit, messages empilés
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  const toasts = () => page.textContent('#toasts');
+  await page.goto(url); await page.waitForTimeout(500);
+  await page.selectOption('#preset', {label: 'Barbare deux mains'}); await page.waitForTimeout(80);
+  await tab(page, 'bo'); await page.click('#boGo');
+  for (const k of ['tree', 'calc', 'tab', 'bo']) await tab(page, k);
+  const fin = await page.waitForFunction(() => !BO.busy && BO.out, null, {timeout: 30000}).then(() => true, () => false);
+  if (!fin || await page.evaluate(() => BO.stop)) errs.push('build optimal arrêté par un changement d\'onglet');
+  else if (!await page.$('#boOut [data-boap]')) errs.push('build optimal : résultats absents après les changements d\'onglet');
+  await tab(page, 'calc');
+  if (!await page.isVisible('#p-calc #oEnemy') || !await page.isVisible('#p-calc .ofam')) errs.push('choix de la cible absent du Calculateur après Build optimal');
+  await page.fill('#planN', '30'); await page.click('#planGo'); await page.waitForTimeout(150);
+  if (!await page.$('#planApply')) errs.push('plan de test vide (30 points)');
+  else { await tab(page, 'tree'); await tab(page, 'calc'); if (!await page.$('#planApply')) errs.push('plan « Répartir au mieux » perdu en changeant d\'onglet'); }
+  await tab(page, 'def'); await page.click('#buildTabs .tab:nth-child(2)'); await page.waitForTimeout(80);
+  if (!/^Build B/.test(await page.textContent('#defFor'))) errs.push('Défense : en-tête pas passé au build B');
+  const cw = await page.evaluate(() => Math.max(...[...document.querySelectorAll('.dform input[type="checkbox"]')].map(c => c.getBoundingClientRect().width)));
+  if (cw > 24) errs.push(`cases à cocher de la Défense étirées (${Math.round(cw)} px)`);
+  await page.click('#cmp'); await page.waitForTimeout(30);
+  if (!/Comparaison A et B/.test(await toasts())) errs.push('« Comparer A et B » hors de la fiche : aucun message');
+  await page.click('#cmp');
+  await tab(page, 'tab'); await page.evaluate(() => { document.querySelector('.mxs').scrollTop = 600; });
+  await page.click('#buildTabs .tab:nth-child(1)'); await page.waitForTimeout(80); await tab(page, 'tab');
+  const st = await page.evaluate(() => document.querySelector('.mxs').scrollTop);
+  if (st < 590) errs.push(`table des ennemis remise en haut (${st} px) après A/B ou un nouveau clic sur l'onglet`);
+  await page.focus('#t-tab'); await page.keyboard.press('Alt+ArrowRight'); await page.keyboard.press('Control+End'); await page.waitForTimeout(40);
+  if (await page.getAttribute('#t-tab', 'aria-selected') !== 'true') errs.push('Alt+→ ou Ctrl+Fin a changé d\'onglet');
+  await page.focus('#mxBody button[data-en="7"]'); await page.keyboard.press('Enter'); await page.waitForTimeout(80);
+  const k2 = await page.evaluate(() => ({f: document.activeElement.id, s: document.querySelector('#t-calc').getAttribute('aria-selected'), e: document.querySelector('#oEnemy').value}));
+  if (k2.f !== 't-calc' || k2.s !== 'true' || k2.e !== '7') errs.push(`Entrée sur un ennemi : focus ${k2.f}, Calculateur ${k2.s}, cible ${k2.e}`);
+  if (!await page.isVisible('#p-calc .ofam')) errs.push('choix de la cible absent du Calculateur après un clic dans Tables');
+  await tab(page, 'bo'); await page.click('#boGo'); await tab(page, 'tree');
+  await page.click('#buildTabs .tab:nth-child(2)'); await page.waitForTimeout(150);
+  const stop = await page.evaluate(() => ({busy: BO.busy, stop: BO.stop}));
+  if (stop.busy || !stop.stop) errs.push('passage A → B pendant le calcul : build optimal non arrêté');
+  if (!/build optimal arrêté/i.test(await toasts())) errs.push('build optimal arrêté hors de son onglet : aucun message');
+  await page.evaluate(() => { toast('Premier message'); toast('Second message'); });
+  const ov = await page.evaluate(() => { const r = [...document.querySelectorAll('#toasts .toast')].map(t => t.getBoundingClientRect()); return r.length < 2 || r.some((a, i) => r.some((b, j) => i < j && a.top < b.bottom - 1 && b.top < a.bottom - 1)); });
+  if (ov) errs.push('messages superposés (ou absents)');
+  console.log(errs.length ? '✗' : '✓', 'onglets : cas limites (calcul, cible, plan, A/B, Tables, clavier, messages)', errs.join(' | '));
+  fail += errs.length; await page.close();
+}
+// Démarrage sur un onglet retenu du calculateur : contenu rendu (et, pour Build optimal, calcul qui aboutit)
+for (const k of ['bo', 'def', 'tab']) {
+  const ctx = await browser.newContext({viewport: {width: 1300, height: 900}});
+  await ctx.addInitScript(k => { try { if (!sessionStorage.getItem('vu')) { localStorage.setItem('forge-embervale-onglet', JSON.stringify(k)); sessionStorage.setItem('vu', '1'); } } catch (e) {} }, k);
+  const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(600);
+  if (await page.getAttribute('#t-' + k, 'aria-selected') !== 'true') errs.push('onglet retenu non rouvert');
+  if (k === 'bo') {
+    if (!await page.isVisible('#p-bo #oEnemy') || await page.isVisible('#p-bo .ofam') || !await page.isVisible('#boGo')) errs.push('Build optimal : carte ou choix de la cible absents');
+    else { await page.click('#boGo'); if (!await page.waitForFunction(() => !BO.busy && BO.out && document.querySelector('#boOut [data-boap]'), null, {timeout: 30000}).then(() => true, () => false)) errs.push('Build optimal : calcul sans résultat'); }
+  }
+  if (k === 'def' && !/coups avant K\.O\./.test(await page.textContent('#defOut').catch(() => ''))) errs.push('Défense vide');
+  if (k === 'tab' && (await page.$$('#mxBody tr')).length < 50) errs.push('table des ennemis vide');
+  console.log(errs.length ? '✗' : '✓', 'démarrage sur l\'onglet ' + k, errs.join(' | '));
+  fail += errs.length; await ctx.close();
+}
+// Zoom de l'utilisateur gardé et canvas recalé quand la fenêtre change pendant que le graphe est caché
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(500);
+  await page.locator('#gwrap').scrollIntoViewIfNeeded();
+  const box = await page.locator('#gcv').boundingBox();
+  await page.mouse.move(box.x + box.width / 3, box.y + box.height / 3); await page.mouse.wheel(0, -500); await page.waitForTimeout(120);
+  const cam = () => page.evaluate(() => { const n = window.G.nodes.find(x => x.id === 'wizard'), r = document.querySelector('#gwrap').getBoundingClientRect(), [x, y] = window.G.screen(n), cv = document.querySelector('#gcv');
+    return {dx: x - r.width / 2, dy: y - r.height / 2, cw: cv.width, want: Math.round(r.width * Math.min(2, devicePixelRatio || 1))}; });
+  const a = await cam();
+  await tab(page, 'calc'); await page.setViewportSize({width: 1100, height: 800}); await page.waitForTimeout(120); await tab(page, 'tree'); await page.waitForTimeout(150);
+  const b = await cam();
+  if (Math.abs(a.dx - b.dx) > 1 || Math.abs(a.dy - b.dy) > 1) errs.push(`zoom ou cadrage perdu en changeant d'onglet (${Math.round(a.dx)},${Math.round(a.dy)} → ${Math.round(b.dx)},${Math.round(b.dy)})`);
+  if (Math.abs(b.cw - b.want) > 1) errs.push(`canvas pas recalé à la nouvelle taille (${b.cw} px au lieu de ${b.want})`);
+  console.log(errs.length ? '✗' : '✓', 'graphe : zoom gardé, canvas recalé après redimensionnement caché', errs.join(' | '));
+  fail += errs.length; await page.close();
+}
+// Stockage du navigateur bloqué (accès à localStorage interdit) : aucune erreur, Arbre ouvert, onglets utilisables, « Enregistrer » le dit
+{
+  const ctx = await browser.newContext({viewport: {width: 1300, height: 900}});
+  await ctx.addInitScript(() => { Object.defineProperty(window, 'localStorage', {configurable: true, get() { throw new DOMException('bloqué', 'SecurityError'); }}); });
+  const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(500);
+  if (await page.evaluate(() => { try { localStorage; return 'accessible'; } catch (e) { return ''; } })) errs.push('blocage du stockage non simulé');
+  if (await page.getAttribute('#t-tree', 'aria-selected') !== 'true') errs.push('Arbre attendu');
+  for (const k of SEC) await tab(page, k);
+  errs.push(...(await ariaErrs(page)).map(e => 'ARIA : ' + e));
+  await page.click('#save'); await page.waitForTimeout(50);
+  if (!/Enregistrement impossible/.test(await page.textContent('#toasts'))) errs.push('« Enregistrer » sans message');
+  console.log(errs.length ? '✗' : '✓', 'stockage bloqué', errs.join(' | '));
   fail += errs.length; await ctx.close();
 }
 // Tracé réel : après « Réorganiser », chaque nœud revient exactement à sa position du jeu (mouvement normal puis réduit)

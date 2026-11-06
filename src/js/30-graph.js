@@ -44,7 +44,8 @@ const G=(()=>{
   function matchSet(){const q=query.toLowerCase();if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
     for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0||gearOf(n)>0;if(okQ&&okO)s.add(n)}return s}
 
-  /* Graphe caché (autre onglet, vue Liste) : W = 0, plus rien n'est dessiné. Taille inchangée : le canvas n'est pas vidé (pas de clignotement à la réouverture) */
+  /* Graphe caché (autre onglet, vue Liste) : W = 0, plus rien n'est dessiné ; à la réouverture, wake le recale (canvas vidé, redessiné à l'image suivante).
+     Taille inchangée (observateur appelé juste après wake) : le canvas n'est pas vidé une seconde fois, donc pas d'image vide */
   function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
     if(r.width!==W||r.height!==H||d!==dpr){dpr=d;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}if(!fitted)fit(area)}
   new ResizeObserver(resize).observe(wrap);
