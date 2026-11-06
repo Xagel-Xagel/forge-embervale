@@ -2,6 +2,17 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.15.0 — 2026-11-06 · Navigation par onglets
+- La page n'affiche plus tout à la suite : **six onglets** sous la barre des builds — Arbre, Équipement, Calculateur, Build optimal, Défense, Tables (table des 101 ennemis et formules) ; une seule partie visible à la fois (choix de l'utilisateur, QCM).
+- La **fiche du personnage** reste à droite des onglets Arbre et Équipement (dessous sous 1000 px de large) ; les autres onglets prennent toute la largeur.
+- Les onglets restent **collés en haut** pendant le défilement ; sur téléphone, ils tiennent sur **2 lignes de 3**. Rien ne passe dessous (focus clavier, haut des parties).
+- La page **rouvre sur le dernier onglet** (stockage du navigateur, via `lsGet`/`lsSet` ; 1re visite ou stockage bloqué : Arbre). L'adresse ne change pas : le hash reste réservé au code de partage.
+- Le choix de la cible (ennemi, arme analysée) apparaît dans Calculateur et Build optimal ; dans Tables, un nom d'ennemi cliqué devient la cible et ouvre le Calculateur.
+- Clavier (motif ARIA des onglets) : ← et → en boucle, Début, Fin ; rôles `tab` / `tabpanel`, `aria-selected`.
+- Plus rapide : seul l'onglet ouvert du calculateur est calculé ; le graphe caché ne se dessine plus, et se recale (taille, premier cadrage) quand on rouvre l'onglet Arbre, sans perdre le zoom.
+- Corrigé au passage : les deux cases à cocher de la Défense étaient étirées sur toute la colonne (défaut déjà présent en 1.14.0).
+- CLAUDE.md : l'Artifact claude.ai est en version 14 (et non 13) ; `localStorage` sert aussi à l'onglet ouvert.
+
 ## 1.14.0 — 2026-11-06 · Preset « Mage critique (baguette) »
 - Nouveau preset (en fin de liste, groupe « Mage et magie ») : **chance de critique d'abord, puis dégâts critiques**, puis dégâts moyens ; aucune compétence utilitaire (choix de l'utilisateur, QCM).
 - Chiffres (niveau 50, Flamme 11, améliorations 5) : **66 % de critique**, **123 % de dégâts critiques** ; Wand Of Bloodflow 428,7 de dégâts moyens (coup 236,6), Violet Storm 392,0 de Puissance ; 93 points dont 24 de liaison (Précision fatale est dans la zone Rôdeur).

@@ -5,10 +5,27 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let builds=[fromPreset(PRESETS[0]),fromPreset(PRESETS[3])];
 let cur=0,compare=true,area='all',onlyOn=false,query='',view='graph';
 const LS='forge-embervale-builds';
-function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||'[]')}catch(e){return[]}}
-function lsSet(v){try{localStorage.setItem(LS,JSON.stringify(v));return true}catch(e){return false}}
+/* localStorage peut lever une exception (navigation privée, Artifact) : toujours passer par ces deux fonctions ; k : clé (builds par défaut), d : valeur si absente ou illisible */
+function lsGet(k=LS,d=[]){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(v,k=LS){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 const B=()=>builds[cur];
+
+/* Onglets des parties (1.15.0) : une seule partie affichée ; l'onglet ouvert est retenu dans ce navigateur (lsGet/lsSet), jamais dans l'adresse (le hash est le code de partage) */
+const SECS=[['tree','Arbre'],['eq','Équipement'],['calc','Calculateur'],['bo','Build optimal'],['def','Défense'],['tab','Tables']];
+const LS_SEC='forge-embervale-onglet',OPT_SECS=['calc','bo','def','tab'],secOk=k=>SECS.some(s=>s[0]===k);
+function secSaved(){const k=lsGet(LS_SEC,'tree');return secOk(k)?k:'tree'}
+let sec=secSaved();
+/* Ouvre une partie : onglet sélectionné (aria-selected, tabindex itinérant), son panneau seul visible, fiche à droite d'Arbre et Équipement seulement,
+   choix de la cible déplacé dans l'onglet Build optimal. quiet (démarrage) : ni mémorisation ni rendu, renderAll suit */
+function showSec(id,quiet){if(!secOk(id))id='tree';sec=id;
+  for(const [k] of SECS){const t=$('#t-'+k),on=k===id;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;$('#p-'+k).hidden=!on}
+  const side=id==='tree'||id==='eq';$('#ficheAside').hidden=!side;$('#secLay').classList.toggle('side',side);
+  if(id==='calc'||id==='bo')$(id==='bo'?'#boTarget':'#optTarget').appendChild($('#optBar'));
+  if(quiet)return;lsSet(id,LS_SEC);
+  if(id==='tree'&&view==='graph'&&window.G)G.wake(); // canvas à la taille du panneau (et premier cadrage si le graphe était caché au démarrage)
+  if(OPT_SECS.includes(id))renderOptNow(); // seul l'onglet ouvert du calculateur est rendu (20-optimizer.js)
+  const p=$('#p-'+id);if(p.getBoundingClientRect().top<$('#secBar').getBoundingClientRect().bottom)p.scrollIntoView({block:'start'})} // page défilée : haut de la partie, sous les onglets
 
 function renderTabs(){
   const el=$('#buildTabs');el.innerHTML='';
@@ -189,3 +206,10 @@ function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const
   if(b._mig){try{history.replaceState(null,'','#'+encode(b))}catch(e){}setTimeout(()=>migNotice(b),0)}return true}
   setTimeout(()=>toast('Lien de partage illisible (incomplet ou abîmé) : builds par défaut affichés'),0)}return false}
 window.addEventListener('hashchange',()=>{if(fromHash())renderAll()});
+SECS.forEach(([k])=>{$('#t-'+k).onclick=()=>showSec(k)});
+/* Clavier (motif ARIA des onglets) : ← et → en boucle, Début, Fin ; l'onglet atteint s'ouvre (rendu immédiat) */
+$('#secTabs').onkeydown=e=>{if(e.altKey||e.ctrlKey||e.metaKey)return;const n=SECS.length;let i=SECS.findIndex(s=>'t-'+s[0]===(e.target&&e.target.id));if(i<0)i=SECS.findIndex(s=>s[0]===sec);
+  const j={ArrowRight:(i+1)%n,ArrowLeft:(i+n-1)%n,Home:0,End:n-1}[e.key];if(j===undefined)return;e.preventDefault();showSec(SECS[j][0]);$('#t-'+SECS[j][0]).focus()};
+/* Hauteur des onglets collés (1 ou 2 lignes) sur :root : décalage de la fiche collée et du défilement (scroll-padding), pour que rien ne passe dessous */
+new ResizeObserver(()=>document.documentElement.style.setProperty('--navh',$('#secBar').offsetHeight+'px')).observe($('#secBar'));
+showSec(sec,true); // avant la création du graphe (30-graph.js) : caché au démarrage, il se cale à sa première ouverture

@@ -44,7 +44,9 @@ const G=(()=>{
   function matchSet(){const q=query.toLowerCase();if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
     for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0||gearOf(n)>0;if(okQ&&okO)s.add(n)}return s}
 
-  function resize(){const r=wrap.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true;if(!fitted)fit(area)}
+  /* Graphe caché (autre onglet, vue Liste) : W = 0, plus rien n'est dessiné. Taille inchangée : le canvas n'est pas vidé (pas de clignotement à la réouverture) */
+  function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
+    if(r.width!==W||r.height!==H||d!==dpr){dpr=d;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}if(!fitted)fit(area)}
   new ResizeObserver(resize).observe(wrap);
   const toS=(x,y)=>[(x-cam.x)*cam.k+W/2,(y-cam.y)*cam.k+H/2];
   const toW=(sx,sy)=>[(sx-W/2)/cam.k+cam.x,(sy-H/2)/cam.k+cam.y];
@@ -167,6 +169,7 @@ const G=(()=>{
   $('#gFit').onclick=()=>{area='all';fit();renderSkills()};
   $('#gShake').onclick=()=>{if(reduce.matches){home();return}for(const n of V){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}alpha=.8;dirty=true};
   resize();fit();
-  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
+  /* wake : à l'ouverture de l'onglet Arbre (showSec), taille recalée sans toucher au cadrage (premier cadrage si le graphe était caché au démarrage) */
+  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},wake(){resize()},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
 })();
 window.G=G;
