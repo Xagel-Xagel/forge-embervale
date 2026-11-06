@@ -32,20 +32,22 @@ function readSnap(x){if(!x||typeof x!=='object'||!Array.isArray(x.order)||!Array
   const size={};for(const k of PIDS)size[k]=SIZES.includes(x.size[k])?x.size[k]:'M';
   return {order,size,folded:[...new Set([...ids(x.folded),...PIDS.filter(k=>size[k]==='S')])],closed:ids(x.closed)}}
 /* Disposition retenue : une disposition prête est reprise du code (définition figée), « Ma disposition » de l'état enregistré ; illisible ou absente → Théoricien */
-function readLayout(x){if(!x||typeof x!=='object'||x.v!==1)return null;const mine=x.mine?readSnap(x.mine):null;let l;
-  if(DISPOS[x.preset])l=mkDispo(x.preset);else if(x.preset==='mine'){const s=readSnap(x);if(!s)return null;l=Object.assign({v:1,preset:'mine'},s)}else return null;
+const isDispo=k=>typeof k==='string'&&Object.hasOwn(DISPOS,k); // pas « toString », « __proto__ »… (stockage modifié à la main)
+function readLayout(x){if(!x||typeof x!=='object'||x.v!==1)return null;let mine=x.mine?readSnap(x.mine):null,l;
+  if(isDispo(x.preset))l=mkDispo(x.preset);else if(x.preset==='mine'){const s=readSnap(x);if(!s)return null;l=Object.assign({v:1,preset:'mine'},s);if(!mine)mine=JSON.parse(JSON.stringify(s))}else return null; // « Ma disposition » abîmée : refaite depuis l'état relu
   if(mine)l.mine=mine;l.acc=pOk(x.acc)&&!l.closed.includes(x.acc)?x.acc:x.acc===null?null:firstOpen(l);return l}
 function loadLayout(){return readLayout(lsGet(LS_PNL,null))||mkDispo('theo')}
-function saveLayout(){return lsSet(lay,LS_PNL)}
+let saveWarned=false;
+function saveLayout(){const ok=lsSet(lay,LS_PNL);if(!ok&&!saveWarned){saveWarned=true;toast('Disposition non retenue : stockage du navigateur bloqué (elle vaut jusqu\'au rechargement)')}return ok} // dit une fois par visite
 let lay=mkDispo('theo'),org=false,lastShown=new Set();
 const isAcc=()=>matchMedia('(max-width:639px)').matches;
 const isOpen=k=>!lay.closed.includes(k);
 const isFolded=k=>isAcc()?k!==lay.acc:lay.folded.includes(k);
 const shown=k=>pOk(k)&&isOpen(k)&&!isFolded(k); // ouvert et déplié : seuls ceux-là sont rendus (renderOptNow)
 /* Tout changement manuel (taille, ordre, repli, fermeture, ouverture) bascule sur « Ma disposition », qui est retenue à part (lay.mine) */
-function touch(){lay.preset='mine';lay.mine={order:lay.order.slice(),size:Object.assign({},lay.size),folded:lay.folded.slice(),closed:lay.closed.slice()}}
+function touch(){if(lay.preset!=='mine'&&lay.mine)toast('« Ma disposition » remplacée par celle-ci (partie de '+DISPOS[lay.preset].l+')');lay.preset='mine';lay.mine={order:lay.order.slice(),size:Object.assign({},lay.size),folded:lay.folded.slice(),closed:lay.closed.slice()}}
 function commit(){touch();saveLayout();paintLayout()}
-function applyDispo(k){let l;if(k==='mine'){if(!lay.mine)return false;l=Object.assign({v:1,preset:'mine'},JSON.parse(JSON.stringify(lay.mine)))}else if(DISPOS[k])l=mkDispo(k);else return false;
+function applyDispo(k){let l;if(k==='mine'){if(!lay.mine)return false;l=Object.assign({v:1,preset:'mine'},JSON.parse(JSON.stringify(lay.mine)))}else if(isDispo(k))l=mkDispo(k);else return false;
   if(lay.mine)l.mine=lay.mine;l.acc=lay.acc&&!l.closed.includes(lay.acc)?lay.acc:firstOpen(l);lay=l;saveLayout();paintLayout();return true}
 /* Monter / Descendre : échange avec le panneau ouvert voisin (les fermés ne comptent pas) */
 function movePanel(k,d){const vis=lay.order.filter(isOpen),i=vis.indexOf(k),j=i+d;if(i<0||j<0||j>=vis.length)return false;
@@ -61,6 +63,8 @@ function openPanel(k){if(!pOk(k)||isOpen(k))return false;lay.closed=lay.closed.f
 function goPanel(k,sel){if(!pOk(k))return;if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false);
   $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
 function setOrg(on){org=!!on;paintLayout()}
+/* Panneau affiché ET dans la fenêtre : sinon un message dit ce qui lui arrive (build optimal arrêté ou calculé) */
+function inView(k){if(!shown(k))return false;const r=$('#p-'+k).getBoundingClientRect();return r.top+r.height>0&&r.top<(window.innerHeight||Infinity)}
 /* Choix de la cible (#optBar) : dans le Calculateur s'il est affiché, sinon dans Build optimal ; ailleurs, Build optimal dit d'où vient sa cible */
 function placeBar(){const t=shown('calc')?'#optTarget':shown('bo')?'#boTarget':null;if(t&&$('#optBar').parentElement!==$(t))$(t).appendChild($('#optBar'));
   $('#boTgtNote').hidden=!(t==='#optTarget'&&shown('bo'))}
@@ -112,7 +116,7 @@ function initPanels(){
   $('#bmore').onkeydown=$('#bb-plus').onkeydown=e=>{if(e.key==='Escape'&&!$('#bmore').hidden){moreOpen(false);$('#bb-plus').focus()}};
   $('#dispo').onchange=e=>{if(applyDispo(e.target.value))toast('Disposition : '+(e.target.value==='mine'?'Ma disposition':DISPOS[e.target.value].l))};
   $('#org').onclick=()=>setOrg(!org);$('#orgDone').onclick=()=>{setOrg(false);$('#org').focus()};
-  const mq=matchMedia('(max-width:639px)');if(mq.addEventListener)mq.addEventListener('change',()=>{moreOpen(false);paintLayout()}); // passage bureau ↔ téléphone : accordéon ou grille
+  const mq=matchMedia('(max-width:639px)'),onMq=()=>{moreOpen(false);paintLayout()};if(mq.addEventListener)mq.addEventListener('change',onMq);else if(mq.addListener)mq.addListener(onMq); // vieux Safari : addListener // passage bureau ↔ téléphone : accordéon ou grille
   lay=loadLayout();paintLayout(true)}
 
 function renderTabs(){

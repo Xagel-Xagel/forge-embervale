@@ -48,8 +48,7 @@ const G=(()=>{
      Taille inchangée (observateur appelé juste après wake) : le canvas n'est pas vidé une seconde fois, donc pas d'image vide */
   function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
     if(r.width!==W||r.height!==H||d!==dpr){dpr=d;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}if(!fitted)fit(area)}
-  new ResizeObserver(resize).observe(wrap);
-  new ResizeObserver(()=>{if(view==='graph')resize()}).observe($('#p-tree')); // panneau Arbre : taille S ↔ M ↔ L, repli, accordéon (même effet que G.wake)
+  new ResizeObserver(resize).observe(wrap); // #gwrap suit le panneau Arbre : taille S ↔ M ↔ L, repli, accordéon, fenêtre (même effet que G.wake)
   const toS=(x,y)=>[(x-cam.x)*cam.k+W/2,(y-cam.y)*cam.k+H/2];
   const toW=(sx,sy)=>[(sx-W/2)/cam.k+cam.x,(sy-H/2)/cam.k+cam.y];
 

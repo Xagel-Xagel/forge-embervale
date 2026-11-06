@@ -6,7 +6,7 @@ const withLs = (ls, fn) => { const keep = globalThis.localStorage; globalThis.lo
 const spyOn = (names, fn) => { const keep = names.map(n => globalThis[n]), calls = []; names.forEach(n => { globalThis[n] = (...a) => { calls.push(n); }; });
   try { return fn(calls); } finally { names.forEach((n, i) => { globalThis[n] = keep[i]; }); } };
 const noLs = fn => withLs(fakeLs(() => null), fn);
-const withLay = (l, fn) => { const keep = lay, keepO = org; lay = l; try { return fn(); } finally { lay = keep; org = keepO; } };
+const withLay = (l, fn) => { const keep = lay, keepO = org, keepS = lastShown; lay = l; try { return fn(); } finally { lay = keep; org = keepO; lastShown = keepS; } };
 const withMq = (phone, fn) => { const keep = globalThis.matchMedia; globalThis.matchMedia = () => ({matches: phone, addEventListener() {}}); try { return fn(); } finally { globalThis.matchMedia = keep; } };
 const OPT = ['optCalc', 'optBo', 'optDef', 'optTab'];
 const visible = () => lay.order.filter(isOpen), shownList = () => lay.order.filter(shown);
@@ -322,7 +322,7 @@ test('clic sur un ennemi de Tables : cible changée, Calculateur ouvert et dépl
       openPanel('tab'); tabEn = null; renderOptNow(); const i = ENEMIES.findIndex(e => e.n === 'Hollow Hound'); assert.notEqual(i, oEnemy); // fr ≠ anglais, traduction (°)
       const f0 = el('pf-calc').focused;
       el('mxBody').onclick({target: {closest: s => s === 'button[data-en]' ? {dataset: {en: String(i)}} : null}});
-      assert.equal(oEnemy, i, 'cible'); assert.equal(shown('calc'), true, 'Calculateur non affiché'); assert.equal(el('pf-calc').focused, f0 + 1, 'focus non posé sur le Calculateur');
+      assert.equal(oEnemy, i, 'cible'); assert.equal(shown('calc'), true, 'Calculateur non affiché'); assert.equal(said.at(-1), 'Cible : Chien Creux °'); assert.equal(el('pf-calc').focused, f0 + 1, 'focus non posé sur le Calculateur');
       assert.equal(el('optBar').parent.id, 'optTarget'); assert.ok(said.some(t => t.includes(nmT(ENEMIES[i])) && t.includes('°')), 'message de la nouvelle cible absent');
       const n = said.length; el('mxBody').onclick({target: {closest: () => null}}); assert.equal(said.length, n, 'clic hors d\'un nom : rien');
     })));
@@ -404,4 +404,100 @@ test('tuiles du Build optimal (DOM observé) : points et Flamme du calcul, −/+
       for (const id of ['boN', 'boF', 'boFdn', 'boFup']) assert.match(h2, new RegExp(`id="${id}"[^>]*disabled|disabled[^>]*id="${id}"`), id + ' actif dans les tuiles refaites pendant le calcul');
     });
   } finally { [builds[0], cur, BO.N, BO.F, BO.busy] = keep; }
+});
+
+// ---- Revue QA (avant la PR) : cas limites relevés par mutation (chaque test tue un mutant qui survivait)
+test('mémoire abîmée : « mine » sans folded / closed / size, nom hérité du prototype → Théoricien, sans exception', () => {
+  for (const o of [{v: 1, preset: 'mine', order: ['tree'], size: {}, closed: []}, {v: 1, preset: 'mine', order: ['tree'], size: {}, folded: []}, {v: 1, preset: 'mine', order: ['tree'], folded: [], closed: []},
+    {v: 1, preset: 'toString'}, {v: 1, preset: '__proto__'}, {v: 1, preset: 'constructor'}, {v: 1, preset: 7}])
+    assert.equal(withLs(fakeLs(() => JSON.stringify(o)), loadLayout).preset, 'theo', JSON.stringify(o));
+  withLay(mkDispo('theo'), () => noLs(() => { assert.equal(applyDispo('toString'), false); assert.equal(lay.preset, 'theo'); }));
+});
+
+test('« Ma disposition » abîmée mais état valide : refaite depuis l\'état relu (on peut y revenir)', () => {
+  const l = withLs(fakeLs(() => JSON.stringify({v: 1, preset: 'mine', order: ['def', 'tree'], size: {def: 'L'}, folded: [], closed: ['tab'], mine: 'oups'})), loadLayout);
+  assert.deepEqual([l.preset, l.mine.order.slice(0, 2), l.mine.size.def, l.mine.closed], ['mine', ['def', 'tree'], 'L', ['tab']]);
+  withLay(l, () => noLs(() => { applyDispo('combat'); assert.equal(applyDispo('mine'), true); assert.equal(lay.size.def, 'L'); }));
+});
+
+test('choisir une disposition prête l\'enregistre (une écriture) ; stockage bloqué : un seul message par visite', () => withLay(mkDispo('theo'), () => {
+  const w = []; withLs(fakeLs(() => null, (k, v) => w.push([k, JSON.parse(v).preset])), () => applyDispo('combat'));
+  assert.deepEqual(w, [['forge-embervale-panneaux', 'combat']]);
+  const said = [], keepT = globalThis.toast, keepW = saveWarned;
+  try {
+    globalThis.toast = t => said.push(t); saveWarned = false;
+    withLs(fakeLs(() => null, () => { throw new Error('SecurityError'); }), () => { applyDispo('mini'); setSize('eq', 'L'); });
+    assert.deepEqual(said, ['Disposition non retenue : stockage du navigateur bloqué (elle vaut jusqu\'au rechargement)']);
+  } finally { globalThis.toast = keepT; saveWarned = keepW; }
+}));
+
+test('retoucher une disposition prête remplace « Ma disposition » : un message le dit (pas la première fois, pas depuis « Ma disposition »)', () => withLay(mkDispo('theo'), () => noLs(() => {
+  const said = [], keepT = globalThis.toast;
+  try {
+    globalThis.toast = t => said.push(t);
+    setSize('eq', 'L'); assert.deepEqual(said, [], 'première « Ma disposition » : rien à remplacer');
+    setSize('fiche', 'L'); assert.deepEqual(said, [], 'déjà sur « Ma disposition »');
+    applyDispo('combat'); openPanel('tree');
+    assert.deepEqual(said, ['« Ma disposition » remplacée par celle-ci (partie de Combat)']); assert.equal(lay.mine.size.calc, 'L');
+  } finally { globalThis.toast = keepT; }
+})));
+
+test('accordéon : changer de disposition garde le panneau déplié s\'il reste ouvert, sinon le premier ouvert ; seuil exact 639 px', () => {
+  withMq(true, () => withLay(mkDispo('all'), () => noLs(() => {
+    lay.acc = 'def'; applyDispo('combat'); assert.equal(lay.acc, 'def'); applyDispo('mini'); assert.equal(lay.acc, 'eq');
+    lay.acc = null; applyDispo('all'); assert.equal(lay.acc, 'tree', 'aucun déplié : premier ouvert');
+  })));
+  const q = [], keep = globalThis.matchMedia; globalThis.matchMedia = s => { q.push(s); return {matches: false}; };
+  try { isAcc(); } finally { globalThis.matchMedia = keep; }
+  assert.deepEqual(q, ['(max-width:639px)'], 'même seuil que styles.css');
+});
+
+test('passage bureau → téléphone (écouteur de matchMedia) : accordéon, « Plus » refermé', () => {
+  let cb = null, phone = false; const keep = globalThis.matchMedia;
+  globalThis.matchMedia = () => ({get matches() { return phone; }, addEventListener(t, f) { cb = f; }});
+  try {
+    fakeDom(el => noLs(() => withLay(lay, () => spyOn(OPT, () => {
+      initPanels(); applyDispo('theo'); assert.equal(el('pf-fiche').getAttribute('aria-expanded'), 'true');
+      el('bmore').hidden = false; phone = true; cb();
+      assert.deepEqual(shownList(), ['tree']); assert.deepEqual([el('p-fiche').cls.has('folded'), el('pf-fiche').getAttribute('aria-expanded'), el('bmore').hidden], [true, 'false', true]);
+      phone = false; cb(); assert.deepEqual(shownList(), ['tree', 'fiche', 'eq', 'calc'], 'retour bureau');
+    }))));
+  } finally { globalThis.matchMedia = keep; }
+});
+
+test('Organiser : aide cachée en lecture ; Fermer au téléphone (rail caché) : focus sur Organiser, message « Plus »', () => {
+  const said = [], keepT = globalThis.toast;
+  try {
+    globalThis.toast = t => said.push(t);
+    fakeDom(el => noLs(() => withLay(mkDispo('theo'), () => spyOn(OPT, () => { el('orgHint').hidden = false; paintLayout(); assert.equal(el('orgHint').hidden, true); setOrg(true); assert.equal(el('orgHint').hidden, false); }))));
+    withMq(true, () => fakeDom(el => noLs(() => withLay(lay, () => spyOn(OPT, () => {
+      initPanels(); applyDispo('theo'); el('r-calc').offsetParent = null; const o0 = el('org').focused;
+      el('px-calc').onclick(); assert.equal(el('org').focused, o0 + 1); assert.equal(said.at(-1), 'Panneau « Calculateur » fermé : rouvrez-le depuis le rail (« Plus » en bas)');
+    })))));
+  } finally { globalThis.toast = keepT; }
+});
+
+test('clic sur un ennemi de Tables, Calculateur déjà affiché : il montre la nouvelle cible ; message littéral', () => {
+  const keepE = oEnemy, keepT = tabEn, keepToast = globalThis.toast, said = [];
+  try {
+    globalThis.toast = t => said.push(t);
+    fakeDom(el => noLs(() => withLay(mkDispo('all'), () => {
+      paintLayout(true); tabEn = null; renderOptNow(); const i = ENEMIES.findIndex(e => e.n === 'Hollow Hound'); assert.notEqual(i, oEnemy);
+      el('mxBody').onclick({target: {closest: s => s === 'button[data-en]' ? {dataset: {en: String(i)}} : null}});
+      assert.ok(el('optBody').innerHTML.includes('Chien Creux'), 'Calculateur resté sur l\'ancienne cible'); assert.deepEqual(said, ['Cible : Chien Creux °']);
+    })));
+  } finally { globalThis.toast = keepToast; oEnemy = keepE; tabEn = keepT; }
+});
+
+test('build optimal périmé, aucun panneau du calculateur affiché : arrêté et dit ; panneau affiché mais hors de l\'écran : dit aussi', () => {
+  const keepBO = {busy: BO.busy, key: BO.key}, keepH = globalThis.innerHeight;
+  try {
+    fakeDom(el => noLs(() => spyOn(['boStopRun', 'toast', ...OPT], calls => {
+      withLay(mkDispo('mini'), () => { BO.busy = true; BO.key = 'périmée'; renderOptNow(); assert.deepEqual(calls.filter(c => c === 'boStopRun' || c === 'toast'), ['boStopRun', 'toast']); });
+      withLay(mkDispo('all'), () => {
+        globalThis.innerHeight = 900; el('p-bo').top = 2000; calls.length = 0; BO.busy = true; renderOptNow(); assert.ok(calls.includes('toast'), 'hors de l\'écran (plus bas) : aucun message');
+        el('p-bo').top = 300; calls.length = 0; BO.busy = true; renderOptNow(); assert.ok(calls.includes('boStopRun') && !calls.includes('toast'), 'à l\'écran : la carte suffit');
+      });
+    })));
+  } finally { Object.assign(BO, keepBO); globalThis.innerHeight = keepH; }
 });

@@ -89,7 +89,7 @@ function renderOpt(){if(optT)clearTimeout(optT);optT=setTimeout(renderOptNow,25)
 function renderOptNow(){optT=null;
   const b=B(),en=ENEMIES[oEnemy];
   // build, cible ou réglages changés pendant le calcul du build optimal, quel que soit le panneau affiché ; panneau Build optimal caché : un message le dit
-  if(BO.busy&&BO.key!==boKey(b)){boStopRun();if(!shown('bo'))toast('Calcul du build optimal arrêté : réglages changés, relancez-le')}
+  if(BO.busy&&BO.key!==boKey(b)){boStopRun();if(!inView('bo'))toast('Calcul du build optimal arrêté : réglages changés, relancez-le')}
   const on=OPT_PANELS.filter(shown);if(!on.length)return;const o=compute(b);
   for(const k of on)({calc:optCalc,bo:optBo,def:optDef,tab:optTab})[k](b,o,en)}
 /* Panneau Calculateur : faiblesses, armes contre la cible, classement des armes, où placer les points */

@@ -186,7 +186,9 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   // Replier au clavier (Entrée) : aria-expanded, corps caché
   await page.focus('#pf-calc'); await page.keyboard.press('Enter'); await page.waitForTimeout(40);
   if (await page.getAttribute('#pf-calc', 'aria-expanded') !== 'false' || await page.isVisible('#optBody')) errs.push('Replier au clavier sans effet');
+  if (await page.evaluate(() => document.activeElement.id) !== 'pf-calc') errs.push('Replier au clavier : focus perdu');
   await page.keyboard.press('Enter'); await page.waitForTimeout(40);
+  if (await page.evaluate(() => document.activeElement.id) !== 'pf-calc') errs.push('Déplier au clavier : focus perdu');
   await page.reload(); await page.waitForTimeout(500);
   const re = await page.evaluate(() => ({d: document.querySelector('#dispo').value, o: [...document.querySelectorAll('#pgrid > .pnl')].filter(p => !p.hidden).map(p => p.id.slice(2)).join(), s: document.querySelector('#p-eq').dataset.size}));
   if (re.d !== 'mine' || re.o !== 'tree,calc,eq' || re.s !== 'L') errs.push(`« Ma disposition » non retenue après rechargement (${re.d}, ${re.o}, ${re.s})`);
@@ -225,9 +227,17 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   if (!/coups avant K\.O\./.test(await page.textContent('#defOut').catch(() => ''))) errs.push('Défense ouverte depuis « Plus » mais vide');
   await page.click('#bb-plus'); await page.keyboard.press('Escape'); await page.waitForTimeout(40);
   if (await page.isVisible('#bmore') || await page.evaluate(() => document.activeElement.id) !== 'bb-plus') errs.push('Échap : « Plus » reste ouvert ou focus perdu');
-  // Passage téléphone → bureau : la grille revient (disposition d'origine, tout déplié)
+  // Passage téléphone → bureau : la grille revient (disposition d'origine, tout déplié) ; « Plus » ouvert est refermé ; retour téléphone : accordéon
+  await page.click('#bb-plus');
   await page.setViewportSize({width: 1300, height: 900}); await page.waitForTimeout(120);
   if ((await shownList(page)).join() !== 'tree,fiche,eq,calc,def') errs.push('retour bureau : ' + (await shownList(page)).join());
+  await page.setViewportSize({width: 400, height: 800}); await page.waitForTimeout(120);
+  if (await page.isVisible('#bmore')) errs.push('« Plus » resté ouvert après un aller-retour de largeur');
+  if ((await shownList(page)).length > 1) errs.push('retour téléphone : ' + (await shownList(page)).join());
+  // Fermer au téléphone (rail caché) : focus sur Organiser
+  await page.click('#org'); await page.click('#px-eq'); await page.waitForTimeout(40);
+  if (await page.evaluate(() => document.activeElement.id) !== 'org') errs.push('Fermer au téléphone : focus sur ' + await page.evaluate(() => document.activeElement.id));
+  await page.click('#orgDone');
   console.log(errs.length ? '✗' : '✓', 'téléphone : accordéon et barre basse', errs.join(' | '));
   fail += errs.length; await page.close();
 }
