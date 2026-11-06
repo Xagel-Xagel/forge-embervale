@@ -88,6 +88,7 @@ function renderOpt(){if(optT)clearTimeout(optT);optT=setTimeout(renderOptNow,25)
 function renderOptNow(){optT=null;
   const root=$('#optBody');if(!root)return;
   const b=B(),o=compute(b),en=ENEMIES[oEnemy];
+  if(BO.busy&&BO.key!==boKey(b))boStopRun(); // build, cible ou réglages changés pendant le calcul du build optimal
   $('#optFor').textContent='Build '+'AB'[cur]+' · '+b.name;
   $('#oSlot').value=oSlot;$('#oFam').value=oFam;$('#oEnemy').value=String(oEnemy);
   const wc=o.weapons[oSlot==='w1'?0:1];
@@ -162,9 +163,11 @@ function renderOptNow(){optT=null;
     <div><span class="tag ok">fichiers du jeu</span><b>Arbre de compétences.</b> Positions et liaisons des 243 nœuds : fichiers 1.0 (relevé PinDrop). <span class="tag hyp">déduit</span> Une liaison marche dans les deux sens (9 nœuds n'ont aucun lien entrant) et chaque rang coûte le prix du nœud (un seul coût par nœud dans les fichiers).</div>
     <div><span class="tag est">communauté</span><b>Critiques.</b> <code>moyenne = coup × (1 + chance de critique × dégâts critiques)</code> Base : 10 % de chance, +80 % de dégâts.</div>
     <div><span class="tag hyp">hypothèse</span><b>Résistances en %.</b> Appliquées après l'armure, en multiplication : <code>subis × (1 − résistance)</code>. Idem pour Tour, Gardien et Aura de terre (−10 % chacun quand ils s'appliquent).</div>
+    <div><span class="tag hyp">heuristique</span><b>Build optimal.</b> Pour chaque famille d'arme : chaque arme non dominée (même catégorie et même répartition des dégâts → la base la plus haute) est essayée ; l'arbre est rempli depuis zéro par deux gloutons (gain de dégâts par point, gain brut ; quand plus rien n'augmente les dégâts, gain de PV par point ; si aucun achat seul ne rapporte, on regarde l'achat d'après) ; l'équipement est choisi pièce par pièce avec la meilleure paire de deux anneaux différents ; on alterne jusqu'à ce que l'équipement ne change plus ; si le budget manque, amélioration locale (retirer un nœud, re-remplir). Pas une preuve d'optimalité.</div>
     <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Arcs et bâtons : le type affiché est indicatif (la flèche ou le sort porte la répartition, absente des fichiers de l'arme) ; les perks d'arme « feu magique », « dégâts perçants »… et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>
   </div></details>`;
-  root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>${cDef}${cMx}${cF}`;
+  root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>${boCard(b,en)}${cDef}${cMx}${cF}`;
+  boBind(root);
   // événements
   root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(ITEMS[bt.dataset.eq].n+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
   root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});

@@ -40,6 +40,7 @@ header.top h1 span{color:var(--ember)}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--ember);border-color:var(--ember);color:#fff}
 .btn.sm{padding:3px 8px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .sep{width:1px;height:26px;background:var(--line)}
 select,input[type="text"],input[type="number"]{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:6px 8px;max-width:100%}
 label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
@@ -181,6 +182,8 @@ span.hc{display:inline-block;padding:1px 6px;font-family:var(--f-mono);font-size
 .meta2{font-size:.78rem;color:var(--muted)}
 .wrow{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .wrow.sel{border-color:var(--ember);box-shadow:inset 3px 0 0 var(--ember)}
+.bogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:8px}
+.bogrid .wl{font-size:.78rem;color:var(--muted)}
 .oscroll{overflow-x:auto;max-width:100%}
 table.ot{width:100%;border-collapse:collapse;font-size:.85rem}
 table.ot th,table.ot td{padding:5px 6px;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}

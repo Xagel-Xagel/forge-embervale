@@ -16,6 +16,8 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 | Modèle de dégâts, critiques | 02-calc.js | [enshroudedcompanion – calculateur](https://enshroudedcompanion.com), [NKB Gaming – DPS](https://nkbgaming.com), [shrouded.tools](https://shrouded.tools), MetaBot | Estimations communautaires concordantes sur le principe, pas sur les détails. |
 | Builds prédéfinis | 01-data.js `PRESETS` | Inspirés de [KeenGamer – best builds 1.0](https://www.keengamer.com/articles/guides/enshrouded-1-0-best-builds-weapons-armor-skills/) + demandes de l'utilisateur | « Sadi Fourbe » : tank à vol de vie passif, demandé par l'utilisateur. Revue 1.10.0 : attributs et compétences ajustés d'après le coût de liaison mesuré sur le tracé réel (`01-tree-data.js`, PinDrop) et l'effet des compétences (`SK`) — voir HISTORY n° 13. |
 
+L'optimiseur de build complet (1.13.0, `21-buildopt.js`) n'ajoute **aucun chiffre de jeu** : il combine les données ci-dessus ; ses réglages (tolérance, 300 re-remplissages, plafond de 10 s) sont des paramètres du simulateur, décrits dans `docs/FORMULAS.md`.
+
 ## Conflits connus entre sources
 - **Feux follets (wisps)** : valeurs différentes entre PinDrop et enshrouded.tools → **exclus**.
 - **Fell Banshee**, **Hollow Reaper** : légers écarts → valeurs PinDrop retenues.

@@ -40,6 +40,13 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
 
 17. (Claude Code, 2026-11-06) QCM « suite » : **optimiseur multi-points** (ROADMAP n° 11) → 1.12.0 : `planPoints` (gloutons + amélioration locale), formulaire « Répartir au mieux N points » et « Appliquer le plan ».
 
+18. (Claude Code, 2026-11-06) « Optimiseur de build complet : pour un budget de points, proposer équipement, attributs et compétences qui maximisent un objectif ; bouton Appliquer ; QCM une question à la fois avant d'écrire » → 1.13.0 (`21-buildopt.js`). QCM de l'utilisateur :
+    - objectif : **« Dégâts vs cible »** (les PV départagent les égalités et reçoivent les points restants) ; non retenus : faction, survie seule, compromis réglable ;
+    - contraintes : **« la seule contrainte sera les points de compétence disponibles et le niveau de la Flamme du joueur »** (ni emplacements verrouillés, ni compétences gardées, ni classe) → l'optimiseur choisit aussi l'arme : un résultat par famille, sans classement entre familles (Dégâts ≠ Puissance) ;
+    - méthode : **« Glouton + alternance »** (mesuré sur prototype : = recherche exhaustive de l'équipement sur 3 cas, ≈ 3 s) ; non retenus : faisceau, ruine et reconstruction ;
+    - conception : **« Valider »** (gemmes non choisies, gemme gardée si compatible ; deux anneaux différents ; calcul découpé, plafond 10 s).
+    Ajouts pendant le codage, signalés : regard à deux achats quand le glouton est bloqué (Essences de vie sans Intelligence), amélioration locale quand le budget manque (jusqu'à +6 % mesuré à 40 points).
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

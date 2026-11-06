@@ -3,7 +3,7 @@
 Simulateur de stuff pour **Enshrouded 1.0** (équipement, gemmes, arbre de compétences, comparaison A/B, partage, calculateur d'optimisation contre les ennemis).
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
-- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 11 au 2026-11-06).
+- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 12 au 2026-11-06).
 
 L'utilisateur (Vincent) parle français : **réponses, interface, commentaires et messages de commit en français.**
 
@@ -34,7 +34,8 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
   10-ui.js           état (builds, cur, compare…), rendus (onglets, équipement, arbre en liste, fiche), événements
-  20-optimizer.js    calculateur : effVs, investments, buyInvest, defense, renderOpt ; surcharge renderStats pour se rafraîchir
+  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; surcharge renderStats pour se rafraîchir
+  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, carte « Build optimal » (boCard, boStart)
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
