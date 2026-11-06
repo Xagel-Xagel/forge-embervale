@@ -47,6 +47,12 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - conception : **« Valider »** (gemmes non choisies, gemme gardée si compatible ; deux anneaux différents ; calcul découpé, plafond 10 s).
     Ajouts pendant le codage, signalés : regard à deux achats quand le glouton est bloqué (Essences de vie sans Intelligence), amélioration locale quand le budget manque (jusqu'à +6 % mesuré à 40 points).
 
+19. (Claude Code, 2026-11-06) « Un stuff mage "full" dégâts critiques et chance de coup critique à la baguette → nouveau preset en fin de PRESETS + son code b3 ; QCM une question à la fois » (précédent : n° 4, Sadi Fourbe) → 1.14.0, preset « Mage critique (baguette) ». QCM de l'utilisateur :
+    - objectif : **« chance puis dégâts critiques »** ; ennemi : **aucun** ;
+    - anneaux : **66 % / 123 %** (Ether + Ancients) plutôt que 67 % / 104 % (Ether + Ring of Stamina) ;
+    - utilitaires : **aucune** (les 2 CON de la décision n° 13 restent, exigées par le test des presets mage) ; points restants : **dégâts + effets critiques** ;
+    - baguette : « pas de préférence, il faut faire le plus de dégâts » → Wand Of Bloodflow (428,7 contre 414,5 pour Ancient Drak Wand) ; arme 2 : **bâton** (Violet Storm, à égalité avec Staff Of The Moor, retenu pour la foudre de Coup en chaîne) ; nom : **« Mage critique (baguette) »**.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.
