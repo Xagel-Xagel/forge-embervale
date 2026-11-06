@@ -5,7 +5,8 @@ Simulateur de stuff pour **Enshrouded 1.0**, en français, dans une seule page w
 - Équipement de fin de jeu : 7 panoplies, anneaux, 53 armes, 29 gemmes, améliorations 0 à 5.
 - Arbre de compétences 1.0 au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian, avec la règle de liaison aux points de départ.
 - Fiche en direct, comparaison de deux builds A/B, 15 builds prédéfinis, sauvegarde locale et code de partage dans le lien.
-- Calculateur d'optimisation : faiblesses de 101 ennemis × 8 types de dégâts, classement des armes contre une cible, meilleurs points à investir, calcul des dégâts subis.
+- Calculateur d'optimisation : faiblesses de 101 ennemis × 8 types de dégâts, classement des armes contre une cible, meilleurs points à investir, build optimal, calcul des dégâts subis.
+- Six onglets (Arbre, Équipement, Calculateur, Build optimal, Défense, Tables), collés en haut de l'écran ; la page rouvre sur le dernier onglet.
 
 **Utiliser l'outil : https://xagel-xagel.github.io/forge-embervale/**
 

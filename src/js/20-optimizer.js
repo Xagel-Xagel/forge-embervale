@@ -3,7 +3,7 @@ const TI={};DTYPES.forEach((d,i)=>TI[d[0]]=i);
 const FLY=/Vulture|Bat\b|Wispwyvern|Dragon Youngling|Bees|Raven/;
 ENEMIES.forEach(e=>e.fly=FLY.test(e.n));
 const DTL=Object.fromEntries(DTYPES.map(d=>[d[0],d[1]]));
-let planN=10,oEnemy=Math.max(0,ENEMIES.findIndex(e=>e.n==='Fell Black Knight')),oSlot='w1',oFam='same',oMxF='all',oMxQ='';
+let planN=10,planMem=null,oEnemy=Math.max(0,ENEMIES.findIndex(e=>e.n==='Fell Black Knight')),oSlot='w1',oFam='same',oMxF='all',oMxQ='';
 const DEF={hit:600,type:'cut',armP:300,armM:200,cap:60,crowd:false,aura:false};
 const famOf=w=>CAT[w.cat][1];
 const FAM={melee:'Mêlée (épées, haches, masses, espadons)',dagger:'Dagues',bow:'Arcs',wand:'Baguettes',staff:'Bâtons'};
@@ -85,10 +85,15 @@ function mxRows(){const q=oMxQ.toLowerCase();
   return mx.map(([e,i])=>`<tr${i===oEnemy?' class="cur"':''}><th><button class="lnk" data-en="${i}">${esc(e.n)}</button><small>${FACTIONS[e.f].split(' ')[0]}${e.lv!=='—'?' · niv. '+e.lv:''}</small></th>${e.m.map(v=>`<td ${heat(v)}>${v===0?'0':fmt(v/100,2)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="9" class="empty">Aucun ennemi.</td></tr>'}
 let optT=null;
 function renderOpt(){if(optT)clearTimeout(optT);optT=setTimeout(renderOptNow,25)}
+/* Seul l'onglet ouvert est rendu (Calculateur, Build optimal, Défense ou Tables) ; showSec (10-ui.js) rend un onglet à son ouverture */
 function renderOptNow(){optT=null;
+  const b=B(),en=ENEMIES[oEnemy];
+  // build, cible ou réglages changés pendant le calcul du build optimal, quel que soit l'onglet ouvert ; hors de son onglet, un message le dit
+  if(BO.busy&&BO.key!==boKey(b)){boStopRun();if(sec!=='bo')toast('Calcul du build optimal arrêté : réglages changés, relancez-le')}
+  const f={calc:optCalc,bo:optBo,def:optDef,tab:optTab}[sec];if(f)f(b,compute(b),en)}
+/* Onglet Calculateur : faiblesses, armes contre la cible, classement des armes, où placer les points */
+function optCalc(b,o,en){
   const root=$('#optBody');if(!root)return;
-  const b=B(),o=compute(b),en=ENEMIES[oEnemy];
-  if(BO.busy&&BO.key!==boKey(b))boStopRun(); // build, cible ou réglages changés pendant le calcul du build optimal
   $('#optFor').textContent='Build '+'AB'[cur]+' · '+b.name;
   $('#oSlot').value=oSlot;$('#oFam').value=oFam;$('#oEnemy').value=String(oEnemy);
   const wc=o.weapons[oSlot==='w1'?0:1];
@@ -135,9 +140,30 @@ function renderOptNow(){optT=null;
       <div class="row"><label class="chk">Répartir au mieux <input type="number" id="planN" min="1" max="212" value="${Math.max(1,Math.min(planN,Math.max(1,free)))}" style="width:5rem" aria-label="Nombre de points à répartir"> points</label><button class="btn sm" id="planGo">Calculer</button></div>
       <div id="planOut"></div></div>`;
     root._inv=inv}
-  // 5. défense
-  const cDef=`<div class="ocard"><div class="oh"><h3>Défense : combien de coups encaissez-vous ?</h3><span class="lbl">${fmt(o.hp)} PV</span></div>
-    <div class="dform">
+  root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>`;
+  // événements
+  root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(ITEMS[bt.dataset.eq].n+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
+  root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});
+  /* Plan « Répartir au mieux » : gardé (planMem) tant que l'emplacement A/B, la cible, l'arme analysée et le build ne changent pas ; changer d'onglet ne l'efface plus */
+  const pk=planKey(b),showPlan=(out,P,N)=>{
+    if(!P||!P.steps.length){out.innerHTML='<p class="empty">Aucun point ne peut augmenter les dégâts de cette arme contre cette cible.</p>';return}
+    let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
+    out.innerHTML=`${optTable(rows,['#','Nœud','Coût','Cumul'],'named')}<p class="verdict">${P.used} / ${N} points : dégâts moyens ${fmt(P.base)} → <b>${fmt(P.avg)}</b> <span class="d-up">(+${fmt(P.gain*100,1)} %)</span>${P.used<N?' · plus rien d\'autre n\'augmente ces dégâts':''}</p>
+      <div class="row"><button class="btn sm primary" id="planApply">Appliquer le plan</button><span class="meta2">Méthode : gloutons puis amélioration locale (pas une preuve d'optimalité).</span></div>`;
+    out.querySelector('#planApply').onclick=()=>{planMem=null;builds[cur]=Object.assign(P.t,{name:b.name});renderAll();toast(`Plan appliqué : ${P.used} pts, +${fmt(P.gain*100,1)} %`)}};
+  const pg=root.querySelector('#planGo');if(pg){pg.onclick=()=>{planN=Math.max(1,Math.min(212,parseInt(root.querySelector('#planN').value)||1));const P=planPoints(b,oSlot,en,planN);planMem={k:pk,P,N:planN};showPlan(root.querySelector('#planOut'),P,planN)};
+    if(planMem&&planMem.k===pk)showPlan(root.querySelector('#planOut'),planMem.P,planMem.N)}
+}
+const planKey=b=>[cur,oEnemy,oSlot,JSON.stringify(b)].join('|');
+/* Onglet Build optimal (21-buildopt.js) : même cible et même arme analysée que le calculateur */
+function optBo(b,o,en){const root=$('#boBody');if(!root)return;
+  $('#boFor').textContent='Build '+'AB'[cur]+' · '+b.name;
+  $('#oSlot').value=oSlot;$('#oEnemy').value=String(oEnemy);
+  root.innerHTML=boCard(b,en);boBind(root)}
+/* Onglet Défense : coup reçu, armure et résistances → dégâts subis et coups avant K.O. (réglages gardés dans DEF) */
+function optDef(b,o){const root=$('#defBody');if(!root)return;
+  $('#defFor').textContent='Build '+'AB'[cur]+' · '+fmt(o.hp)+' PV';
+  root.innerHTML=`<div class="dform">
       <label>Coup reçu (avant réduction)<input type="number" id="dHit" min="0" value="${DEF.hit}"></label>
       <label>Type du coup<select id="dType">${DTYPES.map(d=>`<option value="${d[0]}"${d[0]===DEF.type?' selected':''}>${d[1]}</option>`).join('')}</select></label>
       <label>Armure physique (fiche en jeu)<input type="number" id="dArmP" min="0" value="${DEF.armP}"></label>
@@ -145,15 +171,25 @@ function renderOptNow(){optT=null;
       <label>Réduction max. par l'armure (%)<input type="number" id="dCap" min="0" max="95" value="${DEF.cap}"></label>
       <div class="dchk"><label class="chk"><input type="checkbox" id="dCrowd"${DEF.crowd?' checked':''}> 3 ennemis ou plus à 20 m${o.R('tower')||o.R('warden')?'':' <small>(Tour / Gardien non pris)</small>'}</label>
       <label class="chk"><input type="checkbox" id="dAura"${DEF.aura?' checked':''}> Aura de terre active</label></div>
-    </div><div id="defOut">${defOut(o)}</div></div>`;
-  // 6. matrice complète
-  const cMx=`<details class="ocard" id="mxBox"${root._mxOpen?' open':''}><summary><h3>Table complète : ${ENEMIES.length} ennemis × 8 types de dégâts</h3></summary>
+    </div><div id="defOut">${defOut(o)}</div>`;
+  const upd=()=>{$('#defOut').innerHTML=defOut(compute(B()))};
+  const num=(id,k)=>{root.querySelector(id).oninput=e=>{DEF[k]=Math.max(0,parseFloat(e.target.value)||0);upd()}};
+  num('#dHit','hit');num('#dArmP','armP');num('#dArmM','armM');num('#dCap','cap');
+  root.querySelector('#dType').onchange=e=>{DEF.type=e.target.value;upd()};
+  root.querySelector('#dCrowd').onchange=e=>{DEF.crowd=e.target.checked;upd()};
+  root.querySelector('#dAura').onchange=e=>{DEF.aura=e.target.checked;upd()}}
+/* Onglet Tables : matrice des faiblesses (ouverte par défaut) et formules ; un nom cliqué devient la cible et ouvre le calculateur.
+   Ne dépend que de la cible (ligne surlignée) : rendue une fois par cible (tabEn), la table garde son défilement quand le build change */
+let mxOpen=true,fOpen=false,tabEn=null;
+function optTab(){const root=$('#tabBody');if(!root||tabEn===oEnemy)return;tabEn=oEnemy;
+  // 1. matrice complète
+  const cMx=`<details class="ocard" id="mxBox"${mxOpen?' open':''}><summary><h3>Table complète : ${ENEMIES.length} ennemis × 8 types de dégâts</h3></summary>
     <div class="filters" style="margin:8px 0"><select id="mxF"><option value="all">Toutes les factions</option>${Object.entries(FACTIONS).map(([k,v])=>`<option value="${k}"${k===oMxF?' selected':''}>${v}</option>`).join('')}</select>
     <input type="text" id="mxQ" placeholder="Filtrer par nom" value="${esc(oMxQ)}" aria-label="Filtrer les ennemis"></div>
     <div class="oscroll mxs"><table class="ot mx"><thead><tr><th>Ennemi</th>${DTYPES.map(d=>`<th>${d[1]}</th>`).join('')}</tr></thead><tbody id="mxBody">${mxRows()}</tbody></table></div>
-    <div class="meta2">Multiplicateur appliqué aux dégâts de ce type : 1,2 = +20 % (faiblesse), 0,8 = −20 % (résistance), 0 = immunisé. Cliquez un nom pour l'analyser. Les feux follets (wisps) sont exclus : les sources se contredisent sur leurs valeurs.</div></details>`;
-  // 7. formules
-  const cF=`<details class="ocard"><summary><h3>Formules utilisées et niveau de confiance</h3></summary><div class="formulas">
+    <div class="meta2">Multiplicateur appliqué aux dégâts de ce type : 1,2 = +20 % (faiblesse), 0,8 = −20 % (résistance), 0 = immunisé. Cliquez un nom pour l'analyser dans le calculateur. Les feux follets (wisps) sont exclus : les sources se contredisent sur leurs valeurs.</div></details>`;
+  // 2. formules
+  const cF=`<details class="ocard" id="fBox"${fOpen?' open':''}><summary><h3>Formules utilisées et niveau de confiance</h3></summary><div class="formulas">
     <div><span class="tag ok">officiel</span><b>Armure.</b> Tutoriel en jeu : chaque point d'armure réduit les dégâts reçus de 1, jusqu'à 60 % de réduction au maximum.
       <code>subis = max(coup − armure, coup × (1 − 60 %))</code> L'armure physique couvre tranchant, perçant, contondant ; l'armure magique couvre feu, glace, foudre, Shroud. Le poison ignore l'armure.</div>
     <div><span class="tag ok">fichiers du jeu</span><b>Faiblesses des ennemis.</b> Chaque ennemi a un multiplicateur caché par type de dégâts. Pour une arme à dégâts mixtes, chaque part est multipliée séparément puis additionnée. <span class="tag ok">fichiers du jeu</span> Répartition : 16 armes de mêlée et dagues à 50/50 (ex. tranchant + glace), les autres à 100 %. <span class="tag hyp">hypothèse</span> Une compétence de type (Taillade, Pyromane…) ne joue que sur sa part.
@@ -166,28 +202,12 @@ function renderOptNow(){optT=null;
     <div><span class="tag hyp">heuristique</span><b>Build optimal.</b> Pour chaque famille d'arme : chaque arme non dominée (même catégorie et même répartition des dégâts → la base la plus haute) est essayée ; l'arbre est rempli depuis zéro par deux gloutons (gain de dégâts par point, gain brut ; quand plus rien n'augmente les dégâts, gain de PV par point ; si aucun achat seul ne rapporte, on regarde l'achat d'après) ; l'équipement est choisi pièce par pièce avec la meilleure paire de deux anneaux différents ; on alterne jusqu'à ce que l'équipement ne change plus ; si le budget manque, amélioration locale (retirer un nœud, re-remplir). Pas une preuve d'optimalité.</div>
     <div><span class="tag hyp">limite</span><b>Ce qui n'est pas compté.</b> Arcs et bâtons : le type affiché est indicatif (la flèche ou le sort porte la répartition, absente des fichiers de l'arme) ; les perks d'arme « feu magique », « dégâts perçants »… et les gemmes ne sont pas convertis en dégâts ; les points faibles, attaques impitoyables et furtives ne sont pas dans le classement.</div>
   </div></details>`;
-  root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>${boCard(b,en)}${cDef}${cMx}${cF}`;
-  boBind(root);
-  // événements
-  root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(ITEMS[bt.dataset.eq].n+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
-  root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});
-  const pg=root.querySelector('#planGo');if(pg)pg.onclick=()=>{planN=Math.max(1,Math.min(212,parseInt(root.querySelector('#planN').value)||1));const P=planPoints(b,oSlot,en,planN);const out=root.querySelector('#planOut');
-    if(!P||!P.steps.length){out.innerHTML='<p class="empty">Aucun point ne peut augmenter les dégâts de cette arme contre cette cible.</p>';return}
-    let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
-    out.innerHTML=`${optTable(rows,['#','Nœud','Coût','Cumul'],'named')}<p class="verdict">${P.used} / ${planN} points : dégâts moyens ${fmt(P.base)} → <b>${fmt(P.avg)}</b> <span class="d-up">(+${fmt(P.gain*100,1)} %)</span>${P.used<planN?' · plus rien d\'autre n\'augmente ces dégâts':''}</p>
-      <div class="row"><button class="btn sm primary" id="planApply">Appliquer le plan</button><span class="meta2">Méthode : gloutons puis amélioration locale (pas une preuve d'optimalité).</span></div>`;
-    out.querySelector('#planApply').onclick=()=>{builds[cur]=Object.assign(P.t,{name:b.name});renderAll();toast(`Plan appliqué : ${P.used} pts, +${fmt(P.gain*100,1)} %`)}};
-  root.querySelector('#mxBody').onclick=e=>{const bt=e.target.closest('button[data-en]');if(!bt)return;oEnemy=+bt.dataset.en;renderOptNow();$('#optPanel').scrollIntoView({behavior:'smooth',block:'start'})};
-  const upd=()=>{$('#defOut').innerHTML=defOut(compute(B()))};
-  const num=(id,k)=>{root.querySelector(id).oninput=e=>{DEF[k]=Math.max(0,parseFloat(e.target.value)||0);upd()}};
-  num('#dHit','hit');num('#dArmP','armP');num('#dArmM','armM');num('#dCap','cap');
-  root.querySelector('#dType').onchange=e=>{DEF.type=e.target.value;upd()};
-  root.querySelector('#dCrowd').onchange=e=>{DEF.crowd=e.target.checked;upd()};
-  root.querySelector('#dAura').onchange=e=>{DEF.aura=e.target.checked;upd()};
-  root.querySelector('#mxBox').ontoggle=e=>{root._mxOpen=e.target.open};
+  root.innerHTML=cMx+cF;
+  root.querySelector('#mxBody').onclick=e=>{const bt=e.target.closest('button[data-en]');if(!bt)return;oEnemy=+bt.dataset.en;showSec('calc');$('#t-calc').focus({preventScroll:true});toast('Cible : '+ENEMIES[oEnemy].n)};
+  root.querySelector('#mxBox').ontoggle=e=>{mxOpen=e.target.open};
+  root.querySelector('#fBox').ontoggle=e=>{fOpen=e.target.open};
   root.querySelector('#mxF').onchange=e=>{oMxF=e.target.value;$('#mxBody').innerHTML=mxRows()};
-  root.querySelector('#mxQ').oninput=e=>{oMxQ=e.target.value;$('#mxBody').innerHTML=mxRows()};
-}
+  root.querySelector('#mxQ').oninput=e=>{oMxQ=e.target.value;$('#mxBody').innerHTML=mxRows()}}
 (function initOpt(){
   const sel=$('#oEnemy');if(!sel)return;
   sel.innerHTML=Object.entries(FACTIONS).map(([k,v])=>`<optgroup label="${v}">`+ENEMIES.map((e,i)=>e.f===k?`<option value="${i}">${esc(e.n)}${e.boss?' ★':''}</option>`:'').join('')+'</optgroup>').join('');

@@ -53,6 +53,14 @@ Projet démarré le 2026-11-05 dans une session Claude (claude.ai), repris ensui
     - utilitaires : **aucune** (les 2 CON de la décision n° 13 restent, exigées par le test des presets mage) ; points restants : **dégâts + effets critiques** ;
     - baguette : « pas de préférence, il faut faire le plus de dégâts » → Wand Of Bloodflow (428,7 contre 414,5 pour Ancient Drak Wand) ; arme 2 : **bâton** (Violet Storm, 392,0 de Puissance contre 350,2 pour Staff Of The Moor grâce à Tonnerre) ; nom : **« Mage critique (baguette) »**.
 
+20. (Claude Code, 2026-11-06) « L'interface met tout sur une seule page (arbre, équipement, fiche, calculateur, build optimal, défense, tables) et on ne s'y retrouve plus → ajouter des menus ou une navigation par sections ; QCM une question à la fois » → 1.15.0. Outil : skill `frontend-design` (code ré-intégrable sous contraintes dures, fiche 07 de la banque de connaissances). QCM de l'utilisateur :
+    - forme : **« onglets en haut »** (non retenus : menu latéral, menu repliable ☰, sommaire à ancres) ;
+    - découpage : **« un onglet par outil »** — Arbre · Équipement · Calculateur · Build optimal · Défense · Tables (table des ennemis + formules), le choix de la cible affiché dans Calculateur et Build optimal ;
+    - toujours visible : barre des builds au-dessus des onglets, **fiche à droite d'Arbre et d'Équipement** (dessous sur téléphone), pleine largeur ailleurs ;
+    - 400 px : **« 2 lignes, collées en haut »** (3 × 2, la barre reste en haut pendant le défilement, partout) ;
+    - mémoire : **« oui, dans ce navigateur »** (lsGet/lsSet ; règle de CLAUDE.md élargie).
+    Ajouts pendant le codage, signalés : seul l'onglet ouvert du calculateur est rendu ; `scroll-padding-top` pour que les onglets collés ne cachent pas le focus clavier ; cases à cocher de la Défense corrigées (défaut antérieur). Après la revue QA : messages quand le build optimal s'arrête ou se termine hors de son onglet, plan « Répartir au mieux » gardé d'un onglet à l'autre, messages empilés et lus par les lecteurs d'écran.
+
 ## Décisions techniques
 - Page unique autonome (contrainte Artifact) ; sources découpées dans `src/` et réassemblées par `scripts/build.mjs`.
 - Noms d'objets en anglais (comme en jeu), compétences traduites avec le nom anglais en italique.

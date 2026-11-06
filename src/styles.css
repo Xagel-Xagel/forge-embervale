@@ -1,4 +1,4 @@
-/* Layout : barre d'outils, arbre de compétences en graphe pleine largeur, puis deux colonnes (équipement · fiche) qui s'empilent sur mobile */
+/* Layout : barre des builds, onglets des parties (collés en haut), puis la partie ouverte ; la fiche à droite des onglets Arbre et Équipement (dessous en dessous de 1000 px) */
 :root{
   --bg:#e9ecef; --surface:#f7f8f9; --surface2:#e1e5ea; --ink:#1b2029; --muted:#596272; --line:#cdd3db;
   --ember:#b8501a; --ember-soft:#f3dccd; --shroud:#5d4594;
@@ -20,6 +20,7 @@
   --war:#e7716b; --rng:#62c487; --mag:#79a6f0; --core:#cdb97a;
   --good:#5fc78f; --bad:#f0766b; --g-bg:#0c0e13; --g-node:#5d6472; --g-edge:#262c38; --g-label:#c8ccd4; --g-ring:#f2f0ea; color-scheme:dark }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
   padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:20px 48px}
 h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:.01em}
@@ -45,8 +46,21 @@ header.top h1 span{color:var(--ember)}
 select,input[type="text"],input[type="number"]{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:6px 8px;max-width:100%}
 label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .namein{width:12rem}
-.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+/* Onglets des parties : collés en haut pendant le défilement (hauteur mesurée dans --navh sur :root, 10-ui.js) ; 3 × 2 sous 640 px */
+.secbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-top:4px;border-bottom:1px solid var(--line)}
+.sectabs{display:flex;flex-wrap:wrap;gap:0 4px}
+.sectabs [role="tab"]{border:0;border-bottom:3px solid transparent;margin-bottom:-1px;background:transparent;padding:9px 13px 7px;cursor:pointer;color:var(--muted);font-family:var(--f-display);font-weight:700;font-size:1.05rem;line-height:1.25;letter-spacing:.02em}
+.sectabs [role="tab"]:hover{color:var(--ink)}
+.sectabs [role="tab"][aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ember)}
+.sectabs [role="tab"]:focus-visible{outline-offset:-3px}
+@media (max-width:639px){.sectabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+  .sectabs [role="tab"]{margin-bottom:0;padding:9px 4px 7px;min-height:44px;font-size:1rem}
+  .sectabs [role="tab"][aria-selected="true"]{background:var(--surface)}}
+.seclay{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1000px){.seclay.side{grid-template-columns:minmax(0,1fr) minmax(300px,25rem)}}
+.secmain{min-width:0}
+/* Défilement (focus clavier, haut d'une partie) : rien ne passe sous les onglets collés */
+html{scroll-padding-top:calc(var(--navh,52px) + env(safe-area-inset-top,0px) + 8px)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
 .panel>.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .panel>.ph h2{font-size:1.25rem}
@@ -104,10 +118,10 @@ label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:non
 .step button:disabled{opacity:.35;cursor:default}
 .step .rk{font-family:var(--f-mono);min-width:2.6rem;text-align:center;font-size:.85rem}
 .step .ct{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);min-width:3.4rem;text-align:right}
-.panel.stats{position:sticky;top:max(12px, env(safe-area-inset-top,0px))}
-@media (max-width:760px){.panel.stats{position:static}}
-.stats .pb{max-height:calc(100vh - 120px);overflow:auto}
-@media (max-width:760px){.stats .pb{max-height:none}}
+.panel.stats{position:sticky;top:calc(var(--navh,52px) + env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:999px){.panel.stats{position:static}}
+.stats .pb{max-height:calc(100vh - var(--navh,52px) - 90px);overflow:auto}
+@media (max-width:999px){.stats .pb{max-height:none}}
 table.st{width:100%;border-collapse:collapse;font-size:.88rem}
 table.st th{text-align:left;font-weight:500;padding:4px 6px 4px 0;color:var(--ink)}
 table.st td{text-align:right;font-family:var(--f-mono);padding:4px 0 4px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -135,12 +149,14 @@ details.why ul{margin:4px 0 0;padding-left:18px;font-size:.8rem;color:var(--mute
 .modal .box{background:var(--surface);border:1px solid var(--line);border-radius:10px;max-width:620px;width:100%;padding:18px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto}
 .modal textarea{width:100%;min-height:90px;font-family:var(--f-mono);font-size:.78rem;background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;word-break:break-all}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;z-index:40}
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:6px;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
+.toast{background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;text-align:center}
 .foot{color:var(--muted);font-size:.8rem;line-height:1.5;max-width:75ch}
 .foot a{color:var(--ember)}
 .empty{color:var(--muted);font-size:.85rem;padding:10px}
 .treehead{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px 18px;align-items:end}
 @media (max-width:900px){.treehead{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1249px){.seclay.side .treehead{grid-template-columns:minmax(0,1fr)}}
 .viewsw{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:6px}
 .viewsw button{border:0;background:transparent;padding:4px 10px;border-radius:4px;cursor:pointer;color:var(--muted)}
 .viewsw button[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
@@ -182,6 +198,8 @@ span.hc{display:inline-block;padding:1px 6px;font-family:var(--f-mono);font-size
 .meta2{font-size:.78rem;color:var(--muted)}
 .wrow{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .wrow.sel{border-color:var(--ember);box-shadow:inset 3px 0 0 var(--ember)}
+#boTarget .ofam{display:none}
+.oflat{display:flex;flex-direction:column;gap:8px;min-width:0}
 .bogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:8px}
 .bogrid .wl{font-size:.78rem;color:var(--muted)}
 .oscroll{overflow-x:auto;max-width:100%}
@@ -197,13 +215,14 @@ table.ot tr.cur{background:color-mix(in srgb,var(--ember) 9%,transparent)}
 table.ot tr.over td{opacity:.6}
 table.mx td.hc{display:table-cell;border:0;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:0;font-size:.8rem;text-align:center}
 table.mx thead th{text-align:center}
-.mxs{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.mxs{max-height:min(70vh,720px);overflow:auto;border:1px solid var(--line);border-radius:6px}
 .mxs thead th{position:sticky;top:0;background:var(--surface);z-index:1}
 .lnk{border:0;background:transparent;padding:0;color:var(--ink);font-weight:700;cursor:pointer;text-align:left;font:inherit;font-weight:700}
 .lnk:hover{color:var(--ember);text-decoration:underline}
 .dform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .dform label{display:flex;flex-direction:column;gap:2px;font-size:.8rem;color:var(--muted)}
 .dform input,.dform select{width:100%}
+.dform input[type="checkbox"]{width:auto;flex:none}
 .dchk{display:flex;flex-direction:column;gap:4px;justify-content:center;font-size:.85rem}
 .dchk small{color:var(--muted)}
 .dform label.chk{flex-direction:row;color:var(--ink);font-size:.85rem}

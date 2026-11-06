@@ -91,14 +91,14 @@ function boMerge(r,b,o){const m=clone(r.b),ot=o.slot==='w1'?'w2':'w1',bg=b.gem||
   m.gem={};if(b.gear[ot]&&bg[ot])m.gem[ot]=bg[ot];const g=GEMI[bg[o.slot]];if(g&&gemFit(g,ITEMS[m.gear[o.slot]])!==false)m.gem[o.slot]=g.id;
   return m}
 
-/* ---------- Interface : carte « Build optimal » du calculateur ---------- */
+/* ---------- Interface : onglet « Build optimal » (rendu par optBo, 20-optimizer.js) ---------- */
 /* N et F : saisis par build (A, B) ; null = suivre le budget et la Flamme du build. cpu : temps de calcul seul (hors attente entre tranches). open : détails ouverts */
 const BO={run:0,busy:false,out:null,part:null,prog:'',key:'',N:[null,null],F:[null,null],stop:false,err:'',cpu:0,open:new Set()};
 const boDef=(b,k)=>k==='N'?Math.max(0,Math.min(212,budget(b))):Math.max(1,Math.min(11,b.flame));
 const boN=b=>BO.N[cur]??boDef(b,'N'),boF=b=>BO.F[cur]??boDef(b,'F');
 const boKey=b=>[cur,oEnemy,oSlot,boN(b),boF(b),b.upg].join('|');
-function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="ocard" id="boCard"><div class="oh"><h3>Build optimal contre ${esc(en.n)}</h3><span class="lbl">arme, armures, anneaux et arbre</span></div>
-  <p class="meta2">L'optimiseur part d'un arbre vide et choisit tout le build pour chaque famille d'arme ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
+function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat" id="boCard">
+  <p class="meta2">Pour chaque famille d'arme, l'optimiseur part d'un arbre vide et choisit l'arme, les armures, les anneaux et l'arbre qui font le plus de dégâts contre <b>${esc(en.n)}</b> ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
   <div class="row"><label class="chk">Points disponibles <input type="number" id="boN" min="0" max="212" value="${boN(b)}" style="width:5rem"${dis}></label>
     <label class="chk">Niveau de Flamme <input type="number" id="boF" min="1" max="11" value="${boF(b)}" style="width:4rem"${dis}></label>
     <button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button></div>
@@ -143,7 +143,7 @@ function boStart(){const b=B(),en=ENEMIES[oEnemy],N=boN(b),F=boF(b),my=++BO.run;
   const g=boRun(oSlot,en,N,F,b.upg,cw?boFamOf(cw.w):null,BO_TMAX,clock);
   const tick=()=>{if(my!==BO.run)return;s0=Date.now();
     try{let r,ch=false;do{r=g.next();if(!r.done&&r.value){BO.part=Object.assign({res:Object.values(r.value.res)},base);BO.prog=`${Object.keys(r.value.res).length} famille(s) sur ${BO_FAM.length} (dernière : ${r.value.fam})`;ch=true}}while(!r.done&&Date.now()-s0<30);
-      BO.cpu+=Date.now()-s0;s0=0;if(r.done){BO.busy=false;BO.out=r.value;BO.part=null;boPaint()}else{if(ch)boProgress();setTimeout(tick,0)}}
+      BO.cpu+=Date.now()-s0;s0=0;if(r.done){BO.busy=false;BO.out=r.value;BO.part=null;boPaint();if(sec!=='bo')toast('Build optimal calculé : résultats dans l\'onglet Build optimal')}else{if(ch)boProgress();setTimeout(tick,0)}}
     catch(e){if(s0)BO.cpu+=Date.now()-s0;s0=0;boFail(e)}};
   boPaint();setTimeout(tick,0)}
 function boFail(e){BO.run++;BO.busy=false;BO.stop=true;BO.err=String(e&&e.message||e);BO.out=BO.part?Object.assign({},BO.part,{ms:BO.cpu,err:true}):null;BO.part=null;

@@ -3,7 +3,7 @@
 Simulateur de stuff pour **Enshrouded 1.0** (équipement, gemmes, arbre de compétences, comparaison A/B, partage, calculateur d'optimisation contre les ennemis).
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
-- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 13 au 2026-11-06).
+- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 14 au 2026-11-06).
 
 L'utilisateur (Vincent) parle français : **réponses, interface, commentaires et messages de commit en français.**
 
@@ -33,10 +33,10 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
-  10-ui.js           état (builds, cur, compare…), rendus (onglets, équipement, arbre en liste, fiche), événements
-  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; surcharge renderStats pour se rafraîchir
-  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, carte « Build optimal » (boCard, boStart)
-  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G
+  10-ui.js           état (builds, cur, compare, sec…), onglets des parties (SECS, showSec), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
+  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que l'onglet ouvert (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
+  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, onglet « Build optimal » (boCard, boStart)
+  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.wake à l'ouverture de l'onglet Arbre)
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
 scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)
@@ -54,8 +54,8 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 - Pas de `<!doctype>`, `<html>`, `<head>`, `<body>` dans `src/page.html` ni dans `dist/forge-embervale.html` (claude.ai ajoute le squelette ; `dist/index.html` le reçoit du build). Le build le vérifie.
 - Ressources externes : polices **Google Fonts uniquement** ; scripts seulement depuis cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, unpkg.com (version exacte épinglée). Tout le reste est bloqué sans erreur visible : pas de fetch, pas d'images distantes, pas d'iframe.
 - `alert`, `confirm`, `prompt`, `window.print()` ne marchent pas : utiliser `toast()` et `modal()` de 10-ui.js.
-- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch). Il ne sert qu'aux builds enregistrés localement.
-- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage).
+- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch, clé en paramètre). Il ne sert qu'aux builds enregistrés localement et à l'onglet ouvert (décision du 2026-11-06).
+- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage) : aucune navigation dans le hash (les onglets sont des boutons, l'onglet ouvert vit dans `localStorage`).
 - Couleurs : uniquement via les jetons CSS de `:root`, redéfinis dans les deux blocs sombres (`@media (prefers-color-scheme: dark)` avec `:root:not([data-theme="light"])`, et `:root[data-theme="dark"]`). Jamais de couleur littérale dans un composant, sauf les raretés de gemmes (RAR).
 - Largeur téléphone (~400 px) : aucun défilement horizontal de la page ; les tableaux larges vont dans `.oscroll`. La gouttière latérale `max(16px, env(safe-area-inset-*))` est sur `body`.
 - Pas de nouvelle dépendance si on peut l'éviter.
