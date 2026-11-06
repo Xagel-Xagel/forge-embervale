@@ -62,6 +62,12 @@ function openPanel(k){if(!pOk(k)||isOpen(k))return false;lay.closed=lay.closed.f
 /* Aller à un panneau (barre basse, rail, clic dans Tables) : ouvert, déplié, ramené en haut de l'écran (sous la barre collée), focus sur sel ou son bouton Replier */
 function goPanel(k,sel){if(!pOk(k))return;if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false);
   $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
+/* « Ma classe » : afficher un panneau sans retoucher la disposition prête choisie ni « Ma disposition » retenue (ouvert et déplié pour cette visite,
+   la disposition relue au rechargement reste celle du menu) ; depuis « Ma disposition », c'est une retouche ordinaire (retenue). Puis comme goPanel */
+function peekPanel(k,sel){if(!pOk(k))return;
+  if(lay.preset==='mine'){if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false)}
+  else{lay.closed=lay.closed.filter(x=>x!==k);if(isAcc())lay.acc=k;else{lay.folded=lay.folded.filter(x=>x!==k);if(lay.size[k]==='S')lay.size[k]='M'}saveLayout();paintLayout()}
+  $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
 function setOrg(on){org=!!on;paintLayout()}
 /* Panneau affiché ET dans la fenêtre : sinon un message dit ce qui lui arrive (build optimal arrêté ou calculé) */
 function inView(k){if(!shown(k))return false;const r=$('#p-'+k).getBoundingClientRect();return r.top+r.height>0&&r.top<(window.innerHeight||Infinity)}
@@ -106,14 +112,15 @@ const zonePts=(b,k)=>SK.reduce((a,s)=>a+(s.area===k?s.cost*Math.min(b.sk[s.id]||
 function paintCls(){for(const [k] of CLS){const bt=$('#c-'+k);if(bt)bt.setAttribute('aria-pressed',String(myCls===k))}
   const o=$('#oFamCls');if(o){o.disabled=!myCls;o.textContent=myCls?`Ma classe : ${clsName(myCls)} · ${clsFams(myCls)}`:'Ma classe (à choisir en haut)'}
   const f=$('#oFam');if(f)f.value=oFam} // liste « Armes à classer » à jour même si le Calculateur est caché (il ne la relit qu'à son rendu)
-function setCls(k){if(!CLS.some(c=>c[0]===k))return false;myCls=myCls===k?null:k;area=myCls||'all';
+function setCls(k){if(!CLS.some(c=>c[0]===k))return false;const run=BO.busy;myCls=myCls===k?null:k;area=myCls||'all';
   if(myCls)oFam='cls';else if(oFam==='cls')oFam='same';
-  if(BO.busy)boStopRun(); // calcul d'une autre classe : arrêté sans message (relancé juste après, ou réglages changés)
+  if(run)boStopRun(); // calcul en cours : arrêté ; relancé juste après (autre classe, sans message) ou dit (classe retirée)
   paintCls();renderSkills();
-  if(myCls){const was=shown('bo');goPanel('bo','#c-'+k);if(was)renderOptNow()}else renderOptNow(); // panneau qui apparaît : déjà rendu par paintLayout
-  if(view==='graph'&&window.G){if(shown('tree'))G.focus(area);else treeRefit=true} // arbre caché (fermé, replié, accordéon) : recentré quand il réapparaît
-  if(!myCls){toast('Classe retirée : le build optimal revient aux six familles d\'arme');return true}
-  boStart();toast(`${clsName(k)} : build optimal en calcul pour ${clsFams(k)} ; arbre centré sur la zone ${clsName(k)}`);return true}
+  if(myCls){const was=shown('bo');peekPanel('bo','#c-'+k);if(was)renderOptNow()}else renderOptNow(); // panneau qui apparaît : déjà rendu par paintLayout
+  const tv=view==='graph'&&!!window.G&&shown('tree');if(view==='graph'&&window.G){if(tv)G.focus(area);else treeRefit=true} // arbre caché (fermé, replié, accordéon) : recentré quand il réapparaît
+  if(!myCls){toast(`Classe retirée${run?' et calcul arrêté':''} : le build optimal couvrira de nouveau les six familles d'arme au prochain calcul`);return true}
+  const n=clsName(k);boStart(); // message fidèle à l'arbre : centré s'il est affiché, à son ouverture sinon, liste limitée à la zone en vue Liste
+  toast(`${n} : build optimal en calcul pour ${clsFams(k)} ; ${view!=='graph'?`liste de l'arbre limitée à la zone ${n}`:tv?`arbre centré sur la zone ${n}`:`arbre centré sur la zone ${n} à son ouverture`}`);return true}
 /* Barre basse (< 640 px) : Réglages (niveau, exploration, Flamme : tuiles de l'Arbre), Arbre, Équipement, Cible (Calculateur), Plus (les autres) */
 const BBAR=[['reg','Réglages','tree','#lvl'],['tree','Arbre','tree'],['eq','Équipement','eq'],['cible','Cible','calc','#oEnemy']],BMORE=['fiche','bo','def','tab'];
 function moreOpen(on){$('#bmore').hidden=!on;$('#bb-plus').setAttribute('aria-expanded',String(on))}

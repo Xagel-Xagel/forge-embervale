@@ -14,8 +14,8 @@ test('rendu complet de chaque preset, en vue graphe et liste, dans chaque dispos
 
 // « Ma classe » (1.19.0) : chaque preset avec chaque classe choisie dans la barre (disposition Tout : tous les panneaux rendus), bureau et accordéon, vue graphe et liste.
 // Le calcul du build optimal n'est pas lancé ici (boStart remplacé) ; dispositions × classes : nav.test.js (DOM observé).
-test('rendu complet de chaque preset avec chaque classe (bureau et accordéon, graphe et liste)', () => {
-  const keepL = lay, keepMq = globalThis.matchMedia, keepS = globalThis.boStart, keepT = globalThis.toast, keep = [myCls, area, oFam, treeRefit];
+test('fumée : rendu complet de chaque preset avec chaque classe (bureau et accordéon, graphe et liste), sans exception', () => {
+  const keepL = lay, keepMq = globalThis.matchMedia, keepS = globalThis.boStart, keepT = globalThis.toast, keep = [myCls, area, oFam, treeRefit, lastShown, cur];
   try {
     globalThis.boStart = () => {}; globalThis.toast = () => {};
     for (let i = 0; i < PRESETS.length; i++) {
@@ -26,5 +26,5 @@ test('rendu complet de chaque preset avec chaque classe (bureau et accordéon, g
         assert.deepEqual([myCls, area, oFam], [c, c, 'cls'], PRESETS[i].name + ' · ' + c);
       }
     }
-  } finally { view = 'graph'; lay = keepL; globalThis.matchMedia = keepMq; globalThis.boStart = keepS; globalThis.toast = keepT; [myCls, area, oFam, treeRefit] = keep; builds[0] = fromPreset(PRESETS[0]); }
+  } finally { view = 'graph'; lay = keepL; globalThis.matchMedia = keepMq; globalThis.boStart = keepS; globalThis.toast = keepT; [myCls, area, oFam, treeRefit, lastShown, cur] = keep; builds[0] = fromPreset(PRESETS[0]); }
 });

@@ -34,10 +34,10 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
   07-noms.js         FR_ITEMS, FR_SETS, FR_ENEMIES (noms français, clés = id / nom anglais) ; nmH, nmF, nmT, nmMatch (affichage et recherche)
-  10-ui.js           état (builds, cur, compare…), « Ma classe » (CLS, CLS_OF, myCls, setCls, paintCls, zonePts, zoneTag), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
+  10-ui.js           état (builds, cur, compare…), « Ma classe » (CLS, CLS_OF, myCls, setCls, paintCls, zonePts, zoneTag), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, peekPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
   20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que les panneaux affichés, ouverts et dépliés (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
   21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre ; fams : les deux d'une classe, BO_CLS), boMerge, panneau « Build optimal » (boCard, boStart)
-  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.wake quand le panneau Arbre apparaît ; ResizeObserver de #gwrap, qui suit la taille du panneau)
+  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.dim et G.zoneStyle : zone de « Ma classe » ; G.wake quand le panneau Arbre apparaît ; ResizeObserver de #gwrap, qui suit la taille du panneau)
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
 scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)

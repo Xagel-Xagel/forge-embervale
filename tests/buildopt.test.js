@@ -354,15 +354,26 @@ test('Ma classe : boRun ne calcule que les familles demandées (ordre de BO_FAM)
   const all = full(HH, 60, 7);
   assert.deepEqual(all.fams, ['m1', 'm2', 'dag', 'bow', 'wand', 'staff'], 'sans classe : six familles');
   for (const [k, want] of [['war', ['m1', 'm2']], ['rng', ['dag', 'bow']], ['mag', ['wand', 'staff']]]) {
-    const o = boDrain(boRun('w1', HH, 60, 7, 5, 'bow', 1e9, null, boClsFams(k))); // famille de l'arme analysée (arc) hors de la classe Guerrier : ignorée
-    assert.deepEqual([o.res.map(r => r.fk), o.fams, o.N, o.F], [want, want, 60, 7], k);
+    const o = boDrain(boRun('w1', HH, 4, 7, 5, 'bow', 1e9, null, boClsFams(k))); // 4 points : rapide ; famille analysée (arc) hors de la classe Guerrier : ignorée
+    assert.deepEqual([o.res.map(r => r.fk), o.fams, o.N, o.F], [want, want, 4, 7], k);
+  }
+  { const o = boDrain(boRun('w1', HH, 60, 7, 5, 'bow', 1e9, null, boClsFams('rng'))); // même résultat que le calcul complet (déjà en cache), pour une classe
     for (const r of o.res) {
       const a = all.res.find(x => x.fk === r.fk);
-      assert.equal(r.w.id, a.w.id, `${k} ${r.fk} : autre arme`);
-      assert.ok(Math.abs(r.s.d - a.s.d) < 1e-9 && r.s.hp === a.s.hp && r.used === a.used, `${k} ${r.fk} : résultat différent du calcul complet`);
+      assert.equal(r.w.id, a.w.id, `rng ${r.fk} : autre arme`);
+      assert.ok(Math.abs(r.s.d - a.s.d) < 1e-9 && r.s.hp === a.s.hp && r.used === a.used, `rng ${r.fk} : résultat différent du calcul complet`);
     }
   }
   assert.deepEqual(boDrain(boRun('w1', HH, 30, 7, 5, null, 1e9, null, [])).res, [], 'aucune famille demandée : aucun résultat');
+});
+
+test('Ma classe : boRun ne LANCE que les familles demandées (progression) ; le plafond de temps n\'est pas consommé par une famille hors classe', () => {
+  const g = boRun('w1', HH, 10, 7, 5, 'bow', 1e9, null, ['m1', 'm2']), seen = []; let r;
+  do { r = g.next(); if (!r.done && r.value) seen.push(r.value.fam); } while (!r.done);
+  assert.deepEqual(seen, ['Mêlée une main', 'Mêlée deux mains'], 'familles lancées');
+  let k = 0; const clock = () => 6000 * k++; // une lecture d'horloge par famille après la première : 6 s, puis 12 s (plafond 10 s)
+  const p = boDrain(boRun('w1', HH, 10, 7, 5, 'wand', 10000, clock, ['m1', 'm2'])); // famille analysée (baguettes) hors classe
+  assert.deepEqual(p.res.map(x => [x.fk, !!x.skip]), [['m1', false], ['m2', false]], 'une famille de la classe sautée : le temps est parti ailleurs');
 });
 
 test('Ma classe : points par zone (oracle littéral) ; la somme des quatre zones = points dépensés (presets, résultats du build optimal)', () => {
@@ -371,6 +382,17 @@ test('Ma classe : points par zone (oracle littéral) ; la somme des quatre zones
   b.sk.warriorsPath = 9; assert.equal(zonePts(b, 'war'), 6, 'rang au-delà du maximum compté au maximum, comme spentPoints'); assert.equal(spentPoints(b), 8);
   for (const p of PRESETS) { const x = fromPreset(p); assert.equal(AREAS.reduce((a, [k]) => a + zonePts(x, k), 0), spentPoints(x), p.name); }
   for (const r of full(FBK, 212, 11).res) assert.equal(AREAS.reduce((a, [k]) => a + zonePts(r.b, k), 0), r.used, r.fl);
+});
+
+test('Ma classe : ligne « Arbre : » d\'un résultat (oracle littéral : 1 pt / 2 pts, zones à 0 point absentes, ordre des zones)', () => {
+  const keepB = builds[0], keepC = cur;
+  try {
+    builds[0] = fromPreset(PRESETS[3]); cur = 0;
+    const b = blankBuild('r'); b.gear.w1 = 'w_graven'; b.sk.warriorsPath = 1; b.pip = {int: 2};
+    const h = boCards({res: [{fk: 'm1', fl: 'Mêlée une main', w: ITEMS.w_graven, b, used: 3, s: {d: 1, hp: 1}}], fams: ['m1'], N: 10, F: 11, slot: 'w1', en: ENEMIES.indexOf(FBK)}, false);
+    assert.ok(h.includes('<p class="zpts">Arbre : <span class="ztag" style="--ac:var(--war)">Guerrier 1 pt</span> <span class="ztag" style="--ac:var(--mag)">Mage 2 pts</span></p>'), 'ligne des zones : ' + (h.match(/<p class="zpts">.*?<\/p>/) || [''])[0]);
+    b.sk = {}; b.pip = {}; assert.ok(boCards({res: [{fk: 'm1', fl: 'Mêlée une main', w: ITEMS.w_graven, b, used: 0, s: {d: 1, hp: 1}}], fams: ['m1'], N: 10, F: 11, slot: 'w1', en: ENEMIES.indexOf(FBK)}, false).includes('<p class="zpts">Arbre : aucun point</p>'), 'arbre vide');
+  } finally { builds[0] = keepB; cur = keepC; }
 });
 
 // Faux calcul qui respecte les familles demandées (rejoue les vrais résultats Fell Black Knight, 212 pts, Flamme 11)
@@ -391,6 +413,8 @@ test('Ma classe (interface) : deux familles calculées et affichées, progressio
       const r = BO.out.res.find(x => x.fk === fk), z = AREAS.filter(([k]) => zonePts(r.b, k) > 0);
       assert.ok(z.length >= 1, fk); for (const [k, l] of z) { const v = zonePts(r.b, k); assert.ok(h.includes(zoneTag(k, `${l} ${v} pt${v > 1 ? 's' : ''}`)), `${fk} : zone ${l} absente`); }
     }
+    assert.ok(BO.out.res.some(r => AREAS.some(([k]) => zonePts(r.b, k) === 0)), 'témoin : une zone à 0 point');
+    for (const r of BO.out.res) for (const [k, l] of AREAS) if (zonePts(r.b, k) === 0) assert.ok(!h.includes(`>${l} 0 pt<`), `${r.fk} : zone ${l} à 0 point affichée`);
     assert.ok(boClsLine().includes(zoneTag('rng', 'Ma classe : Rôdeur')) && boClsLine().includes('dagues et arcs') && boClsLine().includes('id="boAllCls"'), 'ligne de la classe');
     myCls = 'mag'; assert.ok(boOutHtml().includes('relancez') && boOutHtml().includes('classe'), 'classe changée : résultats périmés');
     const before = clone(B()); boApply('dag'); assert.deepEqual(B(), before, 'classe changée : « Appliquer » bloqué');
@@ -415,6 +439,6 @@ test('Ma classe (interface) : choisir une autre classe pendant un calcul l\'arr�
     boBind(root); const keepQ = document.querySelector; let f = 0;
     document.querySelector = s => s === '#boGo' ? {focus() { f++; }} : keepQ(s);
     try { btn.onclick(); } finally { document.querySelector = keepQ; }
-    assert.deepEqual([myCls, BO.busy, f, said.at(-1)], [null, false, 1, 'Classe retirée : le build optimal revient aux six familles d\'arme']);
+    assert.deepEqual([myCls, BO.busy, f, said.at(-1)], [null, false, 1, 'Classe retirée et calcul arrêté : le build optimal couvrira de nouveau les six familles d\'arme au prochain calcul']);
   } finally { [myCls, area, oFam, treeRefit, globalThis.toast, lay] = keep; BO.run++; BO.busy = false; }
 }));

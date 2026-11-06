@@ -40,6 +40,10 @@ const G=(()=>{
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
   new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
   const areaCol=a=>colors[a]||colors.ember;
+  /* « Ma classe » (10-ui.js) : nœud non acquis d'une des deux autres zones → estompé (Cœur, départs et nœuds acquis restent nets) ;
+     libellé de zone : celui de la classe en grand et marqué, les autres plus pâles */
+  const dim=n=>!!myCls&&n.area!==myCls&&n.area!=='core'&&!isOn(n);
+  const zoneStyle=k=>k===myCls?{t:' · ma classe',px:16,a:1}:{t:'',px:13,a:myCls?.55:.85};
 
   function matchSet(){const q=query.toLowerCase();if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
     for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0||gearOf(n)>0;if(okQ&&okO)s.add(n)}return s}
@@ -55,8 +59,7 @@ const G=(()=>{
   function draw(){
     dirty=false;curR=reach(b());ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,W,H);
     const ms=matchSet();const hl=hover&&hoverAmt>0?new Set([hover,...hover.nb]):null;
-    // « Ma classe » (10-ui.js) : nœuds non acquis des deux autres zones estompés (le Cœur et les nœuds acquis restent nets)
-    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);if(myCls&&n.area!==myCls&&n.area!=='core'&&!isOn(n))a=Math.min(a,.4);return a};
+    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);if(dim(n))a=Math.min(a,.4);return a}; // dim : « Ma classe »
     ctx.setTransform(dpr*cam.k,0,0,dpr*cam.k,dpr*(W/2-cam.x*cam.k),dpr*(H/2-cam.y*cam.k));
     // liens
     for(const [p,q] of E){const on=isOn(p)&&isOn(q);const fq=Math.min(fa(p),fa(q));
@@ -88,9 +91,9 @@ const G=(()=>{
     const fade=Math.max(0,Math.min(1,(cam.k-.75)/.45));
     // zones, gardées dans le cadre ; puis les noms par priorité (sélection, survol, recherche, acquis), sans chevauchement
     const placed=[],free=x=>!placed.some(q=>x[0]<q[2]&&x[2]>q[0]&&x[1]<q[3]&&x[3]>q[1]);
-    for(const z of zones){const mine=z.k===myCls;ctx.font=`700 ${mine?16:13}px "Alegreya SC", Georgia, serif`; // zone de « Ma classe » : plus grande, marquée
-      const t=z.l.toUpperCase()+(mine?' · ma classe':''),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
-      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+(mine?19:16)]);ctx.globalAlpha=mine?1:myCls?.55:.85;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
+    for(const z of zones){const zs=zoneStyle(z.k);ctx.font=`700 ${zs.px}px "Alegreya SC", Georgia, serif`;
+      const t=z.l.toUpperCase()+zs.t,w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
+      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+zs.px+3]);ctx.globalAlpha=zs.a;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
     const lab=[];
     for(const n of V){let a=0,txt='',pr=0;
       if(n.kind==='start'){if(n===hover||n===sel){a=n===sel?1:hoverAmt;txt='Étincelle';pr=3}}
@@ -172,6 +175,6 @@ const G=(()=>{
   $('#gShake').onclick=()=>{if(reduce.matches){home();return}for(const n of V){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}alpha=.8;dirty=true};
   resize();fit();
   /* wake : quand le panneau Arbre apparaît (paintLayout) ou change de taille, taille recalée sans toucher au cadrage (premier cadrage si le graphe était caché au démarrage) */
-  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},wake(){resize()},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
+  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},wake(){resize()},screen(n){return toS(n.x,n.y)},dim,zoneStyle,nodes:N,edges:E};
 })();
 window.G=G;
