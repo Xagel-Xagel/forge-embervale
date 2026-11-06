@@ -2,6 +2,14 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.14.0 — 2026-11-06 · Preset « Mage critique (baguette) »
+- Nouveau preset (en fin de liste, groupe « Mage et magie ») : **chance de critique d'abord, puis dégâts critiques**, puis dégâts moyens ; aucune compétence utilitaire (choix de l'utilisateur, QCM).
+- Chiffres (niveau 50, Flamme 11, améliorations 5) : **66 % de critique**, **123 % de dégâts critiques** ; Wand Of Bloodflow 428,7 de dégâts moyens (coup 236,6), Violet Storm 392,0 de Puissance ; 93 points dont 24 de liaison (Précision fatale est dans la zone Rôdeur).
+- Plafond du jeu : 100 % de chance ; plafond atteignable à la baguette avec nos données et deux anneaux différents : **67 %** (Ring of the Ether + un anneau à +5 %), cédé d'1 point contre +19 de dégâts critiques (Ring of the Ancients), décision de l'utilisateur. Ce chiffre suppose que les rangs donnés par l'équipement dépassent le maximum de la compétence (**hypothèse**, sinon 49 %, voir FORMULAS).
+- Liaisons obligatoires achetées au chargement (13 compétences au rang 1, 6 Esprit, 1 Dextérité) : ce ne sont pas des choix utilitaires.
+- Non comptés : perks d'arme (« Précis », « Brutal », éléments), gemmes (aucune posée), attaques impitoyables et furtives, effets déclenchés par les critiques (Coup en chaîne, Destruction massive, Terreur, Saignée, Frappe et sort).
+- CLAUDE.md : l'Artifact claude.ai est en version 13 (et non 12).
+
 ## 1.13.0 — 2026-11-06 · Build optimal (équipement + arbre)
 - Calculateur, nouvelle carte **« Build optimal contre <ennemi> »** : pour des **points disponibles** et un **niveau de Flamme** donnés, l'optimiseur part d'un arbre vide et choisit l'arme, les 5 pièces d'armure, 2 anneaux et l'arbre qui maximisent les dégâts moyens contre la cible ; les PV départagent les égalités et reçoivent les points restants. Bouton **« Appliquer »** par résultat.
 - **Un résultat par famille** (mêlée une main, mêlée deux mains, dagues, arcs, baguettes, bâtons), sans classement entre familles : « Dégâts » et « Puissance » ne se comparent pas et la vitesse d'attaque n'est pas comptée.

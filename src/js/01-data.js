@@ -369,5 +369,7 @@ const PRESETS = [
  {name:'Gardien du Shroud (soutien)',cat:'heal',gear:{head:'lif_h',chest:'lif_c',hands:'lif_g',legs:'lif_l',feet:'lif_f',w1:'w_oracle',w2:'w_twisting',r1:'rg_heir',r2:'rg_am'},gem:{w1:'g_embers',w2:'g_cleanse'},
   sk:{shroudMitigation:3,sharedMisery:3,innerFires:3,shroudResistance:3,healer:3,waterAura:3,saviour:3,healingRevive:3,lifeBurst:1,watersOfLife:1,manaCurrents:3,mageApprentice:3,wizard:3,darkArts:3,lifeEssences:3,exalted:1,arcaneConc:1,doubleJump:1,thickSkin:1},pip:{int:11,spi:11,con:2}},
  {name:'Prêtre du feu (soin offensif)',cat:'heal',gear:{head:'lif_h',chest:'lif_c',hands:'lif_g',legs:'fla_l',feet:'lif_f',w1:'w_guidance',w2:'w_bloodflow',r1:'rg_mf',r2:'rg_anc'},gem:{w1:'g_light',w2:'g_burn'},
-  sk:{healer:3,righteousFire:3,divineSurge:1,radiantAura:3,arsonist:3,waterAura:3,watersOfLife:1,lifeBurst:1,wizard:3,mageApprentice:3,quickCharge:3,fireResistance:3,counterstrike:3,lifeEssences:3,exalted:1,arcaneConc:1,doubleJump:1},pip:{int:11,spi:11,con:2}}
+  sk:{healer:3,righteousFire:3,divineSurge:1,radiantAura:3,arsonist:3,waterAura:3,watersOfLife:1,lifeBurst:1,wizard:3,mageApprentice:3,quickCharge:3,fireResistance:3,counterstrike:3,lifeEssences:3,exalted:1,arcaneConc:1,doubleJump:1},pip:{int:11,spi:11,con:2}},
+ {name:'Mage critique (baguette)',cat:'mage',gear:{head:'fla_h',chest:'fla_c',hands:'fla_g',legs:'fla_l',feet:'fla_f',w1:'w_bloodflow',w2:'w_violet',r1:'rg_eth',r2:'rg_anc'},
+  sk:{fatalPrecision:3,wizard:3,mageApprentice:3,wandMastery:3,arsonist:3,exalted:1,spellslinger:3,thunder:3,chainHit:1,massDestr:1,terror:3,bloodletting:3,blastCast:1},pip:{int:11,con:2}}
 ];
