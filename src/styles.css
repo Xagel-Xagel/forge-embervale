@@ -87,13 +87,29 @@ html{scroll-padding-top:calc(var(--navh,52px) + env(safe-area-inset-top,0px) + 8
 .gwarn{color:var(--bad);font-size:.78rem}
 .upg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface2);border-radius:6px;padding:8px 10px}
 .upg input[type=range]{flex:1;min-width:120px;accent-color:var(--ember)}
-.budget{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.budget label{display:flex;flex-direction:column;gap:2px;font-size:.8rem;color:var(--muted)}
-.budget input{width:100%}
+/* Tuiles Points et Flamme (Arbre, Build optimal, 1.17.0) : le chiffre en grand, deux tuiles côte à côte jusqu'à 400 px ; −/+ de 44 px */
+.ptiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:560px}
+#boTiles{margin-bottom:12px}
+.ptile{display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:8px}
+.ptl{font-size:.85rem;color:var(--muted)}
+.ptn{font-family:var(--f-display);font-weight:700;font-size:2.25rem;line-height:1.1;color:var(--ember);font-variant-numeric:lining-nums tabular-nums}
+output.ptn{display:block}
+.ptn.over{color:var(--bad)}
+input.ptn{width:100%;min-width:0;padding:0 6px;background:var(--surface);text-align:center;font-size:1.9rem}
+.ptf{display:flex;align-items:center;gap:6px}
+.ptf input.ptn{flex:1;-moz-appearance:textfield;appearance:textfield}
+.ptf input.ptn::-webkit-outer-spin-button,.ptf input.ptn::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pstep{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:1.4rem;line-height:1;cursor:pointer}
+.pstep:hover:not(:disabled){border-color:var(--ember);color:var(--ember)}
+.pstep:disabled{opacity:.4;cursor:not-allowed}
+.pts{font-size:.8rem;color:var(--muted)}
+.ptin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:2px}
+.ptin label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted)}
+.ptin input{width:100%}
+@media (max-width:480px){.ptile{padding:8px}}
 .bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
 .bar>i{display:block;height:100%;background:var(--ember);transition:width .2s}
 .bar.over>i{background:var(--bad)}
-.budgetline{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.85rem;flex-wrap:wrap;gap:6px}
 .over-msg{color:var(--bad)}
 .areas{display:flex;gap:4px;flex-wrap:wrap}
 .area{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:5px 10px;cursor:pointer;font-weight:500;display:flex;gap:6px;align-items:center}

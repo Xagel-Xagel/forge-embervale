@@ -154,14 +154,22 @@ test('build optimal : petit budget, égal au meilleur des arbres reliés énumé
   }
 });
 
-test('build optimal : armes non dominées, chaque arme de la famille est couverte par une arme au moins aussi forte', () => {
-  for (const [fk, , f] of BO_FAM) {
-    const cand = boWeapons(fk); assert.ok(cand.length > 0, fk);
-    for (const [id] of WEAPONS) {
-      const w = ITEMS[id]; if (!f(w.cat)) continue;
-      assert.ok(cand.some(c => c.cat === w.cat && JSON.stringify(c.split) === JSON.stringify(w.split) && c.val >= w.val), `${fk} : ${w.n}`);
-    }
+test('build optimal : armes non dominées (base, chance et dégâts de coup critique des perks débloqués), chaque arme couverte par une au moins aussi forte', () => {
+  const same = (c, w) => c.cat === w.cat && JSON.stringify(c.split) === JSON.stringify(w.split), ge = (x, y) => x.every((v, n) => v >= y[n]);
+  for (const u of [0, 2, 4, 5]) for (const [fk, , f] of BO_FAM) {
+    const cand = boWeapons(fk, u); assert.ok(cand.length > 0, fk);
+    for (const [id] of WEAPONS) { const w = ITEMS[id]; if (!f(w.cat)) continue;
+      assert.ok(cand.some(c => same(c, w) && ge(boPk(c, u), boPk(w, u))), `${fk}, ${u} améliorations : ${w.n} non couverte`); }
+    for (const c of cand) assert.ok(!cand.some(d => d !== c && same(d, c) && ge(boPk(d, u), boPk(c, u))), `${fk}, ${u} améliorations : ${c.n} dominée mais gardée`);
     assert.ok(cand.every(c => f(c.cat)), fk);
+  }
+  // sur de vrais builds (preset mage critique, Barbare), remplacer une arme écartée par celle qui la couvre ne baisse jamais la moyenne
+  for (const p of [PRESETS.find(q => q.name === 'Mage critique (baguette)'), PRESETS[3]]) { const b = fromPreset(p), fk = boFamOf(ITEMS[b.gear.w1]), cand = boWeapons(fk, b.upg), f = BO_FAM.find(x => x[0] === fk)[2];
+    const avg = id => { const t = clone(b); t.gear.w1 = id; return compute(t).weapons[0].avg; };
+    let out = 0;
+    for (const [id] of WEAPONS) { const w = ITEMS[id]; if (!f(w.cat) || cand.includes(w)) continue; out++;
+      const c = cand.find(c => same(c, w) && ge(boPk(c, b.upg), boPk(w, b.upg))); assert.ok(avg(c.id) >= avg(id) - 1e-9, `${p.name} : ${c.n} < ${w.n}`); }
+    assert.ok(out > 0, p.name + ' : aucune arme écartée, contrôle vide');
   }
 });
 
@@ -188,8 +196,12 @@ test('build optimal : arme analysée en arme 2, améliorations < 5, Flamme diff�
 
 test('build optimal : « Appliquer » (boMerge) garde nom, niveau, améliorations, autre arme et gemmes ; pièces gardées ; partage b3', () => {
   const o = full(FBK, 212, 11);
-  for (const [pi, fk, gem] of [[3, 'm1', undefined], [4, 'dag', 'g_toxic']]) { // Barbare : Fracture (contondant) → hache tranchante, retirée ; Assassin : gemme sans type, gardée
-    const b = fromPreset(PRESETS[pi]); b.lvl = 42; b.exp = 100; b.upg = 3;
+  // Barbare : gemme typée incompatible avec l'arme gagnante (choisie d'après elle : depuis 1.17.0 les perks de critique comptent et le gagnant mêlée une main
+  // est un marteau contondant, compatible avec la Fracture d'avant) → retirée ; Assassin : gemme sans type, gardée
+  const m1w = ITEMS[o.res.find(x => x.fk === 'm1').b.gear.w1], off = GEMS.map(g => GEMI[g[0]]).find(g => gemFit(g, m1w) === false);
+  assert.ok(off, 'aucune gemme incompatible avec ' + m1w.n + ' : la branche « retirée » n\'est plus exercée');
+  for (const [pi, fk, gem, set] of [[3, 'm1', undefined, off.id], [4, 'dag', 'g_toxic']]) {
+    const b = fromPreset(PRESETS[pi]); b.lvl = 42; b.exp = 100; b.upg = 3; if (set) b.gem.w1 = set;
     const r = o.res.find(x => x.fk === fk), m = boMerge(r, b, o);
     assert.deepEqual([m.name, m.lvl, m.exp, m.upg, m.flame, m.tv], [b.name, 42, 100, 3, 11, 1]);
     assert.equal(m.gear.w2, b.gear.w2); assert.equal(m.gem.w2, b.gem.w2);
@@ -304,3 +316,19 @@ test('build optimal (interface) : saisies ramenées et affichées, valeurs propr
   builds[0] = blankBuild('Vide'); BO.N[0] = null; globalThis.boRun = fakeRun; boStart(); await until(() => !BO.busy);
   const html = boOutHtml(); assert.ok(html.includes('data-boap') && !html.includes('Par rapport à votre build'));
 }));
+
+// Revue QA 1.17.0 : la domination doit suivre les améliorations du build (oracles en littéral, pas boPk)
+test('build optimal : armes candidates selon les améliorations (Ancient Drak Wand gardée à 3, écartée à 5) et choix réel à 3 améliorations', () => {
+  const ids = u => boWeapons('wand', u).map(w => w.id).sort();
+  assert.deepEqual(ids(3), ['w_ancdrak', 'w_apprentice', 'w_polymath', 'w_twisting']); // à 3 : Mythic sans perk compté, dominée par Drak (+6 % en emplacement 2)
+  assert.deepEqual(ids(5), ['w_frostw', 'w_mythic', 'w_polymath', 'w_twisting']); // à 5 : Mythic +12 % domine Drak +6 %
+  const m = DTYPES.map(([k]) => k === 'shock' ? 200 : 50), en = {n: 'Cible foudre (test)', f: 'none', m, lv: '—'}; // seule la foudre porte
+  assert.equal(boDrain(boFamily('wand', 'w1', en, 20, 11, 3)).w.id, 'w_ancdrak');
+  assert.equal(boDrain(boFamily('wand', 'w1', en, 20, 11, 5)).w.id, 'w_mythic');
+});
+
+test('build optimal : « Appliquer » garde une gemme typée compatible avec l\'arme gagnante', () => {
+  const o = full(FBK, 212, 11), r = o.res.find(x => x.fk === 'm1'), w = ITEMS[r.b.gear.w1];
+  const ok = GEMS.map(g => GEMI[g[0]]).find(g => gemFit(g, w) === true); assert.ok(ok, 'aucune gemme typée compatible avec ' + w.n);
+  const b = fromPreset(PRESETS[3]); b.gem.w1 = ok.id; assert.equal(boMerge(r, b, o).gem.w1, ok.id);
+});

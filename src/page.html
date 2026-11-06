@@ -49,15 +49,23 @@
       <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div></div>
     <div class="pb">
       <div class="treehead">
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div class="budget">
-            <label>Niveau du personnage<input type="number" id="lvl" min="1" max="50"></label>
-            <label>Points d'exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
-            <label>Niveau de la Flamme<input type="number" id="flame" min="1" max="11"></label>
-          </div>
-          <div>
-            <div class="budgetline"><span id="spent"></span><span id="needLvl"></span></div>
+        <!-- Tuiles Points et Flamme (1.17.0) : le nombre de points à attribuer et le niveau de la Flamme en grand, aussi à 400 px -->
+        <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
+          <div class="ptile">
+            <div class="ptl" id="ptLbl">Points à attribuer</div>
+            <output class="ptn" id="ptLeft" aria-labelledby="ptLbl"></output>
+            <div class="pts"><span id="spent"></span> · <span id="needLvl"></span></div>
             <div class="bar" id="bar"><i></i></div>
+            <div class="ptin">
+              <label>Niveau<input type="number" id="lvl" min="1" max="50" title="Niveau du personnage (1 à 50) : 2 points par niveau"></label>
+              <label>Exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
+            </div>
+          </div>
+          <div class="ptile">
+            <label class="ptl" for="flame">Niveau de la Flamme</label>
+            <div class="ptf"><button type="button" class="pstep" id="flameDn" aria-label="Baisser la Flamme d'un niveau">−</button><input type="number" class="ptn" id="flame" min="1" max="11"><button type="button" class="pstep" id="flameUp" aria-label="Monter la Flamme d'un niveau">+</button></div>
+            <div class="pts">sur 11</div>
+            <div class="pts" id="flameFx"></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -119,7 +127,7 @@
 
   <section class="panel" id="p-bo" role="tabpanel" aria-labelledby="t-bo" tabindex="0" hidden>
     <div class="ph"><h2 id="h-bo">Build optimal</h2><span class="lbl" id="boFor"></span></div>
-    <div class="pb"><div id="boTarget"></div><div id="boBody"></div></div>
+    <div class="pb"><div class="ptiles" id="boTiles" role="group" aria-label="Points et Flamme du calcul"></div><div id="boTarget"></div><div id="boBody"></div></div>
   </section>
 
   <section class="panel" id="p-def" role="tabpanel" aria-labelledby="t-def" tabindex="0" hidden>

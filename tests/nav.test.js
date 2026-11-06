@@ -246,3 +246,57 @@ test('clic : sur un onglet, focus posé dessus ; sur un ennemi de Tables, cible 
     }));
   } finally { globalThis.toast = keepToast; oEnemy = keepE; tabEn = keepT; showSec(keepS, true); }
 });
+
+// Tuiles Points et Flamme (1.17.0, HISTORY n° 23) : en tête des onglets Arbre et Build optimal, le nombre de points et la Flamme en grand.
+test('tuiles de l\'Arbre (DOM observé) : points à attribuer, points en trop, Flamme −/+ bornée, effet des nœuds de Flamme', () => {
+  const keep = [builds[0], cur, view];
+  try {
+    fakeDom(el => {
+      builds[0] = fromPreset(PRESETS.find(p => p.name === 'Mage critique (baguette)')); cur = 0; view = 'list';
+      renderSkills();
+      assert.deepEqual([el('ptLbl').textContent, el('ptLeft').textContent, el('ptLeft').cls.has('over'), el('spent').textContent], ['Points à attribuer', '14', false, '95 / 109 dépensés']);
+      assert.equal(el('needLvl').textContent, 'niveau requis 18');
+      assert.equal(el('flameFx').textContent, 'Exalté : +2 INT');
+      builds[0].lvl = 1; renderSkills(); // 0 + 61 points pour 95 dépensés
+      assert.deepEqual([el('ptLbl').textContent, el('ptLeft').textContent, el('ptLeft').cls.has('over')], ['Points en trop', '34', true]);
+      assert.equal(el('needLvl').textContent, 'retirez-en ou montez de niveau'); assert.equal(el('bar').className, 'bar over');
+      builds[0].lvl = 25;
+      builds[0].lvl = 25; builds[0].flame = 2; renderSkills(); assert.equal(el('flameDn').disabled, false);
+      const fl0 = el('flame').focused; stepFlame(-1); assert.equal(builds[0].flame, 1); assert.equal(el('flameDn').disabled, true, '− désactivé à 1');
+      assert.equal(el('flame').focused, fl0 + 1, 'focus sur le champ à la borne');
+      stepFlame(-1); assert.equal(builds[0].flame, 1, 'pas en dessous de 1');
+      builds[0].flame = 10; stepFlame(1); assert.equal(builds[0].flame, 11); assert.equal(el('flameUp').disabled, true, '+ désactivé à 11');
+      stepFlame(1); assert.equal(builds[0].flame, 11, 'pas au-dessus de 11');
+      assert.equal(el('flameFx').textContent, 'Exalté : +5 INT');
+      builds[0] = blankBuild('Vide'); renderSkills();
+      assert.match(el('flameFx').textContent, /^aucun nœud de Flamme acquis/); assert.equal(el('ptLeft').textContent, '212');
+    });
+  } finally { [builds[0], cur, view] = keep; }
+});
+
+test('tuiles du Build optimal (DOM observé) : points et Flamme du calcul, −/+ bornés et réglés par build, désactivés pendant le calcul', () => {
+  const keep = [builds[0], cur, BO.N.slice(), BO.F.slice(), BO.busy];
+  try {
+    fakeDom(el => {
+      builds[0] = fromPreset(PRESETS.find(p => p.name === 'Mage critique (baguette)')); cur = 0; BO.N = [null, null]; BO.F = [null, null]; BO.busy = false;
+      boTiles(); let h = el('boTiles').innerHTML;
+      assert.match(h, /id="boN" min="0" max="212" value="109"/); assert.match(h, /id="boF" min="1" max="11" value="4"/);
+      assert.match(h, /budget du build/); assert.match(h, /celle du build/);
+      el('boFup').onclick(); assert.equal(BO.F[0], 5);
+      assert.equal(el('boFh').textContent, 'sur 11 · réglée ici · build 4'); assert.ok(el('boFup').focused > 0, 'focus gardé sur +');
+      el('boFdn').onclick(); assert.equal(BO.F[0], null, 'retour à la Flamme du build : plus de réglage propre');
+      BO.F[0] = 11; boPaint(); assert.deepEqual([el('boFup').disabled, el('boFdn').disabled], [true, false]);
+      BO.F[0] = 1; boPaint(); assert.deepEqual([el('boFup').disabled, el('boFdn').disabled], [false, true]);
+      cur = 1; assert.equal(boF(B()), B().flame, 'le réglage du build A ne vaut pas pour B'); cur = 0;
+      // borne atteinte au clic : le bouton se désactive, le focus passe au champ ; une saisie ne refait pas les tuiles
+      BO.F[0] = 10; boTiles(); const f0 = el('boF').focused; el('boFup').onclick(); assert.equal(BO.F[0], 11);
+      assert.equal(el('boFup').disabled, true); assert.equal(el('boF').focused, f0 + 1, 'focus sur le champ à la borne');
+      const html = el('boTiles').innerHTML; el('boN').value = '50'; el('boN').onchange(); assert.equal(BO.N[0], 50);
+      assert.equal(el('boTiles').innerHTML, html, 'saisie : tuiles non refaites'); assert.equal(el('boNh').textContent, 'réglé ici · build 109');
+      assert.equal(el('boFh').textContent, 'sur 11 · réglée ici · build 4');
+      BO.busy = true; boPaint(); for (const id of ['boGo', 'boN', 'boF', 'boFdn', 'boFup']) assert.equal(el(id).disabled, true, id + ' actif pendant le calcul');
+      BO.F[0] = 5; boTiles(); const h2 = el('boTiles').innerHTML; // tuiles refaites pendant le calcul (changement d'onglet) : tout reste désactivé
+      for (const id of ['boN', 'boF', 'boFdn', 'boFup']) assert.match(h2, new RegExp(`id="${id}"[^>]*disabled|disabled[^>]*id="${id}"`), id + ' actif dans les tuiles refaites pendant le calcul');
+    });
+  } finally { [builds[0], cur, BO.N, BO.F, BO.busy] = keep; }
+});

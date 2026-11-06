@@ -1,6 +1,6 @@
 /* =========================== CALCUL =========================== */
 function blankBuild(name){return {name:name||'Nouveau build',gear:{},gem:{},sk:{},pip:{},pn:{},lvl:50,exp:114,flame:11,upg:5,tv:1}} // tv : build fait sur le tracé réel (1.9.0+)
-function fromPreset(p){const b=blankBuild(p.name);b.gear={...p.gear};b.gem={...(p.gem||{})};b.sk={...p.sk};b.pip={...p.pip};delete b.pn;return normalize(b)}
+function fromPreset(p){const b=blankBuild(p.name);for(const k of ['lvl','exp','flame','upg'])if(p[k]!=null)b[k]=p[k];b.gear={...p.gear};b.gem={...(p.gem||{})};b.sk={...p.sk};b.pip={...p.pip};delete b.pn;return normalize(b)}
 function spentPoints(b){let t=0;for(const id in b.sk){const s=SKI[id];if(s)t+=s.cost*Math.min(b.sk[id],s.max)}for(const k in b.pip)t+=b.pip[k]||0;return t}
 function budget(b){return 2*(Math.max(1,Math.min(50,b.lvl))-1)+Math.max(0,Math.min(114,b.exp))}
 function levelNeeded(b){const need=spentPoints(b)-Math.max(0,Math.min(114,b.exp));return need<=0?1:Math.ceil(need/2)+1}
@@ -16,7 +16,7 @@ function compute(b){
   const half=Math.floor(Math.max(1,Math.min(11,b.flame))/2);
   const A={str:(b.pip.str||0)+(R('barbarian')?half:0),con:(b.pip.con||0)+(R('thickSkin')?half:0),end:(b.pip.end||0)+(R('enduranceFlame')?half:0)+R('ranger'),
     dex:(b.pip.dex||0)+(R('gracefulStride')?half:0)+R('ranger'),int:(b.pip.int||0)+(R('exalted')?half:0),spi:(b.pip.spi||0)+(R('arcaneConc')?half:0)};
-  const o={attr:A,raw:s,gearRk};
+  const o={attr:A,raw:s,gearRk,upg:b.upg};
   o.hp=100+50*A.con+(s.hp||0)+3*A.str*R('athlete')+3*A.dex*R('veiledVigor')+3*A.int*R('lifeEssences');
   o.mana=100+20*A.spi+(s.mana||0);
   o.sta=100+10*A.end+(s.sta||0);
@@ -69,7 +69,10 @@ function weaponCalc(w,o,s,R,A){
   if(melee){cc+=(s.critCMelee||0)+2*R('veteran');if(s.critCMelee)cparts.push(['Équip. : critique mêlée',s.critCMelee]);if(R('veteran'))cparts.push([SKI.veteran.fr,2*R('veteran')])}
   if(fam==='bow'){cc+=(s.critCRanged||0)+2*R('sniper');if(s.critCRanged)cparts.push(['Équip. : critique à distance',s.critCRanged]);if(R('sniper'))cparts.push([SKI.sniper.fr,2*R('sniper')])}
   if(fam==='wand'||fam==='staff'){cc+=(s.critCMagic||0)+2*R('wizard');if(s.critCMagic)cparts.push(['Équip. : critique magique',s.critCMagic]);if(R('wizard'))cparts.push([SKI.wizard.fr,2*R('wizard')])}
+  // perks de l'arme débloqués (o.upg premiers emplacements, fichiers 1.0) : chance et dégâts de coup critique de CETTE arme ; les autres ne sont pas comptés
+  let cd=o.critD;const cdparts=[];
+  for(const [k,v] of (w.wperks||[]).slice(0,o.upg??5)){const c=WPC[k];if(c==='cc'){cc+=v;cparts.push(['Perk : '+WPERK[k],v])}else if(c==='cd'){cd+=v;cdparts.push(['Perk : '+WPERK[k],v])}}
   cc=Math.min(100,cc);
-  const hit=byType.reduce((a,x)=>a+x[2],0);const avg=hit*(1+cc/100*o.critD/100);
-  return {w,catName,unit:(fam==='bow'||fam==='staff')?'Puissance':'Dégâts',bonus,parts,cc,cparts,hit,avg,byType};
+  const hit=byType.reduce((a,x)=>a+x[2],0);const avg=hit*(1+cc/100*cd/100);
+  return {w,catName,unit:(fam==='bow'||fam==='staff')?'Puissance':'Dégâts',bonus,parts,cc,cparts,cd,cdparts,hit,avg,byType};
 }

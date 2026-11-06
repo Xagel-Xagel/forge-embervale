@@ -26,7 +26,7 @@ Aucune dépendance npm n'est nécessaire hormis Playwright pour `test:e2e` (`npm
 src/page.html        balisage + marqueurs <!-- INLINE:CSS --> et <!-- INLINE:JS -->
 src/styles.css       tous les styles (jetons de couleur clair/sombre)
 src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, chacun dans son <script>
-  01-data.js         ST (stats), SETS (armures), RINGS, CAT, WTYPE, WPERK, WEAPONS, SK (compétences), PIPS, AREAS, PRESETS
+  01-data.js         ST (stats), SETS (armures), RINGS, CAT, WTYPE, WPERK (perks d'arme ; WPU unités, WPC comptés, WOC surcharge), WEAPONS (5 emplacements de perks), SK (compétences), PIPS, AREAS, PRESETS
   01-tree-data.js    TREE : tracé réel de l'arbre 1.0 (243 nœuds x/y, 312 liaisons) — GÉNÉRÉ, ne pas éditer à la main
   02-calc.js         blankBuild, fromPreset, budget, compute(build) → fiche, weaponCalc
   03-share.js        tables figées FZ, encode/decode des codes de partage (b3-…, rétrocompatible b2- et b1-)
