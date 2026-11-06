@@ -37,7 +37,7 @@
 
 ## Build optimal (21-buildopt.js)
 - Générateurs (`function*`) : `boRun` → `boFamily` (une par famille de `BO_FAM`) → `boWeapon` (armes non dominées de `boWeapons`, alternance `boTree` ↔ `boGear`) → `boFinish` (arme gagnante : arbre avec PV, `boLocal`, équipement revu). `boFill` rend la main après chaque achat ; `boDrain` termine d'un coup (tests).
-- `boStart` exécute le générateur par tranches de 30 ms (`setTimeout`), affiche la progression et les familles terminées ; `BO.key` (build A/B, cible, arme analysée, points, Flamme, améliorations) invalide les résultats périmés ; `boMerge` produit le build appliqué (nom, niveau, exploration, autre arme et gemmes repris du build courant).
+- `boStart` exécute le générateur par tranches de 30 ms (`setTimeout`) ; horloge = temps de calcul seul (`BO.cpu`) ; `boProgress` met à jour le texte et les familles finies à chaque famille (le bouton « Arrêter », dans `#boProg`, n'est pas recréé), `boPaint` à chaque changement d'état ; une exception passe par `boFail` (message, bouton libéré). `BO.key` (emplacement A/B, cible, arme analysée, points, Flamme, améliorations) invalide les résultats périmés ; `BO.N` / `BO.F` sont propres à chaque build (null = valeurs du build) ; `boMerge` produit le build appliqué (nom, niveau, exploration, améliorations, autre arme et gemmes, pièces des emplacements laissés vides repris du build courant).
 
 ## Tests
 `tests/run.mjs` exécute les scripts de `src/js` dans un contexte Node avec un faux DOM (Proxy qui accepte tout), puis les `*.test.js`. Les tests d'interface ne vérifient donc que « pas d'exception » ; le rendu réel se vérifie avec `tests/e2e.mjs` (Playwright) et les captures (dont la carte « Build optimal », avec mesure des tâches longues).

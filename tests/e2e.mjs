@@ -35,22 +35,56 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   const txt = await page.textContent('#defOut');
   if (!/coups avant K\.O\./.test(txt)) errs.push('bloc défense vide');
   // Build optimal : calcul découpé (aucune tâche longue), un résultat par famille, détail ouvert pour la capture
-  await page.evaluate(() => { window.__lt = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__lt.push(e.duration))).observe({type: 'longtask'}); } catch (e) { window.__lt = null; } });
+  await page.evaluate(() => { window.__lt = null; try { const l = []; new PerformanceObserver(o => o.getEntries().forEach(e => l.push(e.duration))).observe({type: 'longtask'}); window.__lt = l; } catch (e) {} });
   const t0 = Date.now(); await page.click('#boGo');
-  await page.waitForFunction(() => document.querySelectorAll('#boOut [data-boap]').length === 6, null, {timeout: 30000}).catch(() => errs.push('build optimal : résultats absents après 30 s'));
-  const lt = await page.evaluate(() => window.__lt && Math.max(0, ...window.__lt));
-  if (lt > 200) errs.push(`build optimal : tâche longue de ${Math.round(lt)} ms (page figée)`);
-  console.log(`  build optimal (${w} px, ${scheme}) : ${Date.now() - t0} ms, plus longue tâche ${lt === null ? 'non mesurée' : Math.round(lt) + ' ms'}`);
-  await page.click('#boOut details summary');
+  const done = await page.waitForFunction(() => !BO.busy && BO.out, null, {timeout: 30000}).then(() => true, () => false);
+  if (!done) errs.push('build optimal : calcul non terminé après 30 s');
+  else {
+    const st = await page.evaluate(() => ({n: document.querySelectorAll('#boOut [data-boap]').length, skip: BO.out.res.filter(r => r.skip).length, lt: window.__lt && Math.max(0, ...window.__lt)}));
+    if (st.lt === null) errs.push('build optimal : tâches longues non mesurables (PerformanceObserver « longtask » absent)');
+    else if (st.lt > 200) errs.push(`build optimal : tâche longue de ${Math.round(st.lt)} ms (page figée)`);
+    if (st.n + st.skip !== 6 || st.n < 1) errs.push(`build optimal : ${st.n} résultats, ${st.skip} familles non calculées`);
+    console.log(`  build optimal (${w} px, ${scheme}) : ${Date.now() - t0} ms, plus longue tâche ${Math.round(st.lt || 0)} ms${st.skip ? `, ${st.skip} familles sautées (temps)` : ''}`);
+    await page.click('#boOut details summary');
+  }
   const swo = await page.evaluate(() => document.documentElement.scrollWidth);
   if (swo > w) errs.push(`débordement horizontal avec le build optimal : ${swo}px > ${w}px`);
   const name = `tests/screenshots/${w}-${scheme}.png`;
   await page.screenshot({path: join(root, name), fullPage: true});
-  // « Appliquer » (famille Mêlée deux mains) : l'arme 1 du build devient celle du résultat
-  const want = await page.evaluate(() => BO.out.res.find(r => r.fk === 'm2').w.id);
-  await page.click('#boOut [data-boap="m2"]'); await page.waitForTimeout(100);
-  if (await page.inputValue('#slot-w1') !== want) errs.push('« Appliquer » n\'a pas équipé l\'arme du build optimal');
+  // « Appliquer » (famille Mêlée deux mains) : l'arme 1 du build devient celle du résultat, et la carte garde ses résultats (+0 % pour cette famille)
+  if (done && await page.$('#boOut [data-boap="m2"]')) {
+    const want = await page.evaluate(() => BO.out.res.find(r => r.fk === 'm2').w.id);
+    await page.click('#boOut [data-boap="m2"]');
+    const ok = await page.waitForFunction(id => document.querySelector('#slot-w1').value === id, want, {timeout: 3000}).then(() => true, () => false);
+    if (!ok) errs.push('« Appliquer » n\'a pas équipé l\'arme du build optimal');
+    await page.waitForTimeout(80);
+    if (!/\+0 %<\/b> de dégâts, \+0 PV/.test(await page.innerHTML('#boOut'))) errs.push('après « Appliquer », la carte ne montre plus les résultats (+0 % attendu)');
+  }
   console.log(errs.length ? '✗' : '✓', name, errs.join(' | '));
+  fail += errs.length; await page.close();
+}
+// Build optimal pendant le calcul : un détail ouvert reste ouvert ; « Arrêter » cliqué lentement à la souris (appui puis relâché 150 ms plus tard) arrête bien
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(600);
+  await page.selectOption('#preset', {label: 'Barbare deux mains'}); await page.waitForTimeout(100);
+  await page.click('#boGo');
+  const first = await page.waitForFunction(() => BO.busy && BO.part && document.querySelector('#boOut details'), null, {timeout: 20000}).then(() => true, () => false);
+  if (!first) errs.push('aucune famille affichée pendant le calcul');
+  else {
+    const fk = await page.evaluate(() => { const d = document.querySelector('#boOut details'); d.open = true; return d.dataset.fk; });
+    await page.waitForFunction(() => BO.part && BO.part.res.length >= 2, null, {timeout: 20000}).catch(() => {});
+    if (!await page.evaluate(k => { const d = document.querySelector(`#boOut details[data-fk="${k}"]`); return !!(d && d.open); }, fk)) errs.push('le détail ouvert se referme quand une famille se termine');
+    if (await page.$('#boOut [data-boap]')) errs.push('bouton « Appliquer » actif pendant le calcul');
+    const box = await (await page.$('#boStop')).boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(150); await page.mouse.up();
+    await page.waitForTimeout(100);
+    const st = await page.evaluate(() => ({busy: BO.busy, stop: BO.stop, txt: document.querySelector('#boOut').textContent}));
+    if (st.busy || !st.stop) errs.push('« Arrêter » (clic lent) n\'a pas arrêté le calcul');
+    else if (!/Calcul arrêté avant la fin/.test(st.txt)) errs.push('arrêt non signalé à l\'écran');
+  }
+  console.log(errs.length ? '✗' : '✓', 'build optimal : détails ouverts et « Arrêter » pendant le calcul', errs.join(' | '));
   fail += errs.length; await page.close();
 }
 // Tracé réel : après « Réorganiser », chaque nœud revient exactement à sa position du jeu (mouvement normal puis réduit)
