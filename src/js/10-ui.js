@@ -44,17 +44,20 @@ function perkChip(p,on){
   if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?s.fr:p[1]} +${p[2]} rang${p[2]>1?'s':''}`,'sk '+(on?'':'off'))}
   return chip(`Armure (${ARMT[p[1]]}) +3 % de part`,on?'':'off');
 }
+/* Options d'un emplacement d'équipement : nom français (07-noms.js) */
+function slotOpts(sl){let opts='<option value="">— Aucun —</option>';
+  if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
+    for(const c in groups)opts+=`<optgroup label="${CAT[c][0]}">`+groups[c].map(w=>`<option value="${w[0]}">${esc(nmT(ITEMS[w[0]]))} · niv. ${w[3]}</option>`).join('')+'</optgroup>';}
+  else if(sl[0]==='r'){opts+=RINGS.map(r=>`<option value="${r[0]}">${esc(nmT(ITEMS[r[0]]))} · niv. ${r[2]}</option>`).join('')}
+  else{SETS.forEach(S=>{const p=S.p.find(x=>x[2]===sl);if(p)opts+=`<option value="${p[0]}">${esc(nmT(ITEMS[p[0]]))} · ${S.cls}</option>`})}
+  return opts}
 function renderSlots(){
   const b=B(),el=$('#slots');el.innerHTML='';let n=0;
   $('#upg').value=b.upg;$('#upgTxt').textContent=b.upg===5?'5/5 · toutes les améliorations':b.upg+'/5 perks débloqués';
   SLOTS.forEach(([sl,lab])=>{
     const wrap=document.createElement('div');wrap.className='slot';
     const sel=document.createElement('select');sel.id='slot-'+sl;sel.setAttribute('aria-label',lab);
-    let opts='<option value="">— Aucun —</option>';
-    if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
-      for(const c in groups)opts+=`<optgroup label="${CAT[c][0]}">`+groups[c].map(w=>`<option value="${w[0]}">${esc(nmT(ITEMS[w[0]]))} · niv. ${w[3]}</option>`).join('')+'</optgroup>';}
-    else if(sl[0]==='r'){opts+=RINGS.map(r=>`<option value="${r[0]}">${esc(nmT(ITEMS[r[0]]))} · niv. ${r[2]}</option>`).join('')}
-    else{SETS.forEach(S=>{const p=S.p.find(x=>x[2]===sl);if(p)opts+=`<option value="${p[0]}">${esc(nmT(ITEMS[p[0]]))} · ${S.cls}</option>`})}
+    const opts=slotOpts(sl);
     sel.innerHTML=opts;sel.value=b.gear[sl]||'';
     sel.onchange=()=>{if(sel.value)b.gear[sl]=sel.value;else delete b.gear[sl];renderAll()};
     const it=ITEMS[b.gear[sl]];if(it)n++;

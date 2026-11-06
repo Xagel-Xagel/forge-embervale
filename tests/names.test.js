@@ -36,6 +36,7 @@ test('affichage : français puis anglais en italique, ° seulement pour une trad
   assert.equal(nmH(fbk), 'Chevalier noir Déchu <span class="en">Fell Black Knight</span>');
   assert.match(nmH(hh), /^Chien Creux<sup class="trm" title="Traduction du simulateur[^"]*">°<\/sup> <span class="en">Hollow Hound<\/span>$/);
   assert.equal(nmT(hh), 'Chien Creux °'); assert.equal(nmT(fbk), 'Chevalier noir Déchu');
+  assert.match(nmF(hh), /^Chien Creux<sup class="trm"[^>]*>°<\/sup>$/); assert.equal(nmF(fbk), 'Chevalier noir Déchu');
   assert.equal(nmH({fr: '<b>&', n: '"x\'', fs: 'o'}), '&lt;b&gt;&amp; <span class="en">&quot;x\'</span>');
   const n = ENEMIES.filter(e => e.fs === 't').length; assert.ok(n > 0 && n < ENEMIES.length, 'mélange officiel / traduction attendu');
 });

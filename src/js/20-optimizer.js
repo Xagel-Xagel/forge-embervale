@@ -142,7 +142,7 @@ function optCalc(b,o,en){
     root._inv=inv}
   root.innerHTML=`<div class="optgrid">${cWeak}${cEq}</div><div class="optgrid">${cRank}${cInv}</div>`;
   // événements
-  root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(ITEMS[bt.dataset.eq].n+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
+  root.querySelectorAll('[data-eq]').forEach(bt=>bt.onclick=()=>{b.gear[bt.dataset.sl]=bt.dataset.eq;if(b.gem)delete b.gem[bt.dataset.sl];renderAll();toast(nmT(ITEMS[bt.dataset.eq])+' équipée en '+(bt.dataset.sl==='w1'?'arme 1':'arme 2'))});
   root.querySelectorAll('[data-inv]').forEach(bt=>bt.onclick=()=>{const it=root._inv[+bt.dataset.inv];if(!it)return;buyInvest(b,it);renderAll();toast(it.label+' acheté ('+it.cost+' pt'+(it.cost>1?'s':'')+')')});
   /* Plan « Répartir au mieux » : gardé (planMem) tant que l'emplacement A/B, la cible, l'arme analysée et le build ne changent pas ; changer d'onglet ne l'efface plus */
   const pk=planKey(b),showPlan=(out,P,N)=>{
@@ -208,9 +208,11 @@ function optTab(){const root=$('#tabBody');if(!root||tabEn===oEnemy)return;tabEn
   root.querySelector('#fBox').ontoggle=e=>{fOpen=e.target.open};
   root.querySelector('#mxF').onchange=e=>{oMxF=e.target.value;$('#mxBody').innerHTML=mxRows()};
   root.querySelector('#mxQ').oninput=e=>{oMxQ=e.target.value;$('#mxBody').innerHTML=mxRows()}}
+/* Options de la cible, par faction : nom français (° = traduction du simulateur) */
+function enemyOpts(){return Object.entries(FACTIONS).map(([k,v])=>`<optgroup label="${esc(v)}">`+ENEMIES.map((e,i)=>e.f===k?`<option value="${i}">${esc(nmT(e))}${e.boss?' ★':''}</option>`:'').join('')+'</optgroup>').join('')}
 (function initOpt(){
   const sel=$('#oEnemy');if(!sel)return;
-  sel.innerHTML=Object.entries(FACTIONS).map(([k,v])=>`<optgroup label="${v}">`+ENEMIES.map((e,i)=>e.f===k?`<option value="${i}">${esc(nmT(e))}${e.boss?' ★':''}</option>`:'').join('')+'</optgroup>').join('');
+  sel.innerHTML=enemyOpts();
   $('#oFam').innerHTML='<option value="same">Même famille que l\'arme analysée</option><option value="all">Toutes les armes</option>'+Object.entries(FAM).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   sel.onchange=e=>{oEnemy=+e.target.value;renderOptNow()};
   $('#oSlot').onchange=e=>{oSlot=e.target.value;renderOptNow()};

@@ -238,10 +238,10 @@ test('clic : sur un onglet, focus posé dessus ; sur un ennemi de Tables, cible 
     globalThis.toast = t => said.push(t);
     fakeDom(el => noLs(() => {
       showSec('tree', true); secClick('def'); assert.equal(sec, 'def'); assert.equal(el('t-def').focused, 1, 'focus non posé sur l\'onglet cliqué');
-      tabEn = null; showSec('tab'); const i = (oEnemy + 7) % ENEMIES.length;
+      tabEn = null; showSec('tab'); const i = ENEMIES.findIndex(e => e.n === 'Hollow Hound'); assert.notEqual(i, oEnemy); // fr ≠ anglais, traduction (°)
       el('mxBody').onclick({target: {closest: s => s === 'button[data-en]' ? {dataset: {en: String(i)}} : null}});
       assert.equal(oEnemy, i, 'cible'); assert.equal(sec, 'calc', 'Calculateur non ouvert'); assert.equal(el('t-calc').focused, 1, 'focus non posé sur l\'onglet Calculateur');
-      assert.equal(el('optBar').parent.id, 'optTarget'); assert.ok(said.some(t => t.includes(ENEMIES[i].fr)), 'message de la nouvelle cible absent');
+      assert.equal(el('optBar').parent.id, 'optTarget'); assert.ok(said.some(t => t.includes(nmT(ENEMIES[i])) && t.includes('°')), 'message de la nouvelle cible absent');
       const n = said.length; el('mxBody').onclick({target: {closest: () => null}}); assert.equal(said.length, n, 'clic hors d\'un nom : rien');
     }));
   } finally { globalThis.toast = keepToast; oEnemy = keepE; tabEn = keepT; showSec(keepS, true); }

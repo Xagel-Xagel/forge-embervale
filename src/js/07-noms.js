@@ -68,8 +68,11 @@ const FR_ENEMIES={
  'Electric Bat':['Chauve-souris électrique','t'],'Bat':['Chauve-souris','t'],'Bees':['Abeilles','t'],
  'Raven':['Corbeau','t'],'Rat':['Rat','t']
 };
-Object.values(ITEMS).forEach(it=>{it.fr=FR_ITEMS[it.id];if(it.set)it.setFr=FR_SETS[it.set]});
-ENEMIES.forEach(e=>{[e.fr,e.fs]=FR_ENEMIES[e.n]});
+/* Nom français manquant (objet ou ennemi ajouté sans traduction) : nom anglais affiché, marqué ° comme une traduction, et signalé en console ;
+   la page reste utilisable (names.test.js refuse ce cas avant toute mise en production) */
+const frMiss=(k,n)=>{try{console.warn('Nom français manquant ('+k+') : '+n)}catch(x){}};
+Object.values(ITEMS).forEach(it=>{it.fr=FR_ITEMS[it.id];if(!it.fr){it.fr=it.n;it.fs='t';frMiss('objet',it.id)}if(it.set)it.setFr=FR_SETS[it.set]||it.set});
+ENEMIES.forEach(e=>{const f=FR_ENEMIES[e.n];if(f)[e.fr,e.fs]=f;else{e.fr=e.n;e.fs='t';frMiss('ennemi',e.n)}});
 /* Affichage : français, puis l'anglais en italique (comme les compétences) ; ° = traduction du simulateur */
 const TRAD_TIP='Traduction du simulateur : aucun nom français officiel trouvé';
 const trMark=o=>o.fs==='t'?`<sup class="trm" title="${TRAD_TIP}">°</sup>`:'';
