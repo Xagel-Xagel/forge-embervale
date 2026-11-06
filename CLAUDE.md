@@ -33,6 +33,7 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), gemFit
   06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
+  07-noms.js         FR_ITEMS, FR_SETS, FR_ENEMIES (noms français, clés = id / nom anglais) ; nmH, nmF, nmT, nmMatch (affichage et recherche)
   10-ui.js           état (builds, cur, compare, sec…), onglets des parties (SECS, showSec), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
   20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que l'onglet ouvert (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
   21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre), boMerge, onglet « Build optimal » (boCard, boStart)
@@ -85,7 +86,7 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 - Le jeu évolue (patchs) : pour toute donnée « actuelle », vérifier en ligne avant de l'affirmer.
 
 ### 5. Langue et style
-- Interface en français ; noms d'objets et d'ennemis en anglais (comme dans le jeu, qui n'a pas de traduction officielle utilisée par la communauté) ; noms de compétences traduits avec le nom anglais en italique.
+- Interface en français. **Noms d'objets, de panoplies, d'ennemis et de factions en français** (décision du 2026-11-06, HISTORY n° 22) : nom officiel du jeu relevé sur MetaBot quand il existe, sinon traduction du simulateur marquée ° à l'écran ; le nom anglais suit en italique (`nmH`), comme pour les compétences. Le nom anglais reste la **clé** (`e.n`, `it.n` : FLY, cible par défaut, tests) ; le français vit dans 07-noms.js (`.fr`, source `.fs` = o/d/t). Les recherches portent sur les deux noms, sans accents (`nmMatch`). Un nouvel objet ou ennemi demande son nom français (test names.test.js). Termes de jeu (Shroud, Flamme) inchangés.
 - Typographie française : espace avant `%`, `:`, `?`, `!` ; nombres via `fmt()` (format fr-FR).
 - Tout texte venant des données passe par `esc()` avant d'être injecté en HTML.
 - Code compact dans le style existant (fonctions courtes sur une ligne, gabarits littéraux). Pas de reformatage massif : ça rend les diffs illisibles.

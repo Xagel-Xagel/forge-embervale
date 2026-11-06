@@ -7,7 +7,7 @@ const ST = {
   dmgMelee:['Dégâts de mêlée','%'],dmg2H:['Dégâts mêlée deux mains','%'],dmgRanged:['Dégâts à distance','%'],dmgStaff:['Dégâts des bâtons','%'],dmgDagger:['Dégâts des dagues','%'],bluntAll:['Tous dégâts contondants','%'],
   fireMagic:['Dégâts magiques de feu','%'],iceMagic:['Dégâts magiques de glace','%'],shockMagic:['Dégâts magiques de foudre','%'],shroudMagic:['Dégâts magiques de Shroud','%'],
   merciless:['Attaque impitoyable','%'],backstab:['Dégâts dans le dos','%'],block:['Blocage',''],healing:['Soins','%'],
-  vsMelee:['Contre ennemis de mêlée','%'],vsRanged:['Contre ennemis à distance','%'],vsMagic:['Contre ennemis magiques','%'],vsFell:['Contre les Fell','%'],
+  vsMelee:['Contre ennemis de mêlée','%'],vsRanged:['Contre ennemis à distance','%'],vsMagic:['Contre ennemis magiques','%'],vsFell:['Contre les Déchus','%'],
   frost:['Résistance au froid',''],resFire:['Résistance au feu','%'],resIce:['Résistance à la glace','%'],resShock:['Résistance à la foudre','%'],resShroud:['Résistance au Shroud','%'],resPoison:['Résistance au poison','%'],
   shroudTime:['Temps dans le Shroud',' s'],sprint:['Vitesse de sprint','%'],sneakSpeed:['Vitesse en furtivité','%'],revive:['Durée de réanimation',' s'],reviveHeal:['PV à la réanimation','%'],
   hpLeech:['Vol de vie',''],hpLeechP:['Vol de vie','%'],manaLeech:['Vol de mana',''],manaLeechP:['Vol de mana','%'],staLeech:['Vol de vigueur','']
@@ -234,7 +234,7 @@ S('rng',[
  ['vukahCult','Culture vukah','Vukah Culture',4,1,'Les Vukah proches attaquent vos agresseurs.'],
  ['ranger','Rôdeur','Ranger',2,3,'+1 Dextérité, +1 Endurance et régén. de vigueur de base par rang.'],
  ['mithridatist','Mithridatisé','Mithridatist',2,1,'25 % de chance d\'éviter l\'empoisonnement.'],
- ['bounty','Prime généreuse','Bounty Bonanza',2,1,'Tir d\'adresse mortel sur un Fell : +5 XP.'],
+ ['bounty','Prime généreuse','Bounty Bonanza',2,1,'Tir d\'adresse mortel sur un Déchu : +5 XP.'],
  ['sniper','Sniper','Sniper',2,3,'+2 % de critique à l\'arc par rang.'],
  ['shrapnel','Éclats','Shrapnel Blast',3,1,'Flèche explosive : +10 % par cible touchée.'],
  ['echoing','Explosions en écho','Echoing Explosives',4,1,'40 % de chance d\'explosion secondaire.'],
@@ -311,7 +311,7 @@ S('mag',[
  ['thunder','Tonnerre','Thunder',2,3,'+10 % de dégâts de foudre par rang.'],
  ['begone','Dégage !','Begone!',3,1,'Coup de poing magique qui repousse (30 mana).'],
  ['waterAura','Aura d\'eau','Water Aura',1,3,'Aura de soin : 1 PV pour 2 points d\'Intelligence.'],
- ['radiantAura','Aura radieuse','Radiant Aura',1,3,'Brûle les Fell proches (feu × Intelligence).'],
+ ['radiantAura','Aura radieuse','Radiant Aura',1,3,'Brûle les Déchus proches (feu × Intelligence).'],
  ['unity','Unité','Unity',1,3,'Baguette : 2 % de chance de rendre 10 % du mana max.'],
  ['eternalSpark','Étincelle éternelle','Eternal Spark',1,3,'Baguette : 15 % de chance de réparer 1 durabilité.'],
  ['lifeEssences','Essences de vie','Life Essences',1,3,'+3 × Intelligence de santé max par rang.'],
@@ -319,10 +319,10 @@ S('mag',[
  ['fireResistance','Résistance au feu','Fire Resistance',1,3,'+5 % de résistance au feu par rang.'],
  ['iceResistance','Résistance à la glace','Ice Resistance',1,3,'+5 % de résistance à la glace par rang.'],
  ['shockResistance','Résistance à la foudre','Shock Resistance',1,3,'+5 % de résistance à la foudre par rang.'],
- ['righteousFire','Feu vertueux','Righteous Fire',2,3,'Soin : 20 % du soin en dégâts de feu aux Fell proches.'],
+ ['righteousFire','Feu vertueux','Righteous Fire',2,3,'Soin : 20 % du soin en dégâts de feu aux Déchus proches.'],
  ['divineSurge','Élan divin','Divine Surge',4,1,'Les sorts de soin peuvent faire des critiques.'],
  ['sharedMisery','Misère partagée','Shared Misery',2,3,'Dégâts de Shroud subis : +15 % de résistance au Shroud au groupe.'],
- ['boneToAsh','Os en cendres','Bone to Ash',1,3,'+5 % de dégâts contre les Hollow par rang.'],
+ ['boneToAsh','Os en cendres','Bone to Ash',1,3,'+5 % de dégâts contre les Creux par rang.'],
  ['sleight','Tour de main','Sleight of Hand',1,3,'+30 % de dégâts à mains nues par rang.'],
  ['manaCurrents','Courants de mana','Mana Currents',1,3,'+5 de régén. de mana de base par rang.'],
  ['spellslinger','Lanceur de sorts','Spellslinger',1,3,'+5 % de dégâts aux bâtons par rang.'],
@@ -331,7 +331,7 @@ S('mag',[
  ['wandEvasion','Esquive à la baguette','Wand Evasion Attack',4,1,'En esquivant : disque perçant, +50 % des dégâts (50 mana).',1],
  ['aerialWand','Baguette aérienne','Aerial Wand Attack',3,1,'En saut : projectile de zone, +50 % des dégâts.',1],
  ['totemMastery','Maîtrise des totems','Totem Mastery',2,3,'+1 totem invoqué au maximum par rang.',1],
- ['advNecro','Nécromancie avancée','Advanced Necromancy',2,3,'+1 allié Hollow invoqué au maximum par rang.',1],
+ ['advNecro','Nécromancie avancée','Advanced Necromancy',2,3,'+1 allié Creux invoqué au maximum par rang.',1],
  ['blastCast','Frappe et sort','Blast and Cast',3,1,'Critique à la baguette : +50 % au prochain coup de bâton (10 s).',1]
 ]);
 const SKI = {}; SK.forEach(s=>SKI[s.id]=s);

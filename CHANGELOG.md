@@ -2,6 +2,13 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 1.16.0 — 2026-11-06 · Noms en français
+- Objets (armures, panoplies, armes, anneaux), ennemis et factions s'affichent **en français**, suivis du nom anglais en italique, comme les compétences (choix de l'utilisateur, QCM).
+- Noms d'objets et de 13 ennemis : **noms officiels du jeu** (relevés sur MetaBot). Les 88 autres ennemis : **traduction du simulateur**, marquée ° (infobulle et légende de la table, mention sur la carte de la cible).
+- Factions : Déchus, Creux, Maraudeurs, Drak'Dal, Anciens (officiels) ; Vukah et Faune inchangés. « Contre les Fell / Hollow » devient « Contre les Déchus / Creux » ; textes de compétences et de gemmes alignés.
+- Le filtre de la table des ennemis trouve le nom français comme l'anglais, sans tenir compte des accents.
+- Aucun lien de partage touché : les codes enregistrent des identifiants, pas des noms.
+
 ## 1.15.0 — 2026-11-06 · Navigation par onglets
 - La page n'affiche plus tout à la suite : **six onglets** sous la barre des builds — Arbre, Équipement, Calculateur, Build optimal, Défense, Tables (table des 101 ennemis et formules) ; une seule partie visible à la fois (choix de l'utilisateur, QCM).
 - La **fiche du personnage** reste à droite des onglets Arbre et Équipement (dessous sous 1000 px de large) ; les autres onglets prennent toute la largeur.

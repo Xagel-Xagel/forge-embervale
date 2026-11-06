@@ -44,24 +44,27 @@ function perkChip(p,on){
   if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?s.fr:p[1]} +${p[2]} rang${p[2]>1?'s':''}`,'sk '+(on?'':'off'))}
   return chip(`Armure (${ARMT[p[1]]}) +3 % de part`,on?'':'off');
 }
+/* Options d'un emplacement d'équipement : nom français (07-noms.js) */
+function slotOpts(sl){let opts='<option value="">— Aucun —</option>';
+  if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
+    for(const c in groups)opts+=`<optgroup label="${CAT[c][0]}">`+groups[c].map(w=>`<option value="${w[0]}">${esc(nmT(ITEMS[w[0]]))} · niv. ${w[3]}</option>`).join('')+'</optgroup>';}
+  else if(sl[0]==='r'){opts+=RINGS.map(r=>`<option value="${r[0]}">${esc(nmT(ITEMS[r[0]]))} · niv. ${r[2]}</option>`).join('')}
+  else{SETS.forEach(S=>{const p=S.p.find(x=>x[2]===sl);if(p)opts+=`<option value="${p[0]}">${esc(nmT(ITEMS[p[0]]))} · ${S.cls}</option>`})}
+  return opts}
 function renderSlots(){
   const b=B(),el=$('#slots');el.innerHTML='';let n=0;
   $('#upg').value=b.upg;$('#upgTxt').textContent=b.upg===5?'5/5 · toutes les améliorations':b.upg+'/5 perks débloqués';
   SLOTS.forEach(([sl,lab])=>{
     const wrap=document.createElement('div');wrap.className='slot';
     const sel=document.createElement('select');sel.id='slot-'+sl;sel.setAttribute('aria-label',lab);
-    let opts='<option value="">— Aucun —</option>';
-    if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
-      for(const c in groups)opts+=`<optgroup label="${CAT[c][0]}">`+groups[c].map(w=>`<option value="${w[0]}">${esc(w[1])} · niv. ${w[3]}</option>`).join('')+'</optgroup>';}
-    else if(sl[0]==='r'){opts+=RINGS.map(r=>`<option value="${r[0]}">${esc(r[1])} · niv. ${r[2]}</option>`).join('')}
-    else{SETS.forEach(S=>{const p=S.p.find(x=>x[2]===sl);if(p)opts+=`<option value="${p[0]}">${esc(p[1])} · ${S.cls}</option>`})}
+    const opts=slotOpts(sl);
     sel.innerHTML=opts;sel.value=b.gear[sl]||'';
     sel.onchange=()=>{if(sel.value)b.gear[sl]=sel.value;else delete b.gear[sl];renderAll()};
     const it=ITEMS[b.gear[sl]];if(it)n++;
     let info='';
     if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+wtypeTxt(it))}${it.wperks.map(p=>chip(WPERK[p],'tag')).join('')}</div>`}
     else if(it){const base=Object.entries(it.base).map(([k,v])=>chip(`${ST[k][0]} ${sign(v,ST[k][1])}`)).join('');
-      info=`<div class="chips">${base}${it.perks.map((p,i)=>perkChip(p,i<b.upg)).join('')}</div><div class="meta">Niv. ${it.lv} · ${esc(it.cls)}${it.src?' · '+esc(it.src):''}${it.set?' · panoplie '+esc(it.set):''}</div>`}
+      info=`<div class="chips">${base}${it.perks.map((p,i)=>perkChip(p,i<b.upg)).join('')}</div><div class="meta"><span class="en">${esc(it.n)}</span> · Niv. ${it.lv} · ${esc(it.cls)}${it.src?' · '+esc(it.src):''}${it.set?' · panoplie '+esc(it.setFr):''}</div>`}
     wrap.innerHTML=`<div class="sname"><label for="slot-${sl}">${lab}</label></div>`;
     const cell=document.createElement('div');cell.appendChild(sel);wrap.appendChild(cell);wrap.insertAdjacentHTML('beforeend',info);
     if(it&&it.kind==='weapon'){const gs=document.createElement('select');gs.id='gem-'+sl;gs.setAttribute('aria-label','Gemme de '+lab);
@@ -127,7 +130,7 @@ function rowsFor(o){
   g('Défense');x('Armure physique des objets',o.armPhys,' %');x('Armure magique des objets',o.armMag,' %');x('Résistance au feu',o.resFire,' %');x('Résistance à la glace',o.resIce,' %');
   x('Résistance à la foudre',o.resShock,' %');x('Résistance au Shroud',o.resShroud,' %');x('Résistance au poison',o.resPoison,' %');x('Résistance au froid',o.frost);x('Blocage',o.block);x('Puissance de parade',o.parry,' %');
   g('Offensive');x('Chance de critique (base)',o.critC,' %');x('Dégâts critiques',o.critD,' %');x('Attaque impitoyable',o.merciless,' %');x('Dégâts dans le dos',o.backstab,' %');x('Attaque furtive',o.sneak,' %');
-  x('Contre ennemis de mêlée',o.vs.vsMelee,' %');x('Contre ennemis à distance',o.vs.vsRanged,' %');x('Contre ennemis magiques',o.vs.vsMagic,' %');x('Contre les Fell',o.vs.vsFell,' %');x('Contre les Hollow',o.vs.hollow,' %');
+  x('Contre ennemis de mêlée',o.vs.vsMelee,' %');x('Contre ennemis à distance',o.vs.vsRanged,' %');x('Contre ennemis magiques',o.vs.vsMagic,' %');x('Contre les Déchus',o.vs.vsFell,' %');x('Contre les Creux',o.vs.hollow,' %');
   g('Soutien et utilitaire');x('Soins',o.healing,' %');x('PV à la réanimation',o.reviveHeal,' %');x('Durée de réanimation',o.revive,' s',1,-1);x('Temps de charge des sorts',o.charge,' %',0,-1);
   x('Temps dans le Shroud',o.shroudTime,' s');x('Vitesse de sprint',o.sprint,' %');x('Vitesse en furtivité',o.sneakSpeed,' %');
   x('Vol de vie',o.hpLeech);x('Vol de vie (%)',o.hpLeechP,' %');x('Vol de mana',o.manaLeech);x('Vol de mana (%)',o.manaLeechP,' %');x('Vol de vigueur',o.staLeech);
@@ -139,7 +142,7 @@ function attrBlock(o,o2){
 }
 function weaponBlock(wc,label){
   if(!wc)return `<div class="wcard"><div class="wl">${label} : aucune arme</div></div>`;
-  return `<div class="wcard"><div class="wl">${label} · ${wc.catName} · ${wtypeTxt(wc.w)}</div><h3>${esc(wc.w.n)}</h3>
+  return `<div class="wcard"><div class="wl">${label} · ${wc.catName} · ${wtypeTxt(wc.w)}</div><h3>${nmH(wc.w)}</h3>
   <div class="big"><div><b>${fmt(wc.hit)}</b><span>${wc.unit} estimés / coup</span></div><div><b>${fmt(wc.avg)}</b><span>moyenne avec critiques</span></div><div><b>+${fmt(wc.bonus)} %</b><span>bonus cumulés</span></div><div><b>${fmt(wc.cc,1)} %</b><span>critique</span></div></div>
   ${wc.gem?`<div class="wl" style="color:var(--ink)"><span class="gdot" style="--rc:${RAR[wc.gem.r][1]}"></span>${esc(wc.gem.fr)} : ${esc(wc.gem.d)} <span style="color:var(--muted)">(effet conditionnel, non compté dans les dégâts)</span></div>`:'<div class="wl">Aucune gemme</div>'}
   <details class="why"><summary>Détail des bonus (base ${wc.w.val})</summary><ul>${wc.parts.map(p=>`<li>${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')||'<li>Aucun bonus</li>'}${wc.cparts.map(p=>`<li>Critique · ${esc(p[0])} : +${fmt(p[1])} %</li>`).join('')}</ul></details></div>`;
