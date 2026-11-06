@@ -316,3 +316,19 @@ test('build optimal (interface) : saisies ramenées et affichées, valeurs propr
   builds[0] = blankBuild('Vide'); BO.N[0] = null; globalThis.boRun = fakeRun; boStart(); await until(() => !BO.busy);
   const html = boOutHtml(); assert.ok(html.includes('data-boap') && !html.includes('Par rapport à votre build'));
 }));
+
+// Revue QA 1.17.0 : la domination doit suivre les améliorations du build (oracles en littéral, pas boPk)
+test('build optimal : armes candidates selon les améliorations (Ancient Drak Wand gardée à 3, écartée à 5) et choix réel à 3 améliorations', () => {
+  const ids = u => boWeapons('wand', u).map(w => w.id).sort();
+  assert.deepEqual(ids(3), ['w_ancdrak', 'w_apprentice', 'w_polymath', 'w_twisting']); // à 3 : Mythic sans perk compté, dominée par Drak (+6 % en emplacement 2)
+  assert.deepEqual(ids(5), ['w_frostw', 'w_mythic', 'w_polymath', 'w_twisting']); // à 5 : Mythic +12 % domine Drak +6 %
+  const m = DTYPES.map(([k]) => k === 'shock' ? 200 : 50), en = {n: 'Cible foudre (test)', f: 'none', m, lv: '—'}; // seule la foudre porte
+  assert.equal(boDrain(boFamily('wand', 'w1', en, 20, 11, 3)).w.id, 'w_ancdrak');
+  assert.equal(boDrain(boFamily('wand', 'w1', en, 20, 11, 5)).w.id, 'w_mythic');
+});
+
+test('build optimal : « Appliquer » garde une gemme typée compatible avec l\'arme gagnante', () => {
+  const o = full(FBK, 212, 11), r = o.res.find(x => x.fk === 'm1'), w = ITEMS[r.b.gear.w1];
+  const ok = GEMS.map(g => GEMI[g[0]]).find(g => gemFit(g, w) === true); assert.ok(ok, 'aucune gemme typée compatible avec ' + w.n);
+  const b = fromPreset(PRESETS[3]); b.gem.w1 = ok.id; assert.equal(boMerge(r, b, o).gem.w1, ok.id);
+});

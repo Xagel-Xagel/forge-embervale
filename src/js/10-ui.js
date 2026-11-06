@@ -45,8 +45,8 @@ function perkChip(p,on){
   return chip(`Armure (${ARMT[p[1]]}) +3 % de part`,on?'':'off');
 }
 /* Perk d'arme (5 emplacements dans l'ordre, fichiers 1.0) : grisé tant que l'emplacement n'est pas débloqué (améliorations) ; ✓ = compté dans les dégâts de cette arme */
-function wperkChip(p,on){if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?esc(s.fr):p[1]} +${p[2]} rang${p[2]>1?'s':''}`,'sk '+(on?'':'off'))}
-  const [k,v]=p;return chip(`${esc(WPERK[k]||k)} +${fmt(v)}${k in WPU?WPU[k]:' %'}${WPC[k]?' ✓':''}`,'tag'+(on?'':' off'))}
+function wperkChip(p,on){if(p[0]==='k'){const s=SKI[p[1]];return chip(`${s?esc(s.fr):p[1]} +${p[2]} rang${p[2]>1?'s':''} (non compté)`,'sk '+(on?'':'off'))} // rangs d'une arme : actifs hors de la main ? non vérifié
+  const [k,v]=p;return chip(`${esc(WPERK[k]||k)} +${fmt(v)}${k in WPU?WPU[k]:' %'}${WPC[k]&&on?' ✓':''}`,'tag'+(on?'':' off'))}
 /* Options d'un emplacement d'équipement : nom français (07-noms.js) */
 function slotOpts(sl){let opts='<option value="">— Aucun —</option>';
   if(sl[0]==='w'){const groups={};WEAPONS.forEach(w=>{(groups[w[2]]=groups[w[2]]||[]).push(w)});
@@ -66,7 +66,7 @@ function renderSlots(){
     const it=ITEMS[b.gear[sl]];if(it)n++;
     let info='';
     if(it&&it.kind==='weapon'){info=`<div class="chips">${chip(CAT[it.cat][0])}${chip((it.cat==='bow'||it.cat==='staff'?'Puissance ':'Dégâts ')+it.val)}${chip('Type : '+wtypeTxt(it))}${it.oc?chip(`Surcharge ${it.oc} % (non comptée)`):''}${it.wperks.map((p,i)=>wperkChip(p,i<b.upg)).join('')}</div>
-      <div class="meta">Perks dans l'ordre de déblocage (une amélioration chacun) ; ✓ compté dans les dégâts : chance et dégâts de coup critique de cette arme</div>`}
+      <div class="meta">Perks dans l'ordre des fichiers du jeu ; <span class="tag hyp">hypothèse</span> une amélioration débloque le suivant (grisé : pas encore débloqué) ; ✓ compté dans les dégâts : chance et dégâts de coup critique de cette arme</div>`}
     else if(it){const base=Object.entries(it.base).map(([k,v])=>chip(`${ST[k][0]} ${sign(v,ST[k][1])}`)).join('');
       info=`<div class="chips">${base}${it.perks.map((p,i)=>perkChip(p,i<b.upg)).join('')}</div><div class="meta"><span class="en">${esc(it.n)}</span> · Niv. ${it.lv} · ${esc(it.cls)}${it.src?' · '+esc(it.src):''}${it.set?' · panoplie '+esc(it.setFr):''}</div>`}
     wrap.innerHTML=`<div class="sname"><label for="slot-${sl}">${lab}</label></div>`;
@@ -95,7 +95,7 @@ function remPip(b,k){let best=null,bc=Infinity;for(const p of TOPO.pips){if(p.at
 const FLAME_NODES=[['barbarian','FOR'],['gracefulStride','DEX'],['exalted','INT'],['arcaneConc','ESP'],['thickSkin','CON'],['enduranceFlame','END']];
 function flameFx(b,o){const h=Math.floor(Math.max(1,Math.min(11,b.flame))/2),own=FLAME_NODES.filter(([id])=>o.R(id));
   return own.length?own.map(([id,a])=>`${SKI[id].fr} : +${h} ${a}`).join(' · '):`aucun nœud de Flamme acquis (${SKI.exalted.fr}, ${SKI.barbarian.fr}…)`}
-function stepFlame(d){const b=B();b.flame=Math.max(1,Math.min(11,b.flame+d));renderAll()}
+function stepFlame(d){const b=B();b.flame=Math.max(1,Math.min(11,b.flame+d));renderAll();const bt=$(d<0?'#flameDn':'#flameUp');if(bt.disabled)$('#flame').focus()} // à la borne : focus sur le champ, pas sur un bouton désactivé
 function renderSkills(){
   const b=B();
   $('#lvl').value=b.lvl;$('#exp').value=b.exp;$('#flame').value=b.flame;
@@ -141,7 +141,7 @@ function rowsFor(o){
   g('Ressources');x('Santé',o.hp);x('Régén. de santé',o.hpReg);x('Mana',o.mana);x('Régén. de mana',o.manaReg);x('Vigueur',o.sta);x('Régén. de vigueur',o.staReg);x('Régén. de vigueur de base',o.staRegPct,' %');
   g('Défense');x('Armure physique des objets',o.armPhys,' %');x('Armure magique des objets',o.armMag,' %');x('Résistance au feu',o.resFire,' %');x('Résistance à la glace',o.resIce,' %');
   x('Résistance à la foudre',o.resShock,' %');x('Résistance au Shroud',o.resShroud,' %');x('Résistance au poison',o.resPoison,' %');x('Résistance au froid',o.frost);x('Blocage',o.block);x('Puissance de parade',o.parry,' %');
-  g('Offensive');x('Chance de critique (base)',o.critC,' %');x('Dégâts critiques',o.critD,' %');x('Attaque impitoyable',o.merciless,' %');x('Dégâts dans le dos',o.backstab,' %');x('Attaque furtive',o.sneak,' %');
+  g('Offensive');x('Chance de critique (base)',o.critC,' %');x('Dégâts critiques (base, hors perks d\'arme)',o.critD,' %');x('Attaque impitoyable',o.merciless,' %');x('Dégâts dans le dos',o.backstab,' %');x('Attaque furtive',o.sneak,' %');
   x('Contre ennemis de mêlée',o.vs.vsMelee,' %');x('Contre ennemis à distance',o.vs.vsRanged,' %');x('Contre ennemis magiques',o.vs.vsMagic,' %');x('Contre les Déchus',o.vs.vsFell,' %');x('Contre les Creux',o.vs.hollow,' %');
   g('Soutien et utilitaire');x('Soins',o.healing,' %');x('PV à la réanimation',o.reviveHeal,' %');x('Durée de réanimation',o.revive,' s',1,-1);x('Temps de charge des sorts',o.charge,' %',0,-1);
   x('Temps dans le Shroud',o.shroudTime,' s');x('Vitesse de sprint',o.sprint,' %');x('Vitesse en furtivité',o.sneakSpeed,' %');
@@ -191,7 +191,8 @@ function renderAll(){renderTabs();renderSlots();renderSkills();renderStats()}
 $('#buildName').oninput=e=>{B().name=e.target.value||'Sans nom';renderTabs();$('#buildName').focus();renderStats()};
 $('#cmp').onchange=e=>{compare=e.target.checked;renderStats();if(sec!=='tree'&&sec!=='eq')toast('Comparaison A et B '+(compare?'affichée':'retirée')+' : voir la fiche, onglets Arbre et Équipement')};
 [['mage','Mage et magie'],['heal','Soin et soutien'],['tank','Tank'],['war','Guerrier'],['rng','Rôdeur']].forEach(([c,l])=>$('#preset').insertAdjacentHTML('beforeend',`<optgroup label="${l}">`+PRESETS.map((p,i)=>p.cat===c?`<option value="${i}">${esc(p.name)}</option>`:'').join('')+'</optgroup>'));
-$('#preset').onchange=e=>{if(e.target.value==='')return;builds[cur]=fromPreset(PRESETS[+e.target.value]);e.target.value='';renderAll();toast('Build chargé dans '+'AB'[cur])};
+$('#preset').onchange=e=>{if(e.target.value==='')return;const p=PRESETS[+e.target.value];builds[cur]=fromPreset(p);e.target.value='';renderAll();
+  toast('Build chargé dans '+'AB'[cur]+(p.lvl!=null||p.flame!=null?` : niveau ${B().lvl}, exploration ${B().exp}, Flamme ${B().flame} (réglages du preset)`:''))};
 $('#copyAB').onclick=()=>{builds[1-cur]=JSON.parse(JSON.stringify(B()));renderAll();toast('Copié vers '+'AB'[1-cur])};
 $('#reset').onclick=()=>{builds[cur]=blankBuild('Build '+'AB'[cur]);renderAll()};
 $('#upg').oninput=e=>{B().upg=+e.target.value;renderSlots();renderSkills();renderStats()};
@@ -204,7 +205,7 @@ $('#vList').onclick=()=>{view='list';renderSkills()};
 $('#save').onclick=()=>{const s=lsGet();const b=JSON.parse(JSON.stringify(B()));const i=s.findIndex(x=>x.name===b.name);if(i>=0)s[i]=b;else s.push(b);
   if(lsSet(s)){renderSaved();toast('« '+b.name+' » enregistré dans ce navigateur')}else toast('Enregistrement impossible ici : utilisez « Partager »')};
 /* Build enregistré : ceux d'avant le tracé réel (1.8 et avant : nœuds d'attribut de l'ancien tracé, ou comptes seuls) sont migrés */
-function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringify(s)));if(s.tv)return normalize(b);delete b.pn;b.tv=1;return migrate(b,'saved')}
+function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringify(s)));b.upg=Math.max(0,Math.min(5,Math.round(+b.upg)||0));/* borné comme dans decode */if(s.tv)return normalize(b);delete b.pn;b.tv=1;return migrate(b,'saved')}
 $('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!migNotice(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
 $('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
 /* Build d'avant le tracé réel : dire ce qui a été ajouté pour le relier, et l'éventuel dépassement de budget */

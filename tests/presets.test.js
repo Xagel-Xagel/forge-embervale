@@ -74,3 +74,10 @@ test('Mage critique (baguette) : le code du preset s\'ouvre sur ce build ; celui
   const d0 = decode(MCB_CODE_114); assert.ok(d0 && !d0._mig, 'lien de la 1.14.0 illisible ou migré');
   for (const k in MCB_114) assert.deepEqual(d0[k], MCB_114[k], '1.14.0 : ' + k);
 });
+
+test('presets : chacun tient dans son budget ; sans niveau, exploration, Flamme ni améliorations fixés, ceux de blankBuild (50, 114, 11, 5)', () => {
+  for (const p of PRESETS) { const b = fromPreset(p);
+    assert.ok(spentPoints(b) <= budget(b), `${p.name} : ${spentPoints(b)} / ${budget(b)}`);
+    for (const [k, d] of [['lvl', 50], ['exp', 114], ['flame', 11], ['upg', 5]]) { assert.equal(typeof b[k], 'number', p.name + ' ' + k); if (p[k] == null) assert.equal(b[k], d, p.name + ' ' + k); } }
+  const b = fromPreset({...PRESETS[0], upg: 2}); assert.equal(b.upg, 2, 'améliorations du preset recopiées');
+});

@@ -107,16 +107,19 @@ function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat
   <div class="meta2"><b>Heuristique, pas une preuve d'optimalité</b> : gloutons, alternance équipement / arbre et amélioration locale. Pas de classement entre familles (« Dégâts » et « Puissance » ne se comparent pas, la vitesse d'attaque n'est pas comptée).
     Perks d'arme comptés : chance et dégâts de coup critique (emplacements débloqués par les améliorations du build). Non comptés : autres perks d'arme (Lourd, Sans pitié…), surcharge, gemmes (non choisies), armure des pièces, attaques des ennemis, points faibles, attaques impitoyables et furtives. Deux anneaux différents (doublon en jeu non vérifié).</div></div>`}
 /* Tuiles en tête de l'onglet (1.17.0) : points disponibles et Flamme du calcul en grand ; par build (A, B), valeurs du build tant qu'on n'y touche pas */
-function boTilesHtml(b){const dis=BO.busy?' disabled':'',F=boF(b),bN=boDef(b,'N'),bF=boDef(b,'F');
+function boTilesHtml(b){const dis=BO.busy?' disabled':'',F=boF(b);
   return `<div class="ptile"><label class="ptl" for="boN">Points disponibles</label><input type="number" class="ptn" id="boN" min="0" max="212" value="${boN(b)}"${dis}>
-    <div class="pts">${BO.N[cur]==null?`budget du build`:`réglé ici · build ${bN}`}</div></div>
+    <div class="pts" id="boNh">${boHintN(b)}</div></div>
   <div class="ptile"><label class="ptl" for="boF">Niveau de la Flamme</label>
     <div class="ptf"><button type="button" class="pstep" id="boFdn" aria-label="Baisser la Flamme du calcul d'un niveau"${dis||F<=1?' disabled':''}>−</button><input type="number" class="ptn" id="boF" min="1" max="11" value="${F}"${dis}><button type="button" class="pstep" id="boFup" aria-label="Monter la Flamme du calcul d'un niveau"${dis||F>=11?' disabled':''}>+</button></div>
-    <div class="pts">sur 11 · ${BO.F[cur]==null?'celle du build':`réglée ici · build ${bF}`}</div></div>`}
-/* Rendu et événements des tuiles ; −/+ : le focus reste sur le bouton (ou passe au champ si le bouton se désactive à la borne) */
+    <div class="pts" id="boFh">${boHintF(b)}</div></div>`}
+const boHintN=b=>BO.N[cur]==null?'budget du build':`réglé ici · build ${boDef(b,'N')}`,boHintF=b=>'sur 11 · '+(BO.F[cur]==null?'celle du build':`réglée ici · build ${boDef(b,'F')}`);
+/* Rendu (par optBo) et événements des tuiles. Une saisie ou un −/+ ne refait PAS les tuiles (le champ, le bouton visé et le focus restent) :
+   mise à jour en place des textes, états désactivés par boPaint ; à la borne, le bouton se désactive et le focus passe au champ */
 function boTiles(){const el=$('#boTiles');if(!el)return;el.innerHTML=boTilesHtml(B());const nE=$('#boN'),fE=$('#boF');
-  nE.onchange=()=>{boRead(nE,'N');boTiles();boPaint()};fE.onchange=()=>{boRead(fE,'F');boTiles();boPaint()};
-  const st=(d,id)=>{fE.value=String(boF(B())+d);boRead(fE,'F');boTiles();boPaint();const bt=$(id);(bt.disabled?$('#boF'):bt).focus()};
+  const upd=()=>{const b=B();$('#boNh').textContent=boHintN(b);$('#boFh').textContent=boHintF(b);boPaint()};
+  nE.onchange=()=>{boRead(nE,'N');upd()};fE.onchange=()=>{boRead(fE,'F');upd()};
+  const st=(d,id)=>{fE.value=String(boF(B())+d);boRead(fE,'F');upd();const bt=$(id);(bt.disabled?fE:bt).focus()};
   $('#boFdn').onclick=()=>st(-1,'#boFdn');$('#boFup').onclick=()=>st(1,'#boFup')}
 /* « Arrêter » en tête de ligne : le texte de progression, qui change de longueur, ne le déplace pas sous le curseur pendant un clic */
 function boProgHtml(){if(BO.busy)return `<p class="meta2"><button type="button" class="btn sm" id="boStop">Arrêter</button> <span id="boProgTxt" role="status">Calcul en cours… ${esc(BO.prog)}</span></p>`;

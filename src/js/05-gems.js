@@ -33,4 +33,5 @@ const GEMS=[
 ];
 const GEMI={};GEMS.forEach(([id,fr,en,r,t,types,d,v])=>GEMI[id]={id,fr,en,r,t,types,d,v});
 const PERKTYPE={dCut:'cut',dPierce:'pierce',dBlunt:'blunt',dPoison:'poison',venom:'poison',mFire:'fire',mIce:'ice',mShock:'shock',mShroud:'shroud'};
+/* Déclenchement : types de la répartition et des perks « Lourd » des 5 emplacements (l'arme améliorée au maximum, choix assumé : le curseur Améliorations n'y joue pas) */
 function gemFit(g,w){if(!g||!w||!g.types.length)return null;const t=new Set([...w.split.map(x=>x[0]),...w.wperks.map(p=>PERKTYPE[p[0]]).filter(Boolean)]);return g.types.some(x=>t.has(x))}

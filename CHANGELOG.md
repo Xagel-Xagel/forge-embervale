@@ -8,6 +8,7 @@ Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes 
 - **Base des baguettes et des bâtons** : les fichiers 1.0 donnent le même multiplicateur à toute la famille ; toutes les baguettes passent à 91 et tous les bâtons à 77 (la plus haute valeur du wiki). Les autres familles gardent l'estimation d'avant la 1.0 (ROADMAP).
 - **Preset « Mage critique (baguette) » refait** (même place, choix de l'utilisateur, QCM) : chance d'abord ; **Baguette mythique** (Chance de coup critique +6 % ×2) et **Everblue de l'Oracle** (+7 %), gemmes Œil du cyclone et Corruption ; **niveau 25 + 61 d'exploration = 109 points, Flamme 4** ; baguette **78 % / 123 % → 436,8** (1.14.0 : 66 % / 123 % → 428,7), 95 points dépensés, 14 libres. Le lien donné pour la 1.14.0 ouvre toujours l'ancien build.
 - **Points et Flamme en grand** : en tête des onglets Arbre et Build optimal, deux tuiles côte à côte (aussi à 400 px) : points à attribuer (ou en trop) et niveau de la Flamme avec boutons −/+ et l'effet des nœuds de Flamme du build (ex. « Exalté : +2 INT »).
+- Anciens liens et builds enregistrés avec une baguette ou un bâton : mêmes objets et arbre, mais chiffres revus (base commune, perks de critique).
 - Build optimal : une arme n'est écartée que si une autre de même catégorie et même répartition a une base **et** des perks de critique au moins égaux.
 
 ## 1.16.0 — 2026-11-06 · Noms en français

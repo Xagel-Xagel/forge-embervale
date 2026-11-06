@@ -45,5 +45,21 @@ test('puces des perks d\'arme : emplacements grisés au-delà des améliorations
   assert.match(p[0], /class="chip tag"/); assert.match(p[0], /Lourd \(Foudre\) \+10 %/); assert.doesNotMatch(p[0], /✓/);
   assert.match(p[3], /Chance de coup critique \+6 % ✓/); assert.match(p[4], /class="chip tag off"/);
   assert.match(wperkChip(['mleechF', 8], true), /Absorption de mana \+8</);
-  assert.match(wperkChip(['k', 'necromancer', 2], false), /class="chip sk off">Nécromancien \+2 rangs</);
+  assert.match(wperkChip(['k', 'necromancer', 2], false), /class="chip sk off">Nécromancien \+2 rangs \(non compté\)</);
+});
+
+// Revue QA 1.17.0
+test('fiche : la carte d\'arme montre les dégâts critiques de l\'arme et leur détail ; la ligne de la fiche dit « base »', () => {
+  const w = compute(wb('w_bloodflow', null, 5)).weapons[0], h = weaponBlock(w, 'Arme 1');
+  assert.equal(Math.round(w.avg * 10) / 10, 100.3); // 91 × (1 + 0,10 × 1,02) = 100,28 : chance de base 10 %, 80 + 22 % de dégâts critiques
+  assert.match(h, /<b>\+102 %<\/b><span>dégâts critiques/); assert.match(h, /Dégâts critiques · Perk : Dégâts de coup critique : \+22 %/);
+  const h4 = weaponBlock(compute(wb('w_bloodflow', null, 4)).weapons[0], 'Arme 1');
+  assert.match(h4, /<b>\+80 %<\/b>/); assert.doesNotMatch(h4, /Perk : Dégâts de coup critique/);
+  assert.ok(rowsFor(compute(wb('w_bloodflow', null, 5))).some(r => r.lab === 'Dégâts critiques (base, hors perks d\'arme)' && r.v === 80));
+});
+
+test('puces : pas de ✓ sur un perk compté mais encore verrouillé ; rangs d\'arme marqués non comptés et absents de gearRk', () => {
+  assert.doesNotMatch(wperkChip(['precise', 6], false), /✓/); assert.match(wperkChip(['precise', 6], true), /✓/);
+  assert.match(wperkChip(['k', 'manaCurrents', 3], true), /Courants de mana \+3 rangs \(non compté\)/);
+  const b = wb('w_storm', 'w_moor', 5); const o = compute(b); assert.equal(o.gearRk.manaCurrents, undefined); assert.equal(o.gearRk.necromancer, undefined);
 });
