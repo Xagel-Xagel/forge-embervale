@@ -117,6 +117,8 @@ Canevas publié (privé, 12 planches + 3 notes « masqué / déplacé / fusionn�
 
 QCM 1 (2026-11-06) : **B · Panneaux** (non retenus : A Simple / Expert, recommandée pour le risque ; C Parcours). Affinages suivants, un QCM à la fois, rendus révisés à chaque réponse :
 
+- QCM 2 · commandes des panneaux : **mode « Organiser »** — en lecture, un seul bouton Replier par panneau ; un bouton « Organiser les panneaux » affiche poignées, taille S / M / L, monter / descendre, fermer, puis « Terminé » (non retenus : boutons toujours visibles, chevron + menu ⋯).
+
 _(suite à compléter)_
 
 ## 6. Plan d'implémentation
