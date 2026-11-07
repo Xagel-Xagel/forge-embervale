@@ -33,7 +33,7 @@ const G=(()=>{
   function isOn(n){return n.kind==='start'?curR.has(n):owned(b(),n)}
   function avail(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;if(owned(b(),n))return false;for(const m of n.nb)if(curR.has(m))return true;return false}
   /* Ajouté par l'utilisateur : acquis au-delà du rang imposé par l'objectif (anneau pointillé) */
-  function isAdd(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;const bb=b();return n.kind==='skill'?(bb.sk[n.id]||0)>lockOf(bb,n,imp):!!bb.pn[n.id]&&!lockOf(bb,n,imp)}
+  function isAdd(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;const bb=b(),imp=imposed(bb);return n.kind==='skill'?(bb.sk[n.id]||0)>lockOf(bb,n,imp):!!bb.pn[n.id]&&!lockOf(bb,n,imp)}
   let colors={};
   function readColors(){const cs=getComputedStyle(document.documentElement);const g=v=>cs.getPropertyValue(v).trim();
     colors={bg:g('--g-bg'),node:g('--g-node'),edge:g('--g-edge'),label:g('--g-label'),ring:g('--g-ring'),shroud:g('--shroud'),core:g('--core'),war:g('--war'),rng:g('--rng'),mag:g('--mag'),ember:g('--ember')};for(const k in glowCache)delete glowCache[k];dirty=true}
@@ -42,8 +42,8 @@ const G=(()=>{
   new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
   const areaCol=a=>colors[a]||colors.ember;
 
-  function matchSet(){const q=query.toLowerCase();if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
-    for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0;if(okQ&&okO)s.add(n)}return s}
+  function matchSet(){const q=fold(query);if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
+    for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||fold(n.sk.fr+' '+n.sk.en).includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0;if(okQ&&okO)s.add(n)}return s}
 
   /* Graphe caché (vue Liste) : W = 0, plus rien n'est dessiné ; à son retour, l'observateur de taille le recale (canvas vidé seulement si la taille change) */
   function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
@@ -149,7 +149,10 @@ const G=(()=>{
   function change(n,d){const bb=b();let ok=false;if(n.kind==='skill')ok=d>0?addRank(bb,n.id):remRank(bb,n.id);else if(n.kind==='pip')ok=d>0?addPipNode(bb,n):remPipNode(bb,n);else return;if(ok)renderAll();else showCard()}
   /* Origine d'un nœud acquis : étape de l'objectif qui l'impose, liaison du combo, ou ajout */
   function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);if(!lk)return '<div class="m">Ajouté par vous</div>';
-    const w=c.by[n.kind==='pip'?'@'+n.attr:n.id];if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]];return `<div class="org">Imposé par « ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}</div>`}
+    const w=c.by[n.kind==='pip'?'@'+n.attr:n.id];if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]],t=`« ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}`;
+      // attribut : au-delà du nombre visé, certains nœuds imposés ne servent que de liaison (on ne sait pas lesquels)
+      if(n.kind==='pip'&&TOPO.pips.filter(p=>p.attr===n.attr&&c.pn[p.id]).length>(c.want.pip[n.attr]||0))return `<div class="org">Imposé par ${t}, ou liaison du combo</div>`;
+      return `<div class="org">Imposé par ${t}</div>`}
     return '<div class="org">Imposé : liaison du combo (chemin vers une compétence de l\'objectif)</div>'}
   function select(n){sel=n;showCard();dirty=true}
   function lockHtml(bb,n,lock){if(!lock)return '';const pth=pathTo(bb,n);if(!pth)return '<div class="m">Aucun chemin vers ce nœud.</div>';
@@ -173,6 +176,6 @@ const G=(()=>{
   }
   $('#gFit').onclick=()=>{area='all';fit();renderTree()};
   resize();fit();
-  return {refresh(){showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
+  return {isAdd,origin,refresh(){showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
 })();
 window.G=G;

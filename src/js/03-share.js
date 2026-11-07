@@ -79,7 +79,7 @@ function decodeCode(code){
     // un chiffre de rang par bit posé, même hors table (code d'une version plus récente) : un écart signale un lien tronqué
     const bits=bitsOf(big36(m[4])),rk=m[5];if(bits.length?rk.length!==bits.length:rk!=='0')return null;
     for(let k=0;k<bits.length;k++){const v=parseInt(rk[k],36);if(!v)return null;const n=TOPO.byGid[FZ.nd[bits[k]]];if(n&&n.kind==='skill')b.sk[n.id]=Math.min(v,n.sk.max);else gone++}
-    if(m[7])b.obj=m[7].match(/../g).map(x=>x==='zz'?null:FZ.goals[parseInt(x,36)]||null);
+    if(m[7]){if(m[7].startsWith('zz'))return null;b.obj=m[7].match(/../g).map(x=>x==='zz'?null:FZ.goals[parseInt(x,36)]||'?'+x)} // ?xx : objectif inconnu (version plus récente), signalé par fitGoals
     syncPips(b);const R=reach(b);
     // tracé régénéré depuis (nœud disparu ou liaison changée) : migrer et le dire, sinon décodage exact
     if(!gone&&!TOPO.N.some(n=>owned(b,n)&&!R.has(n)))return normalize(b);

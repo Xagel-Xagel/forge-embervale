@@ -87,3 +87,27 @@ test('build enregistré avec objectifs : rechargé à l\'identique, objectifs ga
   const u = loadSaved({...s, obj: ['inconnu', 'fire']}); assert.deepEqual(u.obj, []); assert.equal(u._objLost, true); assert.deepEqual(u.sk, b.sk);
   const v = loadSaved({...s, obj: undefined}); assert.deepEqual(v.obj, []); assert.equal(v._objLost, undefined, 'build d\'avant la 2.0.0 : rien à signaler');
 });
+
+test('ajout d\'un nœud d\'attribut : gardé au changement de secondaire, retiré par −1 de préférence aux nœuds imposés', () => {
+  const b = goalBuild('mageCrit'), R = reach(b), p = TOPO.pips.find(x => x.attr === 'str' && !b.pn[x.id] && canBuy(b, x, R));
+  assert.ok(p, 'aucun nœud de Force achetable'); assert.ok(addPipNode(b, p));
+  setGoals(b, 'mageCrit', 'storm'); assert.ok(b.pn[p.id], 'ajout d\'attribut perdu');
+  const imp = Object.keys(imposed(b).pn); assert.equal(remPip(b, 'str'), true); assert.ok(!b.pn[p.id], 'le nœud ajouté n\'est pas celui retiré');
+  for (const id of imp) assert.ok(b.pn[id], 'nœud imposé retiré : ' + id);
+  // un attribut mixte (imposés + ajouté) : −1 retire l'ajouté
+  const c = goalBuild('tank'), q = TOPO.pips.find(x => x.attr === 'con' && !c.pn[x.id] && canBuy(c, x));
+  if (q) { addPipNode(c, q); assert.equal(remPip(c, 'con'), true); assert.ok(!c.pn[q.id]); assert.equal(c.pip.con, imposed(c).pip.con); }
+});
+test('secondaire = principal : ignoré (setGoals)', () => {
+  const b = blankBuild(); setGoals(b, 'tank', 'tank'); assert.deepEqual(b.obj, ['tank', null]);
+});
+test('un combo ne s\'arrête jamais alors que le prochain achat est payable ; le manque affiché est exact', () => {
+  let n = 0;
+  for (const g of GOALS) for (const fl of [1, 11]) for (let lv = 1; lv <= 50; lv += 7) for (const ex of [0, 20, 114]) {
+    const c = combo(g.id, null, lv, ex, fl), st = c.rep[0].steps.find(s => s.miss); if (!st) continue; n++;
+    const b = {sk: {...c.sk}, pn: {...c.pn}, pip: {...c.pip}}, k = st.at; let cost;
+    if (isAttr(k)) { const D = dijkstra(b, reach(b), u => u.kind === 'pip' && u.attr === k && !owned(b, u)); cost = D.dist.get(D.hit); }
+    else cost = b.sk[k] > 0 ? SKI[k].cost : pathCost(b, pathTo(b, TOPO.byId[k]));
+    assert.equal(cost - c.left, st.miss, `${g.id} niv. ${lv} expl. ${ex} Flamme ${fl} : ${k}`); assert.ok(st.miss > 0); }
+  assert.ok(n > 50, 'trop peu de combos arrêtés : ' + n);
+});

@@ -178,3 +178,11 @@ test('équipement d\'un ancien lien : relu et réécrit à l\'identique, jamais 
   const d = decode(REF_B3); assert.deepEqual(d.gear, REF_B3_BUILD.gear); assert.equal(encode(d), REF_B3);
   const o = compute(d), e = JSON.parse(JSON.stringify(d)); e.gear = {}; assert.deepEqual(compute(e).attr, o.attr); assert.equal(compute(e).hp, o.hp);
 });
+test('segment -o : principal ou secondaire inconnu signalé ; « zz » en principal refusé ; secondaire = principal ignoré sans alerte', () => {
+  const p = encode(goalBuild('archer', 'tank')).split('-').slice(0, -1), sum = s => s + '-' + b3sum(s), with_ = o => decode(sum(p.map(x => x[0] === 'o' && x.length === 5 ? 'o' + o : x).join('-')));
+  const far = (FZ.goals.length + 40).toString(36).padStart(2, '0');
+  const a = with_(far + 'zz'); assert.deepEqual(a.obj, []); assert.equal(a._objLost, true, 'principal inconnu');
+  const b = with_('03' + far); assert.deepEqual(b.obj, ['archer', null]); assert.equal(b._objLost, true, 'secondaire inconnu');
+  assert.equal(with_('zzzz'), null); assert.equal(with_('zz03'), null);
+  const c = with_('0303'); assert.deepEqual(c.obj, ['archer', null]); assert.equal(c._objLost, undefined);
+});

@@ -31,3 +31,27 @@ test('builds enregistrés : enregistrer puis recharger donne le même build (obj
     for (const k of ['obj', 'sk', 'pn', 'pip', 'gem', 'lvl', 'exp', 'flame']) assert.deepEqual(r[k], builds[0][k], k); }); }
   finally { globalThis.toast = keepT; }
 }));
+test('« Pourquoi ce combo » : étape en partie, manque affiché, pastilles bornées à l\'étape', () => keepUi(() => {
+  const el = {}, keep = document.querySelector; document.querySelector = q => q === '#why' ? el : keep(q);
+  try {
+    builds[0] = goalBuild('tank'); cur = 0; builds[0].lvl = 12; builds[0].exp = 0; rebuild(builds[0], null); renderWhy();
+    assert.match(el.innerHTML, /il manque \d+ pts? pour/); assert.match(el.innerHTML, /class="wstep (part|no)"/);
+    const chips = [...el.innerHTML.matchAll(/<span class="chip off">([^<]+)<\/span>/g)].map(m => m[1]); assert.ok(chips.some(t => /(\d+)\/(\d+)/.test(t) && +t.match(/(\d+)\//)[1] < +t.match(/\/(\d+)/)[1]), 'pastille « got/want » absente');
+    builds[0] = goalBuild('tank', 'healer'); renderWhy();
+    for (const m of el.innerHTML.matchAll(/(\d+)\/(\d+)<\/span>/g)) assert.ok(+m[1] <= +m[2], 'pastille au-delà de l\'étape : ' + m[0]);
+    builds[0] = blankBuild(); renderWhy(); assert.match(el.innerHTML, /Aucun objectif/);
+  } finally { document.querySelector = keep; }
+}));
+test('réglage avec objectif : le combo suit le nouveau budget', () => keepUi(() => {
+  const keepT = globalThis.toast; globalThis.toast = () => {};
+  try { builds[0] = goalBuild('mageCrit'); cur = 0; setting('lvl', 20);
+    assert.deepEqual(B().sk, combo('mageCrit', null, 20, 114, 11).sk); assert.ok(spentPoints(B()) <= budget(B())); }
+  finally { globalThis.toast = keepT; }
+}));
+test('graphe : nœud imposé sans anneau « ajouté », avec son étape ; nœud ajouté marqué « Ajouté par vous »', () => keepUi(() => {
+  builds[0] = goalBuild('mageCrit'); cur = 0; const b = B(), n = TOPO.N.find(x => x.kind === 'skill' && !b.sk[x.id] && canBuy(b, x)); addRank(b, n.id);
+  G.refresh(); const w = TOPO.byId.wizard;
+  assert.equal(G.isAdd(w), false); assert.match(G.origin(b, w), /Imposé par « Mage critique \(baguette\) » · étape 1 : Chance de critique/);
+  assert.equal(G.isAdd(n), true); assert.match(G.origin(b, n), /Ajouté par vous/);
+}));
+test('recherche sans accents ni majuscules', () => { assert.ok(fold('Égorgeur').includes(fold('EGORGEUR'))); assert.equal(fold('Pyromane'), 'pyromane'); });

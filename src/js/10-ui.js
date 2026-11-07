@@ -18,6 +18,7 @@ const zoneTag=(k,t)=>{const a=AREAS.find(x=>x[0]===k);return a?`<span class="zta
 const zonePts=(b,k)=>SK.reduce((a,s)=>a+(s.area===k?s.cost*Math.min(b.sk[s.id]||0,s.max):0),0)+PIPS.reduce((a,p)=>a+(p[3]===k?b.pip[p[0]]||0:0),0);
 const goalsTxt=b=>(b.obj||[])[0]?b.obj.filter(Boolean).map(goalName).join(' + '):'Arbre libre';
 const pts=n=>`${n} pt${Math.abs(n)>1?'s':''}`;
+const fold=t=>String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); // recherche sans accents ni majuscules
 
 function renderTabs(){const el=$('#buildTabs');el.innerHTML='';
   builds.forEach((b,i)=>{const t=document.createElement('button');t.className='tab';t.setAttribute('role','tab');t.setAttribute('aria-selected',i===cur);
@@ -49,12 +50,12 @@ function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i?v||null:(v&&
 
 /* ---- Pourquoi ce combo ---- */
 const ICO={ok:'✓',part:'◐',no:'○'},STT={ok:'complète',part:'en partie',no:'pas encore'};
-function itemChip(k,want,c,st){const got=isAttr(k)?(c.want.pip[k]||0):(c.want.sk[k]||0),skip=st.skip.includes(k);
+function itemChip(k,want,c,st){const got=Math.min(want,isAttr(k)?(c.want.pip[k]||0):(c.want.sk[k]||0)),skip=st.skip.includes(k);
   const txt=skip?`${itemName(k)} : sautée (Flamme 1)`:isAttr(k)?`${itemName(k)} ${got}/${want}`:`${itemName(k)}${want>1||got>1?` ${got}/${want}`:''}`;
   return `<span class="chip${skip||got<want?' off':''}">${esc(txt)}</span>`}
 function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spentPoints(b),bu=budget(b);
   const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`;
-  if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placés à la main.`:''}</p>${res}`;return}
+  if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placé${sp>1?'s':''} à la main.`:''}</p>${res}`;return}
   el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
     return `<div class="wgoal"><h3>${zoneTag(g.area,gi?'Secondaire':'Principal')} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
       `<p>${esc(st.why)}</p><div class="chips">${Object.entries(st.items).map(([k,w])=>itemChip(k,w,c,st)).join('')}</div></details>`).join('')+'</div>'}).join('')+
@@ -86,7 +87,7 @@ function remPip(b,k){const imp=imposed(b);let best=null,bc=Infinity;for(const p 
 function buyTo(b,n){const pth=pathTo(b,n);if(pth){buyPath(b,pth);renderAll()}}
 function renderTree(){const b=B(),sp=spentPoints(b),ae=$('#areas');ae.innerHTML='';
   [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const bt=document.createElement('button');bt.className='area';bt.style.setProperty('--ac',`var(${c})`);bt.setAttribute('aria-pressed',area===k);
-    bt.innerHTML=`${n} <small>${k==='all'?sp:zonePts(b,k)} pts</small>`;bt.onclick=()=>{area=k;renderTree();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
+    bt.innerHTML=`${n} <small>${pts(k==='all'?sp:zonePts(b,k))}</small>`;bt.onclick=()=>{area=k;renderTree();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
   $('#vGraph').setAttribute('aria-pressed',view==='graph');$('#vList').setAttribute('aria-pressed',view==='list');$('#graphView').hidden=view!=='graph';$('#listView').hidden=view!=='list';
   if(view==='graph'){if(window.G)G.refresh();return}
   const imp=imposed(b),RR=reach(b),DJ=dijkstra(b,RR),pe=$('#pips');pe.innerHTML='';
@@ -97,8 +98,8 @@ function renderTree(){const b=B(),sp=spentPoints(b),ae=$('#areas');ae.innerHTML=
     const [m,p]=d.querySelectorAll('.step button');m.onclick=()=>{if(remPip(b,k))renderAll()};p.onclick=()=>{if(addPip(b,k))renderAll()};
     const pb=d.querySelector('.pathb');if(pb)pb.onclick=()=>buyTo(b,far);pe.appendChild(d)});
   pe.hidden=area==='core';
-  const ne=$('#nodes');ne.innerHTML='';const q=query.toLowerCase();
-  const list=SK.filter(s=>(q?(s.fr+' '+s.en).toLowerCase().includes(q):(area==='all'||s.area===area))&&(!onlyOn||(b.sk[s.id]||0)>0));
+  const ne=$('#nodes');ne.innerHTML='';const q=fold(query);
+  const list=SK.filter(s=>(q?fold(s.fr+' '+s.en).includes(q):(area==='all'||s.area===area))&&(!onlyOn||(b.sk[s.id]||0)>0));
   if(!list.length)ne.innerHTML='<div class="empty">Aucune compétence ne correspond. Videz la recherche ou décochez « Prises seulement ».</div>';
   list.forEach(s=>{const v=b.sk[s.id]||0,tn=TOPO.byId[s.id],lk=lockOf(b,tn,imp),lock=!v&&!canBuy(b,tn,RR),d=document.createElement('div');d.className='node'+(v?' on':'')+(lock?' lock':'')+(v>lk?' add':'');
     d.style.setProperty('--ac',areaColor(s.area));
@@ -148,7 +149,7 @@ function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringi
 $('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!notices(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
 $('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
 /* Lien ou build ancien : ce qui a été ajouté pour le relier, objectif retiré ; true si un message a été montré */
-function notices(b){const lost=b&&b._objLost;if(lost)toast('Objectif retiré : il a changé depuis ce lien. L\'arbre est gardé tel quel, en arbre libre');return migNotice(b)||!!lost}
+function notices(b){const lost=b&&b._objLost;if(lost)toast((b.obj||[])[0]?'Objectif secondaire retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');return migNotice(b)||!!lost}
 function migNotice(b){const g=b&&b._mig;if(!g||!(g.pts>0||g.gone>0))return false;
   const names=[...g.addSk.map(id=>SKI[id].fr),...Object.entries(g.addPip).map(([a,n])=>PIPS.find(p=>p[0]===a)[1]+' +'+n)];const over=spentPoints(b)-budget(b);
   const m=modal(`<h2>${g.from==='b3'?'Lien fait sur un tracé antérieur':(g.from==='saved'?'Build enregistré':'Lien')+" d'avant le tracé réel"}</h2><p class="sub">${g.from==='b3'?"Ce lien a été créé avant la dernière mise à jour du tracé de l'arbre (patch du jeu).":(g.from==='saved'?'Ce build a été enregistré':'Ce code '+esc(g.from)+'- a été créé')+" avant la version 1.9.0, qui reprend le vrai tracé de l'arbre du jeu."} Vos choix sont conservés${g.gone?`, sauf ${g.gone} nœud${g.gone>1?'s':''} qui n'existe${g.gone>1?'nt':''} plus`:''} (compétences et rangs, attributs, gemmes).${names.length?` Pour les relier à un point de départ, ces nœuds ont été ajoutés (+${pts(g.pts)}) :`:''}</p>
@@ -159,7 +160,7 @@ $('#share').onclick=()=>{const code=encode(B());try{history.replaceState(null,''
   const m=modal(`<h2>Partager « ${esc(B().name)} »</h2><p class="sub">Ce code contient l'arbre, les objectifs, les gemmes et les réglages. Il est aussi placé à la fin du lien de la page : un lien copié depuis la barre d'adresse ouvre directement ce build.</p>
   <textarea id="shareCode" readonly>${code}</textarea><div class="row"><button class="btn primary" id="cpy">Copier le code</button><button class="btn" id="cls">Fermer</button></div>`);
   m.querySelector('#cpy').onclick=()=>copy(code,m.querySelector('#shareCode'));m.querySelector('#cls').onclick=()=>m.remove()};
-$('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b3-</code> ; les anciens <code>b2-</code> et <code>b1-</code> marchent aussi (adaptés au tracé réel de l'arbre ; l'équipement qu'ils portent est ignoré). Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b3-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b3-, b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
+$('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b3-</code> ; les anciens <code>b2-</code> et <code>b1-</code> marchent aussi (adaptés au tracé réel de l'arbre). L'équipement que portent les codes est ignoré. Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b3-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b3-, b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
   m.querySelector('#go').onclick=()=>{const b=decode(m.querySelector('#impCode').value);if(!b){m.querySelector('#impErr').hidden=false;return}builds[cur]=b;m.remove();renderAll();if(!notices(b))toast('Build importé dans '+'AB'[cur])};m.querySelector('#cls').onclick=()=>m.remove()};
 function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const b=decode(h);if(b){builds[0]=b;cur=0;compare=false;
   if(b._mig){try{history.replaceState(null,'','#'+encode(b))}catch(e){}}setTimeout(()=>notices(b),0);return true}
