@@ -42,10 +42,23 @@ header.top h1 span{color:var(--ember)}
 .btn.primary{background:var(--ember);border-color:var(--ember);color:var(--on-ember)} /* encre sombre sur braise en thème sombre (#fff ≈ 2,3 : 1, illisible) */
 .btn.sm{padding:3px 8px;font-size:.85rem}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.sep{width:1px;height:26px;background:var(--line)}
 select,input[type="text"],input[type="number"]{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:6px 8px;max-width:100%}
 label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .namein{width:12rem}
+/* Haut de page explicite (2.2.0) : fil des étapes, build affiché, titres numérotés, groupes de l'étape 5 */
+.steps ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.steps button{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 11px 6px 6px;border-radius:999px;cursor:pointer;min-height:36px;text-align:left}
+.steps button:hover{border-color:var(--ember)}
+.steps b,.panel>.ph h2 .num{display:inline-grid;place-items:center;min-width:1.6em;height:1.6em;border-radius:50%;background:var(--ember);color:var(--on-ember);font-family:var(--f-display);font-weight:700;font-variant-numeric:lining-nums}
+.panel>.ph h2 .num{font-size:.85em;margin-right:4px;vertical-align:.1em}
+.albl{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.namel{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.9rem}
+.thint{flex:1 1 100%;margin:0;color:var(--muted);font-size:.85rem}
+.lead{margin:0;color:var(--muted);font-size:.9rem}
+.lpad{padding:10px 14px 0}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.acts .albl{flex:1 1 100%}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
 /* Barre collée des panneaux (hauteur mesurée dans --navh sur :root, 10-ui.js) */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
 .panel>.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -188,5 +201,4 @@ details.wstep .chips{grid-column:auto;margin-bottom:8px}
 table.cmp td.txt{white-space:normal;text-align:left;font-family:var(--f-body);font-size:.8rem;min-width:12rem;vertical-align:top}
 table.cmp thead th{white-space:nowrap}
 .oscroll{overflow-x:auto;max-width:100%}
-@media (max-width:639px){.toolbar .btn,.toolbar select,.toolbar .tab,.step button{min-height:44px;min-width:44px}.toolbar .sep{display:none}.namein{flex:1 1 10rem}}
-@media (min-width:900px){.main>.tree{position:sticky;top:12px}} /* bureau : l'arbre reste en vue pendant qu'on lit l'explication */
+@media (max-width:639px){.toolbar .btn,.toolbar select,.toolbar .tab,.acts .btn,.acts select,.steps button,.step button{min-height:44px;min-width:44px}.namel{flex:1 1 12rem}.namein{flex:1 1 8rem;min-width:0}}

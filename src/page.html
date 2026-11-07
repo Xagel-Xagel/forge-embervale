@@ -7,32 +7,37 @@
   <header class="top">
     <div>
       <h1>Forge d'<span>Embervale</span></h1>
-      <div class="sub">Arbre de compétences d'Enshrouded 1.0 · choisissez un objectif, le site place vos points et explique pourquoi</div>
+      <div class="sub">Arbre de compétences d'Enshrouded 1.0 · planifiez vos points en 5 étapes</div>
     </div>
     <span class="ver">Données : version 1.0 (oct.–nov. 2026)</span>
   </header>
 
-  <div class="toolbar" role="toolbar" aria-label="Builds">
+  <!-- Fil des étapes : chaque bouton descend au panneau (scrollIntoView, jamais le hash) -->
+  <nav class="steps" aria-label="Étapes">
+    <ol>
+      <li><button type="button" data-go="p-pts"><b>1</b> Réglez vos points</button></li>
+      <li><button type="button" data-go="p-obj"><b>2</b> Choisissez vos objectifs</button></li>
+      <li><button type="button" data-go="p-why"><b>3</b> Lisez pourquoi</button></li>
+      <li><button type="button" data-go="p-tree"><b>4</b> Ajoutez compétences et gemmes</button></li>
+      <li><button type="button" data-go="p-keep"><b>5</b> Enregistrez, partagez, comparez</button></li>
+    </ol>
+  </nav>
+
+  <!-- Build affiché : A ou B, et son nom -->
+  <div class="toolbar" role="group" aria-labelledby="g-cur">
+    <span class="albl" id="g-cur">Build affiché</span>
     <div class="tabs" role="tablist" id="buildTabs" aria-label="Build affiché"></div>
-    <input type="text" class="namein" id="buildName" aria-label="Nom du build">
-    <label class="chk"><input type="checkbox" id="cmp"> Comparer A et B</label>
-    <span class="sep"></span>
-    <button class="btn" id="save">Enregistrer</button>
-    <select id="saved" aria-label="Builds enregistrés"><option value="">Mes builds…</option></select>
-    <button class="btn" id="delSaved">Supprimer</button>
-    <span class="sep"></span>
-    <button class="btn primary" id="share">Partager</button>
-    <button class="btn" id="import">Importer un code</button>
-    <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
-    <button class="btn" id="reset">Vider</button>
+    <label class="namel">Nom <input type="text" class="namein" id="buildName" aria-label="Nom du build"></label>
+    <p class="thint">A et B : deux builds ; tout ce qui suit modifie le build affiché.</p>
   </div>
 
   <div class="main">
     <div class="side">
       <!-- 1. Vos points : niveau, exploration, Flamme -->
-      <section class="panel" aria-labelledby="h-pts">
-        <div class="ph"><h2 id="h-pts">Vos points</h2></div>
+      <section class="panel" id="p-pts" aria-labelledby="h-pts">
+        <div class="ph"><h2 id="h-pts"><span class="num">1</span> Réglez vos points</h2></div>
         <div class="pb">
+          <p class="lead">Niveau, exploration et Flamme : le site calcule combien de points vous avez. Exploration = racines du Shroud et puits d'élixir trouvés.</p>
           <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
             <div class="ptile">
               <div class="ptl" id="ptLbl">Points à attribuer</div>
@@ -55,9 +60,10 @@
       </section>
 
       <!-- 2. Objectifs : principal (combo imposé), secondaire (points restants), soutien (derniers points, compétences seules) -->
-      <section class="panel" aria-labelledby="h-obj">
-        <div class="ph"><h2 id="h-obj">Objectifs</h2></div>
+      <section class="panel" id="p-obj" aria-labelledby="h-obj">
+        <div class="ph"><h2 id="h-obj"><span class="num">2</span> Choisissez vos objectifs</h2></div>
         <div class="pb">
+          <p class="lead">Le site place vos points pour le principal, puis le reste pour le secondaire et le soutien.</p>
           <div class="gsel">
             <label for="goal1">Principal<select id="goal1"></select></label>
             <label for="goal2">Secondaire<select id="goal2"></select></label>
@@ -68,23 +74,21 @@
       </section>
 
       <!-- 3. Pourquoi ce combo : étapes de chaque objectif, état et raison -->
-      <section class="panel" aria-labelledby="h-why">
-        <div class="ph"><h2 id="h-why">Pourquoi ce combo</h2></div>
+      <section class="panel" id="p-why" aria-labelledby="h-why">
+        <div class="ph"><h2 id="h-why"><span class="num">3</span> Lisez pourquoi</h2></div>
+        <p class="lead lpad">Chaque étape du combo, dans l'ordre, avec sa raison (choix du simulateur).</p>
         <div class="pb" id="why"></div>
       </section>
 
-      <!-- 4. Gemmes : deux emplacements (Arme 1, Arme 2) ; effets descriptifs, jamais comptés -->
-      <section class="panel" aria-labelledby="h-gem">
-        <div class="ph"><h2 id="h-gem">Gemmes</h2></div>
-        <div class="pb" id="gems"></div>
-      </section>
     </div>
 
-    <!-- Arbre : graphe (tracé du jeu 1.0) ou liste -->
+    <div class="col">
+    <!-- 4. Arbre : graphe (tracé du jeu 1.0) ou liste -->
     <section class="panel tree" id="p-tree" aria-labelledby="h-sk">
-      <div class="ph"><h2 id="h-sk">Arbre de compétences</h2>
+      <div class="ph"><h2 id="h-sk"><span class="num">4</span> Ajoutez des compétences dans l'arbre</h2>
         <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div>
       <div class="pb">
+        <p class="lead">Avec les points libres, achetez des nœuds reliés ; les nœuds imposés restent.</p>
         <div class="areas" id="areas"></div>
         <div class="filters">
           <input type="text" id="q" placeholder="Rechercher une compétence (FR ou EN)" aria-label="Rechercher une compétence">
@@ -112,6 +116,31 @@
         </div>
       </div>
     </section>
+    <!-- 4 (suite). Gemmes : deux emplacements (Arme 1, Arme 2) ; effets descriptifs, jamais comptés -->
+    <section class="panel" id="p-gem" aria-labelledby="h-gem">
+      <div class="ph"><h2 id="h-gem"><span class="num">4</span> … et des gemmes</h2></div>
+      <p class="lead lpad">Suite de l'étape 4 : une gemme par arme (effet décrit, jamais compté).</p>
+      <div class="pb" id="gems"></div>
+    </section>
+
+    <!-- 5. Garder : enregistrer (navigateur), partager (lien), comparer A et B -->
+    <section class="panel" id="p-keep" aria-labelledby="h-keep">
+      <div class="ph"><h2 id="h-keep"><span class="num">5</span> Enregistrez, partagez, comparez</h2></div>
+      <div class="pb">
+        <div class="acts" role="group" aria-labelledby="g-ls"><span class="albl" id="g-ls">Dans ce navigateur</span>
+          <button class="btn" id="save">Enregistrer</button>
+          <select id="saved" aria-label="Builds enregistrés"><option value="">Mes builds…</option></select>
+          <button class="btn" id="delSaved">Supprimer</button></div>
+        <div class="acts" role="group" aria-labelledby="g-ln"><span class="albl" id="g-ln">Par lien</span>
+          <button class="btn primary" id="share">Partager</button>
+          <button class="btn" id="import">Importer un code</button></div>
+        <div class="acts" role="group" aria-labelledby="g-ab"><span class="albl" id="g-ab">Entre A et B</span>
+          <label class="chk"><input type="checkbox" id="cmp"> Comparer A et B</label>
+          <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
+          <button class="btn" id="reset">Vider ce build</button></div>
+      </div>
+    </section>
+    </div>
   </div>
 
   <!-- A contre B (case « Comparer A et B ») -->

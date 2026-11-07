@@ -23,7 +23,7 @@ const overflow = async (page, w, what, errs) => { const sw = await page.evaluate
 const drawn = page => page.evaluate(() => { const c = document.querySelector('#gcv'); if (!c.width || !c.height) return false;
   const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const s = new Set(); for (let i = 0; i < d.length; i += 4 * 97) s.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return s.size > 3; });
 // Cibles tactiles (téléphone) : boutons et menus de la page ≥ 44 px de haut
-const smallTargets = page => page.evaluate(() => [...document.querySelectorAll('.toolbar button, .toolbar select, .gsel select, .gemrow select, .pstep, .viewsw button, .area')]
+const smallTargets = page => page.evaluate(() => [...document.querySelectorAll('.toolbar button, .toolbar select, .steps button, .acts button, .acts select, .gsel select, .gemrow select, .pstep, .viewsw button, .area')]
   .filter(e => e.offsetParent !== null && e.getBoundingClientRect().height < 44 && !e.closest('.viewsw') && !e.classList.contains('area')).map(e => e.id || e.className));
 // Tâches longues (calcul d'un combo) : relevées par PerformanceObserver
 const watchLong = page => page.evaluate(() => { window.__long = []; new PerformanceObserver(l => { for (const e of l.getEntries()) window.__long.push(Math.round(e.duration)); }).observe({type: 'longtask', buffered: false}); });
@@ -40,6 +40,12 @@ for (const w of [1300, 400]) for (const scheme of ['light', 'dark']) {
   if (await page.inputValue('#goal1') !== 'tank' || await page.inputValue('#goal2') !== 'healer') errs.push('objectifs du build A au démarrage');
   if (w === 400) { const s = await smallTargets(page); if (s.length) errs.push('cibles < 44 px : ' + s.join(', ')); }
   await page.screenshot({path: shot(`${w}-${scheme}`), fullPage: true});
+  // Fil des étapes : l'étape 5 descend au panneau « Enregistrez, partagez, comparez », sans toucher l'adresse
+  await page.click('.steps [data-go="p-keep"]'); await page.waitForTimeout(700);
+  if (!await page.evaluate(() => { const r = document.querySelector('#p-keep').getBoundingClientRect(); return r.top >= -2 && r.top < innerHeight; })) errs.push('étape 5 : panneau hors de vue');
+  if (await page.evaluate(() => document.activeElement && document.activeElement.id) !== 'h-keep') errs.push('étape 5 : focus absent du titre');
+  if (/#p-/.test(page.url())) errs.push('étape 5 : hash modifié');
+  await page.evaluate(() => scrollTo(0, 0));
   await page.click('#cmp'); await page.waitForTimeout(80);
   if (await page.isHidden('#p-cmp')) errs.push('A contre B caché après « Comparer »');
   if (!/Mage critique \(baguette\) \+ Mage de foudre/.test(await page.textContent('#cmpBody'))) errs.push('A contre B : objectifs de B absents');
