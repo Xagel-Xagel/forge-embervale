@@ -90,6 +90,30 @@ for (const w of [1300, 400]) for (const scheme of ['light', 'dark']) {
   report(!errs.length, 'objectifs (menus, réglages, temps, verrou)', errs); await page.close();
 }
 
+// 2.3.0 : un ajout avec objectif recalcule le combo (double-clic dans le graphe) ; message, temps, « vos ajouts », lien avec -a rouvert à l'identique
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(400);
+  await page.selectOption('#goal1', 'mageCrit'); await page.selectOption('#goal2', ''); await page.selectOption('#goal3', '');
+  for (const [f, v] of [['#lvl', '40'], ['#exp', '2']]) { await page.fill(f, v); await page.press(f, 'Tab'); } await page.waitForTimeout(80);
+  if (await page.evaluate(() => budget(B())) !== 80) errs.push('budget de 80 points non réglé');
+  await page.locator('#gwrap').scrollIntoViewIfNeeded(); await page.waitForTimeout(80); await watchLong(page);
+  const pt = await page.evaluate(() => { const n = window.G.nodes.find(x => x.id === 'pip:1wwtpca'); const [x, y] = window.G.screen(n); const r = document.querySelector('#gcv').getBoundingClientRect(); return [r.left + x, r.top + y]; });
+  await page.mouse.dblclick(pt[0], pt[1]); await page.waitForTimeout(120);
+  if (!/Combo recalculé : liaisons 30 pts → 27 pts · objectifs \+4 pts/.test(await page.textContent('#toasts'))) errs.push('ajout : pas de message de recalcul');
+  const lt = (await longs(page)).filter(d => d > LONGTASK); if (lt.length) errs.push(`tâches longues > ${LONGTASK} ms : ${lt.join(', ')}`);
+  const ms = await page.evaluate(() => { const b = B(), t = performance.now(); COMBO.clear(); imposed(b); return performance.now() - t; });
+  if (ms > LONGTASK / 2) errs.push(`recalcul en ${Math.round(ms)} ms`); else console.log(`  recalcul du combo avec un ajout, dans le navigateur : ${ms.toFixed(1)} ms`);
+  if (!/vos ajouts 1 pt/.test(await page.textContent('#why'))) errs.push('« vos ajouts » absent de « Pourquoi ce combo »');
+  await page.evaluate(() => { for (const d of document.querySelectorAll('#why details')) d.open = true; });
+  await page.locator('#why').screenshot({path: shot('1300-ajouts')});
+  const code = await page.evaluate(() => encode(B())); if (!/-a[0-9a-z]+-[0-9a-z]+-[0-9a-z]{2}$/.test(code)) errs.push('ajouts absents du lien');
+  await page.goto(url + '#' + code); await page.reload(); await page.waitForTimeout(500);
+  if (await page.evaluate(() => encode(B())) !== code) errs.push('lien avec ajouts rouvert différemment');
+  report(!errs.length, 'ajouts avec objectif (2.3.0)', errs); await page.close();
+}
+
 // Lien avec objectifs (segment -o) : s'ouvre sur les mêmes objectifs ; un rendu ne change pas l'adresse
 {
   const page = await browser.newPage({viewport: {width: 400, height: 900}});

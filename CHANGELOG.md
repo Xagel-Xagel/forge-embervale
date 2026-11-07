@@ -2,6 +2,15 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.3.0 — 2026-11-07 · Le combo se recalcule avec vos ajouts
+- **Chaque ajout ou retrait recalcule le combo imposé depuis les départs**, en comptant vos nœuds comme déjà acquis : le combo passe par eux sans les payer. Chemins plus courts, liaisons en moins ; les points libérés vont aux étapes suivantes, au secondaire et au soutien. Un court message dit ce qui a changé (ex. « Combo recalculé : liaisons 24 pts → 20 pts · objectifs +7 pts » pour Chien mouillé sur le Tank à 140 points).
+- Vos ajouts viennent **en plus** du combo, comme avant (QCM) : il garde tout votre budget, et « N pts en trop » reste possible.
+- Un nœud que vous avez ajouté et que l'objectif demande **devient imposé** quand le combo atteint son étape (QCM) ; vos rangs au-dessus restent retirables. Vos nœuds d'attribut s'ajoutent au compte des étapes et restent à vous.
+- Garde-fou : si tenir compte de vos ajouts faisait moins bien (calcul glouton, environ 2,5 % des cas mesurés), le site garde l'ancien calcul : jamais d'objectif moins avancé, ni plus cher à avancée égale.
+- Retirer un ajout élague les ajouts qui n'étaient reliés que par lui (règle de l'arbre) ; +1 puis −1 sur un rang ne change rien. Carte d'un nœud : « le combo passe par ce nœud » quand un de vos ajouts lui sert de chemin.
+- **Liens** : vos ajouts entrent dans le lien (segment `-a`, seulement s'il y en a) ; un lien sans ajout est celui de la 2.2.0. Un lien ou un build enregistré d'avant la 2.3.0 avec des ajouts s'ouvre recalculé, avec un message (QCM) ; sans effet sur le combo, il s'ouvre à l'identique.
+- Coûts des combos sans ajout inchangés (11 016 combos comparés à l'ancien moteur) ; un recalcul prend environ 3 ms (7 ms mesurées dans le navigateur).
+
 ## 2.2.0 — 2026-11-07 · Haut de page explicite : 5 étapes
 - **Fil des étapes** sous le titre : 1. Réglez vos points · 2. Choisissez vos objectifs · 3. Lisez pourquoi · 4. Ajoutez compétences et gemmes · 5. Enregistrez, partagez, comparez. Un clic descend à l'étape.
 - Chaque panneau porte son numéro et une phrase qui dit à quoi il sert (Exploration = racines du Shroud et puits d'élixir trouvés).

@@ -29,10 +29,10 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   01-data.js         SK (compétences), SKI, PIPS (attributs), AREAS (zones)
   01-tree-data.js    TREE : tracé réel de l'arbre 1.0 (243 nœuds x/y, 312 liaisons) — GÉNÉRÉ, ne pas éditer à la main
   02-calc.js         blankBuild (gear, upg : inertes), spentPoints, budget, levelNeeded, FLAME_NODES, compute(build) → attributs, santé, mana, vigueur
-  03-share.js        tables figées FZ, encode/decode des codes de partage (b3-… avec segment -o des objectifs, rétrocompatible b2- et b1-)
+  03-share.js        tables figées FZ, encode/decode des codes de partage (b3-… avec segments -o des objectifs et -a de vos ajouts, rétrocompatible b2- et b1-)
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), GEMI, GTYPE
-  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache), imposed, addsOf, rebuild, setGoals, lockOf, fitGoals, goalBuild
+  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache ; 2.3.0 : recalculé avec vos ajouts b.ad, gratuits pour lui), imposed, addsOf, regen, rebuild, setGoals, lockOf, fitGoals, goalBuild
   10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, fil des étapes (goStep), partage, builds enregistrés
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom ; imposé plein, ajouté en pointillé), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
@@ -65,7 +65,7 @@ Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de
 - `FZ.goals` : objectifs (segment `-o`, 2.0.0 ; soutiens `SUPS` en fin, 2.1.0 : 6 caractères seulement avec un soutien) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
 - `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
 
-Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>][-o<objectifs>]-<contrôle>` (1 chiffre de rang par compétence possédée ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
+Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>][-o<objectifs>[-a<ajouts>-<rangs>]]-<contrôle>` (1 chiffre de rang par compétence possédée ; segment `-a` de vos ajouts, 2.3.0, seulement avec objectifs et s'il y en a : bits sur les nœuds possédés, dans l'ordre du code, pas de table FZ ; sans lui, `fitGoals` déduit les ajouts de l'arbre et recalcule, message ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
 
 Donc :
 - **ajouter une gemme, une compétence, un nœud ou un objectif : l'ajouter aussi EN FIN de sa table FZ** (le test des tables figées le réclame). L'ordre de GEMS, SK, GOALS ou TREE peut alors changer sans casser de lien.
@@ -76,7 +76,7 @@ Donc :
 - `tests/share.test.js` et `tests/codes-figes.test.js` (codes des 16 anciens presets) contiennent des codes figés : s'ils cassent, un lien existant est cassé. **Ne pas « corriger » le test en changeant une valeur attendue.** Pour b2, le test vérifie (décision du 2026-11-05) que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés.
 
 ### 3. Règle de l'arbre
-Un nœud ne s'achète que s'il touche un point de départ (Étincelle, gratuit) ou un nœud acquis qui y est relié (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les combos des objectifs (`combo`, chemin le moins cher), les codes importés et les builds enregistrés passent par les mêmes règles (`normalize`, qui achète le chemin le moins cher pour reconnecter. Un nœud imposé par un objectif ne se retire pas (`lockOf`) ; les ajouts de l'utilisateur, si. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js, objectifs.test.js et share.test.js).
+Un nœud ne s'achète que s'il touche un point de départ (Étincelle, gratuit) ou un nœud acquis qui y est relié (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les combos des objectifs (`combo`, chemin le moins cher), les codes importés et les builds enregistrés passent par les mêmes règles (`normalize`, qui achète le chemin le moins cher pour reconnecter. Un nœud imposé par un objectif ne se retire pas (`lockOf`) ; les ajouts de l'utilisateur, si. Avec objectif (2.3.0), un ajout ou un retrait passe par les ajouts du build (`b.ad`) et le combo est recalculé depuis les départs (`regen`, ajouts gratuits pour lui) ; retirer un ajout élague les ajouts qui n'étaient reliés que par lui. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js, objectifs.test.js et share.test.js).
 
 Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé par PinDrop (`src/js/01-tree-data.js`, régénéré par `scripts/tree-from-pindrop.mjs`). La « Flamme » est un nœud **logique** du simulateur, reliant les 12 départs ; elle n'est jamais dessinée (un vrai nœud, Architecte aérien, occupe le centre). Liaisons non orientées et coût identique à chaque rang : déductions des fichiers (comme PinDrop), à présenter comme telles.
 

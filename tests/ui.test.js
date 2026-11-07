@@ -77,3 +77,22 @@ test('goStep : descend au panneau, focus sur son titre, sans toucher l\'adresse 
   try { assert.equal(goStep('p-why'), true); assert.equal(goStep('nope'), false); } finally { document.querySelector = keep; history.replaceState = rs; }
   assert.deepEqual(calls, [['scroll', {behavior: 'smooth', block: 'start'}], ['focus', {preventScroll: true}]]); assert.equal(h.tabIndex, -1); assert.equal(n, 0);
 });
+// 2.3.0 : combo recalculé avec vos ajouts — rendu, message, « Pourquoi ce combo », lien d'avant la 2.3.0 signalé
+test('ajouts avec objectif : rendu graphe et liste, message de recalcul, ligne « vos ajouts » et explication', () => keepUi(() => quiet(msgs => {
+  builds[0] = goalBuild('mageCrit'); cur = 0; const b = B(); [b.lvl, b.exp] = ptsAt(80); rebuild(b); assert.ok(addPipNode(b, TOPO.byId['pip:1wwtpca']));
+  assert.equal(msgs.at(-1), 'Combo recalculé : liaisons 30 pts → 27 pts · objectifs +4 pts');
+  for (const v of ['graph', 'list']) { view = v; renderAll(); }
+  const el = {}, keep = document.querySelector; document.querySelector = q => q === '#why' ? el : keep(q);
+  try { renderWhy(); assert.match(el.innerHTML, /Liaisons 27 pts · vos ajouts 1 pt/); assert.match(el.innerHTML, /Vos ajouts comptent comme déjà acquis/); } finally { document.querySelector = keep; }
+  // « Acheter le chemin » avec objectif : le chemin entre dans vos ajouts
+  const far = TOPO.N.find(x => x.kind === 'skill' && !owned(b, x) && !canBuy(b, x) && pathTo(b, x)); buyTo(b, far);
+  assert.ok(b.ad.sk[far.id] === 1 && owned(b, far)); assert.equal(lostOf(b).length, 0); assert.equal(lockOf(b, far), 0);
+})));
+test('lien d\'avant la 2.3.0 avec ajouts : message, adresse remplacée par le code recalculé (avec -a)', () => keepUi(() => quiet(msgs => {
+  const [lv, ex] = ptsAt(80), z = combo('mageCrit', null, lv, ex, 11), old = blankBuild('ancien');
+  Object.assign(old, {lvl: lv, exp: ex, obj: ['mageCrit', null], sk: {...z.sk}, pn: {...z.pn, 'pip:1wwtpca': 1}}); syncPips(old);
+  let url = null; const rs = history.replaceState, st = globalThis.setTimeout; history.replaceState = (s, t, u) => { url = u; }; globalThis.setTimeout = f => f();
+  location.hash = '#' + encode(old);
+  try { assert.equal(fromHash(), true); } finally { history.replaceState = rs; globalThis.setTimeout = st; location.hash = ''; }
+  assert.match(url, /^#b3-.*-a[0-9a-z]+-[0-9a-z]+-[0-9a-z]{2}$/); assert.ok(msgs.some(m => /^Build d'avant la 2\.3\.0 : combo recalculé avec vos ajouts/.test(m) && /liaisons 30 pts → 27 pts · objectifs \+4 pts/.test(m)));
+})));

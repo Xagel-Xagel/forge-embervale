@@ -202,3 +202,42 @@ test('soutien : inconnu ou objectif ordinaire en soutien → retiré et signalé
   const v = with_(ob + '00'); assert.deepEqual(v.obj, ['archer', 'tank']); assert.equal(v._objLost, true, 'Tank en soutien');
   assert.equal(with_(ob + 'zz'), null);
 });
+
+// ---- 2.3.0 : vos ajouts dans le lien (segment -a), seulement s'il y en a ; liens d'avant la 2.3.0 recalculés (QCM du 2026-11-07) ----
+const withA = () => { const b = goalBuild('tank', 'healer', 'x', 'survie'); [b.lvl, b.exp] = ptsAt(140); rebuild(b); addRank(b, 'wetDog');
+  addPipNode(b, TOPO.pips.find(x => !b.pn[x.id] && canBuy(b, x))); const imp = imposed(b), k = Object.keys(imp.sk).find(id => SKI[id].max > b.sk[id]);
+  addRank(b, k); return b; }; // k : compétence imposée sous son rang maximum (votre rang au-dessus)
+test('segment -a : aller-retour exact (compétence, nœud d\'attribut, rang au-dessus de l\'imposé) ; sans ajout, code de la 2.2.0', () => quiet(() => {
+  const b = withA(), code = encode(b); assert.ok(Object.keys(b.ad.sk).length >= 2 && Object.keys(b.ad.pn).length === 1 && Object.values(b.ad.sk).some(v => v > 1), 'ajouts du test');
+  assert.match(code, /-o[0-9a-z]{6}-a[0-9a-z]+-[0-9a-z]+-[0-9a-z]{2}$/); assert.match(code, /^b3-[0-9a-z-]+$/);
+  const d = decode(code); assert.ok(d); assert.deepEqual(d.ad, b.ad); assert.deepEqual(d.sk, b.sk); assert.deepEqual(d.pn, b.pn); assert.deepEqual(d.obj, b.obj);
+  assert.equal(d._objLost, undefined); assert.equal(d._recalc, undefined); assert.equal(d._mig, undefined); assert.equal(encode(d), code);
+  for (const g of GOALS) assert.doesNotMatch(encode(goalBuild(g.id, 'healer')), /-a/, g.id);
+  const f = blankBuild(); f.sk = {...b.sk}; f.pn = {...b.pn}; f.ad = {...b.ad}; syncPips(f); assert.doesNotMatch(encode(f), /-a/, 'arbre libre : pas de segment');
+}));
+test('lien d\'avant la 2.3.0 avec ajouts (sans -a) : ajouts déduits de l\'arbre, combo recalculé et signalé ; sans effet, rouvert à l\'identique', () => quiet(() => {
+  const [lv, ex] = ptsAt(80), z = combo('mageCrit', null, lv, ex, 11), old = blankBuild('ancien');
+  Object.assign(old, {lvl: lv, exp: ex, obj: ['mageCrit', null], sk: {...z.sk}, pn: {...z.pn, 'pip:1wwtpca': 1}}); syncPips(old);
+  const code = encode(old); assert.doesNotMatch(code, /-a/, 'code tel que l\'écrivait la 2.2.0');
+  const d = decode(code); assert.deepEqual(d.obj, ['mageCrit', null]); assert.deepEqual(d.ad, {sk: {}, pn: {'pip:1wwtpca': 1}});
+  assert.deepEqual(d._recalc.links, [30, 27]); assert.deepEqual(d._recalc.wpts, [49, 53]); assert.equal(imposed(d).links, 27); assert.ok(d.pn['pip:1wwtpca']);
+  assert.equal(lostOf(d).length, 0); assert.match(encode(d), /-a/);
+  // ajout sans effet sur le combo : arbre identique, rien de signalé
+  const R = reach(old), t = blankBuild(); Object.assign(t, {lvl: lv, exp: ex, obj: ['mageCrit', null], sk: {...z.sk}, pn: {...z.pn}}); syncPips(t);
+  const n = TOPO.N.find(x => x.kind === 'skill' && !t.sk[x.id] && canBuy(t, x) && combo('mageCrit', null, lv, ex, 11, null, {sk: {[x.id]: 1}, pn: {}}).links === z.links);
+  t.sk[n.id] = 1; const e = decode(encode(t)); assert.equal(e._recalc, undefined); assert.deepEqual(e.sk, t.sk); assert.deepEqual(e.ad, {sk: {[n.id]: 1}, pn: {}});
+}));
+test('segment -a : refusé sans -o ou abîmé (rangs, masque) ; arbre qui ne correspond plus → arbre libre, arbre gardé, signalé', () => quiet(() => {
+  const b = withA(), p = encode(b).split('-').slice(0, -1), sum = s => s + '-' + b3sum(s), io = p.findIndex(x => x[0] === 'o' && (x.length === 5 || x.length === 7));
+  assert.equal(p[io + 1][0], 'a'); const at = (i, v) => decode(sum(p.map((x, j) => j === i ? v : x).filter(x => x !== null).join('-')));
+  assert.equal(at(io, null), null, '-a sans -o'); assert.equal(at(io + 2, p[io + 2] + '1'), null, 'un rang de trop');
+  assert.equal(at(io + 2, p[io + 2].slice(1) || '0'), null, 'un rang de moins'); assert.equal(at(io + 1, 'a' + (1n << 400n).toString(36)), null, 'masque au-delà de l\'arbre');
+  const t = JSON.parse(JSON.stringify(b)), imp = imposed(b), k = Object.keys(imp.sk).find(id => !b.ad.sk[id] && (imp.want.sk[id] || 0) > 0); delete t.sk[k]; prune(t);
+  const e = decode(encode(t)); assert.deepEqual(e.obj, []); assert.equal(e._objLost, true); assert.deepEqual(e.sk, t.sk); assert.deepEqual(e.ad, {sk: {}, pn: {}});
+}));
+test('build enregistré avec ajouts : rechargé à l\'identique ; build d\'avant la 2.3.0 (sans « ad ») : ajouts déduits, recalculé', () => quiet(() => {
+  const b = withA(), r = loadSaved(JSON.parse(JSON.stringify(b)));
+  assert.deepEqual([r.obj, r.sk, r.pn, r.ad], [b.obj, b.sk, b.pn, b.ad]); assert.equal(r._recalc, undefined); assert.equal(r._objLost, undefined);
+  const [lv, ex] = ptsAt(80), z = combo('mageCrit', null, lv, ex, 11), old = {name: 'ancien', gear: {}, gem: {}, sk: {...z.sk}, pn: {...z.pn, 'pip:1wwtpca': 1}, pip: {}, lvl: lv, exp: ex, flame: 11, upg: 5, tv: 1, obj: ['mageCrit', null]};
+  syncPips(old); const o = loadSaved(old); assert.deepEqual(o.ad, {sk: {}, pn: {'pip:1wwtpca': 1}}); assert.deepEqual(o._recalc.links, [30, 27]); assert.equal(imposed(o).links, 27);
+}));

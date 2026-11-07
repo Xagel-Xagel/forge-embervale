@@ -148,7 +148,11 @@ const G=(()=>{
 
   function change(n,d){const bb=b();let ok=false;if(n.kind==='skill')ok=d>0?addRank(bb,n.id):remRank(bb,n.id);else if(n.kind==='pip')ok=d>0?addPipNode(bb,n):remPipNode(bb,n);else return;if(ok)renderAll();else showCard()}
   /* Origine d'un nœud acquis : étape de l'objectif qui l'impose, liaison du combo, ou ajout */
-  function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);if(!lk)return '<div class="m">Ajouté par vous</div>';
+  /* Un ajout qui porte une partie du combo : sans lui, des nœuds imposés ne seraient plus reliés (2.3.0) */
+  function carries(bb,n,c){const t={sk:{...bb.sk},pn:{...bb.pn}};if(n.kind==='skill')delete t.sk[n.id];else delete t.pn[n.id];const R=reach(t);
+    return Object.keys(c.sk).some(id=>t.sk[id]>0&&!R.has(TOPO.byId[id]))||Object.keys(c.pn).some(id=>!R.has(TOPO.byId[id]))}
+  function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);
+    if(!lk)return `<div class="m">Ajouté par vous${c&&carries(bb,n,c)?' · le combo passe par ce nœud, sans le payer':''}</div>`;
     const w=c.by[n.kind==='pip'?'@'+n.attr:n.id];if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]],t=`« ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}`;
       // attribut : au-delà du nombre visé, certains nœuds imposés ne servent que de liaison (on ne sait pas lesquels)
       if(n.kind==='pip'&&TOPO.pips.filter(p=>p.attr===n.attr&&c.pn[p.id]).length>(c.want.pip[n.attr]||0))return `<div class="org">Imposé par ${t}, ou liaison du combo</div>`;
@@ -172,7 +176,7 @@ const G=(()=>{
        ${lk?`<div class="m">Rang imposé : ${lk}/${s.max}</div>`:''}${lockHtml(bb,sel,lock)}`}
     card.querySelector('.x').onclick=()=>{sel=null;card.hidden=true;dirty=true};
     card.querySelectorAll('[data-d]').forEach(bt=>bt.onclick=()=>change(sel,+bt.dataset.d));
-    const pb=card.querySelector('.pathb');if(pb)pb.onclick=()=>{const pth=pathTo(bb,sel);if(pth){buyPath(bb,pth);renderAll()}};
+    const pb=card.querySelector('.pathb');if(pb)pb.onclick=()=>buyTo(bb,sel);
   }
   $('#gFit').onclick=()=>{area='all';fit();renderTree()};
   resize();fit();
