@@ -1,12 +1,11 @@
 # Forge d'Embervale
 
-Simulateur de stuff pour **Enshrouded 1.0**, en français, dans une seule page web.
+Planificateur d'**arbre de compétences** pour **Enshrouded 1.0**, en français, dans une seule page web.
 
-- Équipement de fin de jeu : 7 panoplies, anneaux, 53 armes, 29 gemmes, améliorations 0 à 5.
-- Arbre de compétences 1.0 au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian, avec la règle de liaison aux points de départ.
-- Fiche en direct, comparaison de deux builds A/B, 15 builds prédéfinis, sauvegarde locale et code de partage dans le lien.
-- Calculateur d'optimisation : faiblesses de 101 ennemis × 8 types de dégâts, classement des armes contre une cible, meilleurs points à investir, build optimal, calcul des dégâts subis.
-- Sept panneaux (Arbre, Équipement, Fiche, Calculateur, Build optimal, Défense, Tables) en grille, repliables et réordonnables, quatre dispositions prêtes (accordéon sur téléphone) ; **« Ma classe »** (Guerrier, Rôdeur, Mage) : build optimal de la classe en un clic, arbre centré sur sa zone.
+- Choisissez un **objectif** (12 objectifs prêts : Tank, Épée et bouclier, Archer, Mage critique, Soigneur…) et, si vous voulez, un **secondaire** : le site place vos points selon votre niveau, votre exploration et votre Flamme, et **explique pourquoi**, étape par étape. Vous ajoutez ensuite ce que vous voulez ; les nœuds imposés ne se retirent pas.
+- Arbre au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian ou en liste, avec la règle de liaison aux points de départ.
+- **Gemmes** des deux armes (effets décrits) ; l'équipement n'est pas pris en compte.
+- Deux builds A et B, comparaison A contre B, sauvegarde locale et code de partage dans le lien (les anciens liens s'ouvrent toujours).
 
 **Utiliser l'outil : https://xagel-xagel.github.io/forge-embervale/**
 

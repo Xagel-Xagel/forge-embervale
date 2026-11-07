@@ -1,6 +1,6 @@
 # Forge d'Embervale — instructions pour Claude Code
 
-Simulateur de stuff pour **Enshrouded 1.0** (équipement, gemmes, arbre de compétences, comparaison A/B, partage, calculateur d'optimisation contre les ennemis).
+Planificateur d'**arbre de compétences** pour **Enshrouded 1.0** (2.0.0, « grand ménage », HISTORY n° 27) : objectifs prêts (principal + secondaire) dont le combo est imposé selon les points et la Flamme, et expliqué ; ajouts libres ; gemmes ; builds A/B, enregistrés, partagés. L'équipement n'est pas pris en compte.
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
 - Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 19 au 2026-11-07).
@@ -13,7 +13,7 @@ L'utilisateur (Vincent) parle français : **réponses, interface, commentaires e
 npm run build      # src/ → dist/index.html (site GitHub Pages) + dist/forge-embervale.html (format Artifact)
 npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0 échec
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
-npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (une par disposition : Théoricien, Combat, Minimal, Tout ; + mode Organiser, menu « Plus », « Ma classe » : une par classe, + l'arbre au bureau) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
+npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (page, A contre B, vue Liste au bureau, « Pourquoi ce combo », lien b2) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
 npm run check      # build + tests
 npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
 ```
@@ -26,22 +26,19 @@ Aucune dépendance npm n'est nécessaire hormis Playwright pour `test:e2e` (`npm
 src/page.html        balisage + marqueurs <!-- INLINE:CSS --> et <!-- INLINE:JS -->
 src/styles.css       tous les styles (jetons de couleur clair/sombre)
 src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, chacun dans son <script>
-  01-data.js         ST (stats), SETS (armures), RINGS, CAT, WTYPE, WPERK (perks d'arme ; WPU unités, WPC comptés, WOC surcharge), WEAPONS (5 emplacements de perks), SK (compétences), PIPS, AREAS, PRESETS
+  01-data.js         SK (compétences), SKI, PIPS (attributs), AREAS (zones)
   01-tree-data.js    TREE : tracé réel de l'arbre 1.0 (243 nœuds x/y, 312 liaisons) — GÉNÉRÉ, ne pas éditer à la main
-  02-calc.js         blankBuild, fromPreset, budget, compute(build) → fiche, weaponCalc
-  03-share.js        tables figées FZ, encode/decode des codes de partage (b3-…, rétrocompatible b2- et b1-)
+  02-calc.js         blankBuild (gear, upg : inertes), spentPoints, budget, levelNeeded, FLAME_NODES, compute(build) → attributs, santé, mana, vigueur
+  03-share.js        tables figées FZ, encode/decode des codes de partage (b3-… avec segment -o des objectifs, rétrocompatible b2- et b1-)
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
-  05-gems.js         RAR, GEMS (29 gemmes), gemFit
-  06-enemies.js      DTYPES (8 types de dégâts), FACTIONS, ENEMIES (101 ennemis × 8 multiplicateurs)
-  07-noms.js         FR_ITEMS, FR_SETS, FR_ENEMIES (noms français, clés = id / nom anglais) ; nmH, nmF, nmT, nmMatch (affichage et recherche)
-  10-ui.js           état (builds, cur, compare…), « Ma classe » (CLS, CLS_OF, myCls, setCls, paintCls, zonePts, zoneTag), panneaux (PANELS, DISPOS, lay : applyDispo, movePanel, setSize, foldPanel, closePanel, openPanel, goPanel, peekPanel, saveLayout, loadLayout, paintLayout, shown), rendus (onglets A/B, équipement, arbre en liste, fiche), événements
-  20-optimizer.js    calculateur : effVs, investments, buyInvest, planPoints, defense, renderOpt ; renderOptNow ne rend que les panneaux affichés, ouverts et dépliés (optCalc, optBo, optDef, optTab) ; surcharge renderStats pour se rafraîchir
-  21-buildopt.js     build optimal : boRun (générateurs, une famille d'arme après l'autre ; fams : les deux d'une classe, BO_CLS), boMerge, panneau « Build optimal » (boCard, boStart)
-  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom), expose window.G (G.dim et G.zoneStyle : zone de « Ma classe » ; G.wake quand le panneau Arbre apparaît ; ResizeObserver de #gwrap, qui suit la taille du panneau)
+  05-gems.js         RAR, GEMS (29 gemmes), GEMI, GTYPE
+  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), combo (moteur, en cache), imposed, addsOf, rebuild, setGoals, lockOf, fitGoals, goalBuild
+  10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, partage, builds enregistrés
+  30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom ; imposé plein, ajouté en pointillé), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
 scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)
-tests/               run.mjs (lanceur), *.test.js, dom-stub.cjs, e2e.mjs
+tests/               run.mjs (lanceur), 00-aides.test.js (aides), *.test.js, dom-stub.cjs, e2e.mjs
 docs/                ARCHITECTURE, FORMULAS, DATA_SOURCES, ROADMAP, HISTORY
 ```
 
@@ -55,8 +52,8 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 - Pas de `<!doctype>`, `<html>`, `<head>`, `<body>` dans `src/page.html` ni dans `dist/forge-embervale.html` (claude.ai ajoute le squelette ; `dist/index.html` le reçoit du build). Le build le vérifie.
 - Ressources externes : polices **Google Fonts uniquement** ; scripts seulement depuis cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, unpkg.com (version exacte épinglée). Tout le reste est bloqué sans erreur visible : pas de fetch, pas d'images distantes, pas d'iframe.
 - `alert`, `confirm`, `prompt`, `window.print()` ne marchent pas : utiliser `toast()` et `modal()` de 10-ui.js.
-- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch, clé en paramètre). Il ne sert qu'aux builds enregistrés localement et à la disposition des panneaux (clé `forge-embervale-panneaux`, `{v:1, preset, order, size, folded, closed, acc, mine}` ; illisible → Théoricien) (décision du 2026-11-06, HISTORY n° 25).
-- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage) : aucune navigation dans le hash (les panneaux s'ouvrent par des boutons, leur disposition vit dans `localStorage`).
+- `localStorage` peut lever une exception : toujours passer par `lsGet`/`lsSet` (try/catch, clé en paramètre). Il ne sert qu'aux builds enregistrés localement (clé `forge-embervale-builds`) ; la disposition des panneaux a disparu en 2.0.0 (HISTORY n° 27).
+- Le hash de l'URL ne doit contenir que lettres, chiffres et tirets (c'est le code de partage) : aucune navigation dans le hash.
 - Couleurs : uniquement via les jetons CSS de `:root`, redéfinis dans les deux blocs sombres (`@media (prefers-color-scheme: dark)` avec `:root:not([data-theme="light"])`, et `:root[data-theme="dark"]`). Jamais de couleur littérale dans un composant, sauf les raretés de gemmes (RAR).
 - Largeur téléphone (~400 px) : aucun défilement horizontal de la page ; les tableaux larges vont dans `.oscroll`. La gouttière latérale `max(16px, env(safe-area-inset-*))` est sur `body`.
 - Pas de nouvelle dépendance si on peut l'éviter.
@@ -65,18 +62,21 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de 03-share.js), jamais l'ordre des données vivantes :
 - `FZ.items` (objets), `FZ.gems` (gemmes) : formats b1, b2 et b3 ;
 - `FZ.at`, `FZ.nd` : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel, format b3 ;
+- `FZ.goals` : objectifs (segment `-o`, 2.0.0) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
 - `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
 
-Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>]-<contrôle>` (1 chiffre de rang par compétence possédée ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
+Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>][-o<objectifs>]-<contrôle>` (1 chiffre de rang par compétence possédée ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
 
 Donc :
-- **ajouter un objet, une gemme, une compétence ou un nœud : l'ajouter aussi EN FIN de sa table FZ** (le test des tables figées le réclame). L'ordre de SETS, RINGS, WEAPONS, GEMS, SK ou TREE peut alors changer sans casser de lien.
+- **ajouter une gemme, une compétence, un nœud ou un objectif : l'ajouter aussi EN FIN de sa table FZ** (le test des tables figées le réclame). L'ordre de GEMS, SK, GOALS ou TREE peut alors changer sans casser de lien.
+- L'équipement (2.0.0) n'est plus pris en compte : celui d'un ancien lien est relu (`FZ.items`, `FZ.slots`) et réécrit tel quel, jamais affiché ni compté. Les champs `gear` et `upg` des builds restent donc, inertes.
+- Changer le contenu d'un objectif : un lien qui le porte et dont l'arbre ne contient plus le combo s'ouvre en arbre libre, arbre gardé (`fitGoals`, message).
 - Ne jamais réordonner ni retirer une entrée de `FZ` : les empreintes du test cassent, et des liens avec.
 - Les codes b1/b2 datent de l'ancien tracé thématique : `decode` les lit via les tables figées, garde l'équipement, les compétences et les comptes d'attributs, puis `migrate` relie le tout au tracé réel (fenêtre « Lien d'avant le tracé réel »).
-- `tests/share.test.js` contient des codes b2 et b3 figés : s'ils cassent, un lien existant est cassé. **Ne pas « corriger » le test en changeant une valeur attendue.** Pour b2, le test vérifie (décision du 2026-11-05) que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés.
+- `tests/share.test.js` et `tests/codes-figes.test.js` (codes des 16 anciens presets) contiennent des codes figés : s'ils cassent, un lien existant est cassé. **Ne pas « corriger » le test en changeant une valeur attendue.** Pour b2, le test vérifie (décision du 2026-11-05) que chaque choix est conservé et que seuls des nœuds de liaison sont ajoutés.
 
 ### 3. Règle de l'arbre
-Un nœud ne s'achète que s'il touche un point de départ (Étincelle, gratuit) ou un nœud acquis qui y est relié (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les presets, les codes importés et les builds enregistrés passent par `normalize`, qui achète le chemin le moins cher pour reconnecter. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js, optimizer.test.js et share.test.js).
+Un nœud ne s'achète que s'il touche un point de départ (Étincelle, gratuit) ou un nœud acquis qui y est relié (`canBuy`). Retirer un nœud élague tout ce qui n'est plus relié (`prune`). Les combos des objectifs (`combo`, chemin le moins cher), les codes importés et les builds enregistrés passent par les mêmes règles (`normalize`, qui achète le chemin le moins cher pour reconnecter. Un nœud imposé par un objectif ne se retire pas (`lockOf`) ; les ajouts de l'utilisateur, si. Toute nouvelle façon de modifier un build doit préserver cet invariant (testé dans rules.test.js, objectifs.test.js et share.test.js).
 
 Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé par PinDrop (`src/js/01-tree-data.js`, régénéré par `scripts/tree-from-pindrop.mjs`). La « Flamme » est un nœud **logique** du simulateur, reliant les 12 départs ; elle n'est jamais dessinée (un vrai nœud, Architecte aérien, occupe le centre). Liaisons non orientées et coût identique à chaque rang : déductions des fichiers (comme PinDrop), à présenter comme telles.
 
@@ -86,7 +86,8 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 - Le jeu évolue (patchs) : pour toute donnée « actuelle », vérifier en ligne avant de l'affirmer.
 
 ### 5. Langue et style
-- Interface en français. **Noms d'objets, de panoplies, d'ennemis et de factions en français** (décision du 2026-11-06, HISTORY n° 22) : nom officiel du jeu relevé sur MetaBot quand il existe, sinon traduction du simulateur marquée ° à l'écran ; le nom anglais suit en italique (`nmH`), comme pour les compétences. Le nom anglais reste la **clé** (`e.n`, `it.n` : FLY, cible par défaut, tests) ; le français vit dans 07-noms.js (`.fr`, source `.fs` = o/d/t). Les recherches portent sur les deux noms, sans accents (`nmMatch`). Un nouvel objet ou ennemi demande son nom français (test names.test.js). Termes de jeu (Shroud, Flamme) inchangés.
+- Interface en français. Compétences et gemmes : nom français, le nom anglais suit en italique ; la recherche porte sur les deux. Termes de jeu (Shroud, Flamme) inchangés. (Les noms d'objets et d'ennemis de la décision n° 22 ont disparu avec eux en 2.0.0.)
+- Objectifs : l'ordre des étapes et les raisons sont des **choix du simulateur**, affichés comme hypothèse ; une raison ne cite que des effets présents dans les descriptions de `SK`.
 - Typographie française : espace avant `%`, `:`, `?`, `!` ; nombres via `fmt()` (format fr-FR).
 - Tout texte venant des données passe par `esc()` avant d'être injecté en HTML.
 - Code compact dans le style existant (fonctions courtes sur une ligne, gabarits littéraux). Pas de reformatage massif : ça rend les diffs illisibles.
@@ -94,7 +95,7 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 ## Flux de travail attendu
 1. Lire `docs/ROADMAP.md` (travaux en attente) et `docs/HISTORY.md` (demandes et décisions passées) avant une évolution importante.
 2. Modifier `src/`, ajouter ou adapter un test dans `tests/`.
-3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px, une par disposition).
+3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px, A contre B, vue Liste, « Pourquoi ce combo »).
 4. Mettre à jour `CHANGELOG.md` (et `docs/FORMULAS.md` / `docs/DATA_SOURCES.md` si besoin), incrémenter la version dans `package.json`.
 5. Publier : commit puis `git push` sur `main` → GitHub Actions teste, construit et met à jour la branche `gh-pages` ; GitHub Pages republie ensuite le site en 1 à 2 minutes (vérifier le run avec `gh run list` / `gh run watch`). Pour un travail en cours, utiliser une branche et une pull request (le workflow `tests.yml` la vérifie : tests Node, build, test navigateur Playwright ; captures dans l'artefact « captures-e2e » du run). Optionnel : si l'outil Artifact est disponible, republier aussi `dist/forge-embervale.html` sur l'URL Artifact.
 

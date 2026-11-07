@@ -1,5 +1,7 @@
 # Harmonisation de l'interface — étude du 2026-11-06
 
+> **Caduque depuis la 2.0.0 (2026-11-07, HISTORY n° 27)** : le « grand ménage » a supprimé les panneaux, l'équipement, les ennemis et leurs noms. Gardée pour l'historique.
+
 Demande (HISTORY n° 24, à venir) : « l'interface est devenue confuse (je ne sais plus sur quoi cliquer, des informations dans tous les sens) et pas assez modulable ». Session d'étude sans changement dans `src/` : état des lieux mesuré, trois directions dessinées (Claude Design), direction validée par QCM, plan d'implémentation pour une session de code.
 
 Précédents : n° 20 (onglets, 1.15.0 — « un onglet par outil », fiche à droite d'Arbre et d'Équipement), n° 23 (tuiles Points / Flamme en tête d'Arbre et de Build optimal, perks d'arme, 1.17.0).
