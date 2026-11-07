@@ -157,23 +157,23 @@ test('2.3.0 · un ajout sur le chemin d\'une étape libère des points pour les 
     assert.ok(addNode(b, n)); const c1 = imposed(b);
     assert.deepEqual([c1.links, c1.wpts], [l1, w1], lbl + ' : après (liaisons, avancée des objectifs)');
     assert.equal(lockOf(b, n), 0, lbl + ' : l\'ajout reste à vous'); assert.equal(lostOf(b).length, 0, lbl + ' : non relié');
-    assert.equal(spentPoints(b), c1.spent + nodeCost(n), lbl + ' : arbre = imposé + ajout'); assert.ok(c1.spent <= B, lbl + ' : le combo garde son budget');
-    assert.equal(msgs.pop(), `Combo recalculé : liaisons ${l0} pts → ${l1} pts · objectifs +${w1 - w0} pts`);
+    assert.equal(spentPoints(b), c1.spent + nodeCost(n), lbl + ' : arbre = imposé + ajout'); assert.equal(spentPoints(b) - c1.buy, nodeCost(n), lbl + ' : « vos ajouts »');
+    assert.ok(c1.buy <= B, lbl + ' : le combo garde son budget'); assert.equal(msgs.pop(), `Combo recalculé : liaisons ${l0} pts → ${l1} pts · +${w1 - w0} pts sur les étapes`);
     assert.match(G.origin(b, n), /Ajouté par vous · le combo passe par ce nœud/); }
 }));
 
 test('2.3.0 · un retrait recalcule : sans l\'ajout, le combo d\'avant revient ; +1 puis −1 sur un rang imposé ne change rien', () => quiet(() => {
   const b = atPts('mageCrit', 80), t0 = {sk: {...b.sk}, pn: {...b.pn}}, n = TOPO.byId['pip:1wwtpca'];
   addPipNode(b, n); assert.notDeepEqual(b.pn, t0.pn); assert.ok(remPipNode(b, n));
-  assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn]); assert.deepEqual(b.ad, {sk: {}, pn: {}}); assert.equal(imposed(b).links, 30);
+  assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn]); assert.deepEqual(b.ad, {sk: {}, pn: {}, up: {}}); assert.equal(imposed(b).links, 30);
   const c = atPts('tank', 140), t1 = {sk: {...c.sk}, pn: {...c.pn}}; addRank(c, 'wetDog'); assert.ok(remRank(c, 'wetDog')); assert.deepEqual([c.sk, c.pn], [t1.sk, t1.pn]);
   let k = 0;
   for (const g of GOALS) { const d = goalBuild(g.id), imp = imposed(d), t2 = {sk: {...d.sk}, pn: {...d.pn}};
     for (const id of Object.keys(imp.sk).filter(x => SKI[x].max > d.sk[x])) { const r = d.sk[id], n2 = TOPO.byId[id]; k++;
-      assert.ok(addRank(d, id)); assert.equal(d.sk[id], r + 1, g.id + ' : ' + id);
-      if ((imp.want.sk[id] || 0) > 0) assert.equal(lockOf(d, n2), r, g.id + ' : rang imposé gardé sous votre ajout');
-      assert.ok(remRank(d, id)); assert.deepEqual([d.sk, d.pn], [t2.sk, t2.pn], g.id + ' : ' + id + ' (+1 −1)'); assert.deepEqual(d.ad, {sk: {}, pn: {}});
-      if ((imp.want.sk[id] || 0) > 0) assert.equal(remRank(d, id), false, g.id + ' : sous le rang imposé, refusé'); } }
+      assert.ok(addRank(d, id)); assert.equal(d.sk[id], r + 1, g.id + ' : ' + id); assert.deepEqual(d.ad.up, {[id]: r + 1}, g.id + ' : rang au-dessus de l\'imposé');
+      assert.equal(lockOf(d, n2), r, g.id + ' : rang imposé gardé sous votre ajout'); assert.deepEqual([imposed(d).sk, imposed(d).pn], [imp.sk, imp.pn], g.id + ' : combo changé par un rang au-dessus');
+      assert.ok(remRank(d, id)); assert.deepEqual([d.sk, d.pn], [t2.sk, t2.pn], g.id + ' : ' + id + ' (+1 −1)'); assert.deepEqual(d.ad, {sk: {}, pn: {}, up: {}});
+      assert.equal(remRank(d, id), false, g.id + ' : sous le rang imposé, refusé'); } }
   assert.ok(k > 20, 'trop peu de rangs essayés : ' + k);
 }));
 
@@ -199,25 +199,25 @@ test('2.3.0 · invariant avec ajouts (1 000+ combos au hasard) : relié, ajouts 
       for (const id in A.pn) { assert.ok(b.pn[id], lbl + ' : ajout perdu ' + id); assert.ok(!c.pn[id], lbl + ' : votre nœud d\'attribut est devenu imposé ' + id); }
       for (const id in A.sk) if (!(c.want.sk[id] > 0)) assert.ok(!c.sk[id], lbl + ' : votre liaison est devenue imposée ' + id);
       for (const k in c.want.sk) assert.ok((b.sk[k] || 0) >= c.want.sk[k], lbl + ' : ' + k);
-      assert.equal(c.spent, spentPoints({sk: c.sk, pn: c.pn, pip: c.pip}), lbl); assert.equal(c.links, c.spent - c.wpts, lbl);
-      assert.ok(c.rep.reduce((a, r) => a + r.pts, 0) <= lv * 2 - 2 + ex, lbl + ' : achats du combo au-delà du budget');
-      const old = z.spent + Object.keys(A.sk).reduce((a, id) => a + SKI[id].cost * A.sk[id], 0) + Object.keys(A.pn).length;
-      assert.ok(c.wpts > z.wpts || c.wpts === z.wpts && spentPoints(b) <= old, lbl + ` : pire que l'ancien calcul (${z.wpts} → ${c.wpts} pts d'objectifs, ${old} → ${spentPoints(b)} pts)`);
-      if (c.wpts > z.wpts || spentPoints(b) < old) better++; } }
+      assert.equal(c.spent, spentPoints({sk: c.sk, pn: c.pn, pip: c.pip}), lbl); assert.equal(c.links, c.buy - c.wbuy, lbl);
+      assert.equal(c.buy, c.rep.reduce((a, r) => a + r.pts, 0), lbl); assert.ok(c.buy <= lv * 2 - 2 + ex, lbl + ' : achats du combo au-delà du budget');
+      const old = z.spent + Object.keys(A.sk).reduce((a, id) => a + SKI[id].cost * A.sk[id], 0) + Object.keys(A.pn).length, i = c.prog.findIndex((v, j) => v !== z.prog[j]);
+      assert.ok(i >= 0 ? c.prog[i] > z.prog[i] : spentPoints(b) <= old, lbl + ` : pire que l'ancien calcul (${z.prog} → ${c.prog} pts par objectif, ${old} → ${spentPoints(b)} pts)`);
+      if (i >= 0 || spentPoints(b) < old) better++; } }
   assert.ok(n > 1000, 'trop peu de combos : ' + n); assert.ok(better > n / 10, 'les ajouts ne servent presque jamais : ' + better + ' / ' + n);
 });
 
-// l'ajout peut lui-même libérer assez de points pour que le combo atteigne son étape : il est alors imposé tout de suite
-test('2.3.0 · un ajout que l\'objectif demande devient imposé quand le combo atteint son étape (QCM du 2026-11-07)', () => quiet(() => {
-  let later = 0, now = 0;
-  for (const g of GOALS) for (const B of [20, 40, 60]) { const b = atPts(g.id, B), c = imposed(b), R = reach(b), st = c.rep[0].steps.find(x => x.st === 'no'); if (!st) continue;
+// QCM du 2026-11-07 : imposé quand le combo l'aurait aussi sans lui ; s'il n'atteint l'étape que grâce à votre nœud, celui-ci reste retirable (+1 puis −1 annule)
+test('2.3.0 · un de vos nœuds qu\'une étape compte : imposé si le combo l\'aurait seul, retirable sinon (QCM du 2026-11-07)', () => quiet(() => {
+  let later = 0, undo = 0;
+  for (const g of GOALS) for (const B of [20, 40, 60, 90]) { const b = atPts(g.id, B), c = imposed(b), R = reach(b), st = c.rep[0].steps.find(x => x.st === 'no'); if (!st) continue;
     const k = Object.keys(st.items).find(id => !isAttr(id) && !b.sk[id] && canBuy(b, TOPO.byId[id], R) && !FLAME_NODES.some(f => f[0] === id)); if (!k) continue;
-    assert.ok(addRank(b, k)); const n = TOPO.byId[k], lk = lockOf(b, n), lbl = `${g.id} à ${B} pts : ${k}`;
-    if (lk) { assert.ok(imposed(b).want.sk[k] > 0, lbl + ' : verrouillé sans que l\'étape le compte'); now++; }
-    else { b.lvl = 50; b.exp = 114; rebuild(b); later++; }
-    assert.equal(lockOf(b, n), imposed(b).want.sk[k], lbl + ' : imposé au rang que l\'étape compte'); assert.ok(lockOf(b, n) >= 1, lbl);
-    const r = b.sk[k]; assert.equal(remRank(b, k), r > lockOf(b, n), lbl + ' : retrait sous l\'imposé'); }
-  assert.ok(later >= 3 && now >= 1, `trop peu de cas : ${later} plus tard, ${now} tout de suite`);
+    const n = TOPO.byId[k], t0 = {sk: {...b.sk}, pn: {...b.pn}}, lbl = `${g.id} à ${B} pts : ${k}`; assert.ok(addRank(b, k)); assert.deepEqual(b.ad.sk, {[k]: 1}, lbl);
+    if (imposed(b).claim[k]) { assert.equal(lockOf(b, n), 0, lbl + ' : verrouillé alors que le combo ne l\'a que grâce à vous');
+      assert.ok(remRank(b, k), lbl); assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn], lbl + ' : +1 puis −1 n\'annule pas'); undo++; continue; }
+    b.lvl = 50; b.exp = 114; rebuild(b); const w = imposed(b).want.sk[k];
+    assert.ok(w >= 1 && lockOf(b, n) === w, lbl + ' : à 212 points, le combo l\'a seul : imposé au rang de l\'étape'); assert.equal(remRank(b, k), b.sk[k] > w, lbl); later++; }
+  assert.ok(later >= 3 && undo >= 1, `trop peu de cas : ${later} imposés, ${undo} retirables`);
 }));
 
 test('2.3.0 · vos nœuds d\'attribut s\'ajoutent au compte des étapes et restent à vous', () => quiet(() => {
@@ -236,5 +236,36 @@ test('2.3.0 · retirer un ajout élague les ajouts qui n\'étaient reliés que p
     if (Y) { x = X; y = Y; break; } }
   assert.ok(x && y, 'aucune paire trouvée'); assert.ok(addNode(b, x)); assert.ok(addNode(b, y)); assert.ok(owned(b, y));
   assert.ok(x.kind === 'pip' ? remPipNode(b, x) : remRank(b, x.id)); assert.ok(!owned(b, x) && !owned(b, y), 'ajout relié seulement par le nœud retiré : gardé');
-  assert.deepEqual(b.ad, {sk: {}, pn: {}}); assert.ok(msgs.some(m => /^Plus reliés à un point de départ, donc retirés/.test(m))); assert.equal(lostOf(b).length, 0);
+  assert.deepEqual(b.ad, {sk: {}, pn: {}, up: {}}); assert.ok(msgs.some(m => /^Plus reliés à un point de départ, donc retirés/.test(m))); assert.equal(lostOf(b).length, 0);
+}));
+
+// ---- 2.3.0, relecture QA : rangs au-dessus de l'imposé, « Acheter le chemin » puis ±1, recalcul sans effet, rang maximum ----
+test('2.3.0 · +1 sur un nœud imposé, budget serré : votre rang au-dessus, combo inchangé, aucun point gratuit ; −1 annule', () => quiet(() => {
+  let k = 0;
+  for (const g of GOALS) for (const B of [18, 40, 90]) { const b = atPts(g.id, B), imp = imposed(b), t0 = {sk: {...b.sk}, pn: {...b.pn}};
+    for (const id of Object.keys(imp.sk).filter(x => SKI[x].max > b.sk[x]).slice(0, 3)) { const sp = spentPoints(b), lbl = `${g.id} à ${B} pts : ${id}`; k++;
+      assert.ok(addRank(b, id)); assert.equal(spentPoints(b), sp + SKI[id].cost, lbl + ' : un clic, un rang'); assert.equal(spentPoints(b) - imposed(b).buy, SKI[id].cost, lbl + ' : « vos ajouts »');
+      assert.deepEqual([imposed(b).sk, imposed(b).pn], [imp.sk, imp.pn], lbl + ' : combo changé'); assert.ok(remRank(b, id)); assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn], lbl + ' : −1'); } }
+  assert.ok(k > 40, 'trop peu de cas : ' + k);
+}));
+test('2.3.0 · « Acheter le chemin », puis +1 et −1 sur un nœud du chemin : rien ne change', () => quiet(() => {
+  let k = 0;
+  for (const [g, s, far] of [['tank', 'healer', 'miner'], ['healer', null, 'sneakAttack'], ['archer', null, 'shockResistance'], ['mageCrit', 'storm', 'lumberjack']]) {
+    const b = goalBuild(g, s), n = TOPO.byId[far]; if (owned(b, n)) continue; buyTo(b, n); assert.ok(owned(b, n), g + ' : ' + far);
+    const t0 = {sk: {...b.sk}, pn: {...b.pn}}, a0 = JSON.stringify(b.ad);
+    for (const id of Object.keys(b.ad.sk).filter(x => SKI[x].max > b.sk[x])) { k++; assert.ok(addRank(b, id)); assert.ok(remRank(b, id), g + ' : ' + id);
+      assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn], g + ' : ' + id + ' (+1 −1)'); assert.equal(JSON.stringify(b.ad), a0, g + ' : vos ajouts changés'); } }
+  assert.ok(k >= 3, 'trop peu de cas : ' + k);
+}));
+test('2.3.0 · un recalcul sans changement ne retire aucun ajout (ajouts au hasard, reliés ou non par le combo)', () => quiet(() => {
+  let n = 0;
+  for (const g of GOALS) for (const B of [40, 120, 212]) { const b = atPts(g.id, B);
+    for (let j = 0; j < 6; j++) { const R = reach(b), c = TOPO.N.filter(x => (x.kind === 'skill' || x.kind === 'pip') && !owned(b, x) && canBuy(b, x, R)); if (!c.length) break; addNode(b, c[Math.floor(rnd() * c.length)]); }
+    const t0 = {sk: {...b.sk}, pn: {...b.pn}}, a0 = JSON.stringify(b.ad); n++;
+    assert.deepEqual(regen(b, false, imposed(b)), [], g.id); assert.deepEqual([b.sk, b.pn], [t0.sk, t0.pn], g.id + ' à ' + B); assert.equal(JSON.stringify(b.ad), a0, g.id + ' à ' + B); }
+  assert.ok(n >= 30);
+}));
+test('2.3.0 · au rang maximum, +1 ne fait rien (ni ajout ni recalcul)', () => quiet(msgs => {
+  const b = goalBuild('tank'), t0 = JSON.stringify([b.sk, b.pn, b.ad]); assert.equal(b.sk.nemesis, 3);
+  assert.equal(addRank(b, 'nemesis'), false); assert.equal(JSON.stringify([b.sk, b.pn, b.ad]), t0); assert.equal(msgs.length, 0);
 }));

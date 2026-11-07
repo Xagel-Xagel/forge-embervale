@@ -125,20 +125,22 @@ const goalName=id=>GOALI[id]?GOALI[id].n:'';
 /* Calcul d'un combo : pour chaque élément des étapes, dans l'ordre, achat du chemin le moins cher depuis l'arbre relié (pathTo, dijkstra : 04-tree.js),
    puis des rangs ; ARRÊT au premier achat trop cher pour les points restants. Les liaisons devenues inutiles sont retirées en fin d'étape (comme normalize).
    Nœud de Flamme sauté à la Flamme 1 (il n'y donne rien). Puis l'objectif secondaire, sur les points restants, et enfin le soutien (2.1.0) sur les derniers.
-   2.3.0 — vos ajouts (A) : le combo part d'un arbre qui les contient déjà, ils ne lui coûtent rien (dijkstra : nœud acquis = 0) et il garde tout le budget
-   (ajouts « en plus », QCM du 2026-11-07). Vos rangs comptent pour une étape, et ce qu'elle en compte devient imposé ; vos nœuds d'attribut s'ajoutent
-   au compte des étapes. Un ajout que l'arbre ne relie pas l'est ensuite par le chemin le moins cher. Le glouton peut faire moins bien avec les ajouts
-   (≈ 2,5 % des cas mesurés) : on garde alors l'ancien calcul (combo seul, ajouts posés dessus) — jamais d'objectif moins avancé, ni plus cher à avancée égale —
-   s'il respecte vos ajouts (aucun de vos nœuds d'attribut ni de vos liaisons n'y devient imposé).
-   Résultat = PARTIE IMPOSÉE (sk, pn, pip, spent, links ; arbre = partie imposée ∪ ajouts, regen), mis en cache. */
+   2.3.0 — vos ajouts A (QCM du 2026-11-07) : sk, pn = VOS nœuds (graine : le combo part d'un arbre qui les contient, ils ne lui coûtent rien) ;
+   up = vos rangs posés au-dessus d'un nœud imposé (ils ne changent pas le combo). Le combo garde tout le budget, vos ajouts viennent en plus.
+   Une étape ne compte un de vos nœuds que s'il est relié (le combo paie d'abord le chemin) ; ce qu'elle en compte devient imposé (claim) ; vos nœuds
+   d'attribut s'ajoutent au compte des étapes. Un ajout que l'arbre ne relie pas l'est ensuite par le chemin le moins cher (conn, au-delà du budget
+   s'il le faut). Le glouton peut faire moins bien avec les ajouts : l'ancien calcul (combo seul, ajouts posés dessus) est gardé, sauf si le nouveau
+   avance plus les objectifs (principal, puis secondaire, puis soutien) ou coûte moins à avancée égale, et sauf s'il absorbait un de vos nœuds
+   d'attribut. Résultat = PARTIE IMPOSÉE (sk, pn, pip, spent) ; buy = achats des objectifs (dans le budget), links = liaisons du combo. Mis en cache. */
 const pipCount=(b,k)=>TOPO.pips.reduce((a,p)=>a+(p.attr===k&&b.pn[p.id]?1:0),0);
 const nReach=b=>{let c=0;for(const n of reach(b))if(n.kind==='skill'||n.kind==='pip')c++;return c};
-const NOADD=()=>({sk:{},pn:{}});
-/* Vos ajouts (b.ad), nettoyés : compétence connue (rang 1 à max), nœud d'attribut du tracé */
+const NOADD=()=>({sk:{},pn:{},up:{}});
+/* Vos ajouts (b.ad), nettoyés : compétence connue (rang 1 à max), nœud d'attribut du tracé ; un nœud est à vous (sk) ou rangs au-dessus (up), pas les deux */
 function cleanAdds(A){const o=NOADD();if(!A||typeof A!=='object')return o;
-  for(const id in A.sk||{}){const s=SKI[id],v=Math.round(+A.sk[id])||0;if(s&&TOPO.byId[id]&&v>0)o.sk[id]=Math.min(v,s.max)}
+  for(const g of ['sk','up'])for(const id in A[g]||{}){const s=SKI[id],v=Math.round(+A[g][id])||0;if(s&&TOPO.byId[id]&&v>0&&!(g==='up'&&o.sk[id]))o[g][id]=Math.min(v,s.max)}
   for(const id in A.pn||{}){const n=TOPO.byId[id];if(n&&n.kind==='pip'&&A.pn[id])o.pn[id]=1}return o}
-const addKey=A=>Object.keys(A.sk).sort().map(k=>k+':'+A.sk[k]).join(',')+'/'+Object.keys(A.pn).sort().join(',');
+const addKey=A=>['sk','up'].map(g=>Object.keys(A[g]).sort().map(k=>k+':'+A[g][k]).join(',')).join('/')+'/'+Object.keys(A.pn).sort().join(',');
+const skCost=o=>Object.entries(o).reduce((a,[id,r])=>a+SKI[id].cost*Math.min(r,SKI[id].max),0);
 /* Liaison retirée seulement si elle ne coupe aucun nœud relié (vos ajouts compris) ; un nœud d'attribut, seulement au-delà du compte des étapes (sp : les vôtres) */
 function cleanLinks(b,want,links,sp){let r0=nReach(b);for(const id of [...links].reverse()){const n=TOPO.byId[id];if(!owned(b,n)){links.delete(id);continue}
   if(n.kind==='skill'){if(want.sk[id]||b.sk[id]!==1)continue;delete b.sk[id];if(nReach(b)<r0-1)b.sk[id]=1;else{links.delete(id);r0--}}
@@ -148,6 +150,7 @@ function runGoal(b,g,left,want,links,role,sp){
   const rep={id:g.id,role,steps:[],pts:0},s0=spentPoints(b),PC=k=>pipCount(b,k)-(sp[k]||0);let stop=null;
   const C=()=>{const a=spentPoints(b);cleanLinks(b,want,links,sp);left+=a-spentPoints(b)};
   const buy=(pth,target)=>{for(const x of pth)if(x!==target&&!owned(b,x))links.add(x.id);buyPath(b,pth)};
+  const path=(n,k)=>{let pth=pathTo(b,n),c=pathCost(b,pth);if(c>left){C();pth=pathTo(b,n);c=pathCost(b,pth);if(c>left){stop={k,miss:c-left};return}}buy(pth,n);left-=c};
   g.steps.forEach(([t,why,items],i)=>{const st={t,why,items,st:'ok',skip:[]};rep.steps.push(st);
     if(stop){st.st='no';return}const sp0=spentPoints(b);
     for(const [k,want0] of Object.entries(items)){
@@ -157,79 +160,86 @@ function runGoal(b,g,left,want,links,role,sp){
           if(c>left){C();D=near();if(!D.hit)break;c=D.dist.get(D.hit);if(c>left){stop={k,miss:c-left};break}} // trop cher : liaisons inutiles rendues, puis nouvel essai
           buy(trace(D,D.hit),D.hit);left-=c;have=PC(k);want.pip[k]=Math.max(want.pip[k],Math.min(want0,have))}}
       else{const s=SKI[k],n=TOPO.byId[k];if(FLAME_NODES.some(f=>f[0]===k)&&Math.floor(b.flame/2)===0){st.skip.push(k);continue}
+        if(b.sk[k]>0&&!reach(b).has(n)){path(n,k);if(stop)break} // votre nœud, pas encore relié : le chemin d'abord
         want.sk[k]=Math.max(want.sk[k]||0,Math.min(want0,b.sk[k]||0));
-        while((b.sk[k]||0)<want0){if(!(b.sk[k]>0)){let pth=pathTo(b,n),c=pathCost(b,pth);if(c>left){C();pth=pathTo(b,n);c=pathCost(b,pth);if(c>left){stop={k,miss:c-left};break}}buy(pth,n);left-=c}
+        while((b.sk[k]||0)<want0){if(!(b.sk[k]>0)){path(n,k);if(stop)break}
           else{if(s.cost>left){C();if(s.cost>left){stop={k,miss:s.cost-left};break}}b.sk[k]++;left-=s.cost}want.sk[k]=Math.max(want.sk[k],b.sk[k])}}
       if(stop)break}
     C();if(stop){st.st=spentPoints(b)>sp0?'part':'no';st.miss=stop.miss;st.at=stop.k}});
   rep.pts=spentPoints(b)-s0;return {rep,left}}
-/* Vos ajouts que l'arbre ne relie pas : reliés par le chemin le moins cher (comme normalize), au-delà du budget s'il le faut. Renvoie ceux qu'il a fallu relier */
-function linkAdds(b,A,links){const R0=reach(b),miss=[...Object.keys(A.sk),...Object.keys(A.pn)].filter(id=>!R0.has(TOPO.byId[id]));
+/* Vos ajouts que l'arbre ne relie pas : reliés par le chemin le moins cher (comme normalize), au-delà du budget s'il le faut. Renvoie [liaisons achetées, ajouts qu'il a fallu relier] */
+function linkAdds(b,A){const R0=reach(b),miss=[...Object.keys(A.sk),...Object.keys(A.pn),...Object.keys(A.up)].filter(id=>!R0.has(TOPO.byId[id])),conn=[];
   for(let g=0;miss.length&&g<300;g++){const R=reach(b),lost=TOPO.N.filter(n=>(n.kind==='skill'||n.kind==='pip')&&owned(b,n)&&!R.has(n));if(!lost.length)break;
     const D=dijkstra(b,R);let best=null;for(const n of lost)if(D.dist.has(n)&&(!best||D.dist.get(n)<D.dist.get(best)))best=n;if(!best)break;
-    const pth=trace(D,best);for(const n of pth)if(!owned(b,n))links.add(n.id);buyPath(b,pth)}
-  return miss}
-/* Partie imposée d'un passage : rangs et nœuds, points, liaisons (imposé − éléments des étapes), étape de chaque élément (by) ; tree : points de tout l'arbre */
-function part(sk,pn,want,rep,left,orphans,tree){const pip={};for(const id in pn){const a=TOPO.byId[id].attr;pip[a]=(pip[a]||0)+1}
-  const spent=Object.entries(sk).reduce((a,[id,r])=>a+SKI[id].cost*Math.min(r,SKI[id].max),0)+Object.keys(pn).length;
-  const wpts=Object.entries(want.sk).reduce((a,[id,r])=>a+SKI[id].cost*r,0)+Object.values(want.pip).reduce((a,v)=>a+v,0);
+    const pth=trace(D,best);for(const n of pth)if(!owned(b,n))conn.push(n.id);buyPath(b,pth)}
+  return [conn,miss]}
+/* Partie imposée : comptes d'attribut, points ; avancée des objectifs (wpts, et prog : un total par objectif), dont achetée (wbuy) ; étape de chaque élément (by) */
+function pack(sk,pn,want,rep,goals,x){const pip={};for(const id in pn){const a=TOPO.byId[id].attr;pip[a]=(pip[a]||0)+1}
+  const wpts=skCost(want.sk)+Object.values(want.pip).reduce((a,v)=>a+v,0),wbuy=wpts-skCost(x.claim);
+  const prog=goals.map(([id])=>GOALI[id].steps.reduce((a,[,,it])=>a+Object.entries(it).reduce((y,[k,v])=>y+(isAttr(k)?Math.min(v,want.pip[k]||0):SKI[k].cost*Math.min(v,want.sk[k]||0)),0),0));
   const by={};rep.forEach((r,gi)=>r.steps.forEach((st,si)=>{for(const k in st.items){const key=isAttr(k)?'@'+k:k;if(!by[key])by[key]=[gi,si]}}));
-  return {sk,pn,pip,rep,spent,links:spent-wpts,wpts,left,by,want,orphans,tree}}
-/* Un passage du moteur ; A : vos ajouts posés d'avance (gratuits pour lui), ou null (combo seul) */
+  return {sk,pn,pip,rep,want,by,spent:skCost(sk)+Object.keys(pn).length,wpts,wbuy,links:x.buy-wbuy,prog,...x}}
+/* Un passage du moteur ; A : vos ajouts (graine : vos nœuds), ou null (combo seul) */
 function runCombo(goals,lvl,exp,flame,A){const b=blankBuild();Object.assign(b,{lvl,exp,flame});const want={sk:{},pip:{}},links=new Set(),rep=[],sp={};
   if(A){Object.assign(b.sk,A.sk);Object.assign(b.pn,A.pn);syncPips(b);for(const id in A.pn){const a=TOPO.byId[id].attr;sp[a]=(sp[a]||0)+1}}
-  const s0=spentPoints(b);let left=budget(b);
+  const s0=spentPoints(b),bu=budget(b);let left=bu;
   for(const [id,role] of goals){const r=runGoal(b,GOALI[id],left,want,links,role,sp);left=r.left;rep.push(r.rep)}
-  const orphans=A?linkAdds(b,A,links):[];if(orphans.length)cleanLinks(b,want,links,sp);syncPips(b);
-  const sk={},pn={};for(const id in b.sk){const v=A&&A.sk[id]?Math.min(b.sk[id],want.sk[id]||0):b.sk[id];if(v>0)sk[id]=v}
+  syncPips(b);const buy=spentPoints(b)-s0,sk={},pn={},claim={};
+  for(const id in b.sk){if(A&&A.sk[id]){const w=Math.min(b.sk[id],want.sk[id]||0);if(w>0){sk[id]=w;claim[id]=Math.min(w,A.sk[id])}}else sk[id]=b.sk[id]}
   for(const id in b.pn)if(b.pn[id]&&!(A&&A.pn[id]))pn[id]=1;
-  return part(sk,pn,want,rep,budget(b)-spentPoints(b)+s0,orphans,spentPoints(b))}
+  let conn=[],orphans=[];
+  if(A){for(const id in A.up)b.sk[id]=Math.max(b.sk[id]||0,A.up[id]);[conn,orphans]=linkAdds(b,A);for(const id of conn)if(TOPO.byId[id].kind==='skill')sk[id]=1;else pn[id]=1}
+  const cc=conn.reduce((a,id)=>a+nodeCost(TOPO.byId[id]),0);
+  return pack(sk,pn,want,rep,goals,{buy,claim,conn,orphans,left:bu-buy-cc,tree:spentPoints(syncPips(b))})}
 /* Ancien calcul, pour comparer : combo seul (z), vos ajouts posés dessus, reliés au besoin */
-function overlay(z,A,lvl,exp,flame){const b=blankBuild();Object.assign(b,{lvl,exp,flame});b.sk={...z.sk};b.pn={...z.pn};
-  for(const id in A.sk)b.sk[id]=Math.max(b.sk[id]||0,A.sk[id]);Object.assign(b.pn,A.pn);syncPips(b);
-  const links=new Set(),orphans=linkAdds(b,A,links),sk={...z.sk},pn={...z.pn};let c=0;for(const id of links){const n=TOPO.byId[id];c+=nodeCost(n);if(n.kind==='skill')sk[id]=1;else pn[id]=1}
-  return part(sk,pn,z.want,z.rep,z.left-c,orphans,spentPoints(b))}
-const better=(a,o)=>a.wpts>o.wpts||a.wpts===o.wpts&&a.tree<=o.tree?a:o;
+function overlay(z,A,goals,lvl,exp,flame){const b=blankBuild();Object.assign(b,{lvl,exp,flame});const t=treeOf(z,A);b.sk=t.sk;b.pn=t.pn;syncPips(b);
+  const [conn,orphans]=linkAdds(b,A),sk={...z.sk},pn={...z.pn};for(const id of conn)if(TOPO.byId[id].kind==='skill')sk[id]=1;else pn[id]=1;
+  return pack(sk,pn,z.want,z.rep,goals,{buy:z.buy,claim:{},conn,orphans,left:z.left-conn.reduce((a,id)=>a+nodeCost(TOPO.byId[id]),0),tree:spentPoints(syncPips(b))})}
+/* Le nouveau calcul seulement s'il fait mieux : objectifs plus avancés (principal, puis secondaire, puis soutien), puis moins de points ; à égalité, l'ancien */
+const better=(a,o)=>{for(let i=0;i<a.prog.length;i++)if(a.prog[i]!==o.prog[i])return a.prog[i]>o.prog[i]?a:o;return a.tree<o.tree?a:o};
 const COMBO=new Map();
 function combo(p,s,lvl,exp,flame,t,A){t=isSup(t)?t:null;A=cleanAdds(A);const ak=addKey(A),key=[p,s,lvl,exp,flame,t,ak].join('|');if(COMBO.has(key))return COMBO.get(key);
   const goals=[[isMain(p)?p:null,'p'],[isMain(s)&&s!==p?s:null,'s'],[t,'t']].filter(x=>x[0]);let out;
-  if(ak==='/'){out=runCombo(goals,lvl,exp,flame,null);out.drop=[]}
-  else{const z=combo(p,s,lvl,exp,flame,t),a=runCombo(goals,lvl,exp,flame,A),o=overlay(z,A,lvl,exp,flame);
-    const fair=Object.keys(A.pn).every(id=>!z.pn[id])&&Object.keys(A.sk).every(id=>!z.sk[id]||(z.want.sk[id]||0)>0);out=fair?better(a,o):a;
-    out.drop=a.orphans.filter(id=>o.orphans.includes(id))} // ajouts qu'aucun des deux calculs ne relie : élagués par regen (règle 3), sauf juste après un ajout
+  if(ak==='//'){out=runCombo(goals,lvl,exp,flame,null);out.drop=[]}
+  else{const z=combo(p,s,lvl,exp,flame,t),a=runCombo(goals,lvl,exp,flame,A),o=overlay(z,A,goals,lvl,exp,flame);
+    out=Object.keys(A.pn).some(id=>z.pn[id])?a:better(a,o); // l'ancien calcul absorberait un de vos nœuds d'attribut (votre +1 perdu) : écarté
+    out.drop=a.orphans.filter(id=>o.orphans.includes(id))} // ajouts qu'aucun des deux calculs ne relie (regen)
   out.ad=A;if(COMBO.size>300)COMBO.clear();COMBO.set(key,out);return out}
 
 /* Build et objectifs : arbre = partie imposée ∪ vos ajouts (b.ad, 2.3.0). Un nœud imposé ne se retire pas (rang minimum = rang imposé) ;
    un changement de réglage (niveau, exploration, Flamme) ou de secondaire garde les ajouts encore reliés ; un nouveau principal repart du combo seul. */
 function imposed(b){const o=b.obj||[];return isMain(o[0])?combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null,b.ad):null}
 /* Vos ajouts : b.ad avec objectif ; en arbre libre, tout l'arbre (placé à la main) */
-function addsOf(b){if(imposed(b))return cleanAdds(b.ad);const sk={},pn={};for(const id in b.sk)if(b.sk[id]>0)sk[id]=b.sk[id];for(const id in b.pn)if(b.pn[id])pn[id]=1;return {sk,pn}}
-const treeOf=(imp,A)=>{const sk={...imp.sk},pn={...imp.pn};for(const id in A.sk)sk[id]=Math.max(sk[id]||0,A.sk[id]);Object.assign(pn,A.pn);return {sk,pn}};
+function addsOf(b){if(imposed(b))return cleanAdds(b.ad);const o=NOADD();for(const id in b.sk)if(b.sk[id]>0)o.sk[id]=b.sk[id];for(const id in b.pn)if(b.pn[id])o.pn[id]=1;return o}
+const treeOf=(imp,A)=>{const sk={...imp.sk},pn={...imp.pn};for(const g of ['sk','up'])for(const id in A[g]||{})sk[id]=Math.max(sk[id]||0,A[g][id]);Object.assign(pn,A.pn);return {sk,pn}};
 const sameTree=(x,b)=>{const ks=Object.keys(x.sk),kp=Object.keys(x.pn);return ks.length===Object.keys(b.sk).filter(id=>b.sk[id]>0).length&&ks.every(id=>b.sk[id]===x.sk[id])&&
   kp.length===Object.keys(b.pn).filter(id=>b.pn[id]).length&&kp.every(id=>!!b.pn[id])};
 /* Arbre recalculé depuis les départs avec vos ajouts. keep (juste après un ajout) : tous vos ajouts restent, reliés par le moteur s'il le faut ;
-   sinon (retrait, réglage, secondaire, soutien) : un ajout qu'aucun calcul ne relie plus est élagué (règle 3), tant qu'il en reste. Renvoie les ajouts élagués */
-function regen(b,keep){b.ad=cleanAdds(b.ad);const gone=[];let imp=imposed(b);if(!imp)return gone;
-  for(let g=0;!keep&&imp.drop.length&&g<99;g++){for(const id of imp.drop){gone.push(TOPO.byId[id]);delete b.ad.sk[id];delete b.ad.pn[id]}imp=imposed(b)}
-  const t=treeOf(imp,b.ad);b.sk=t.sk;b.pn=t.pn;syncPips(b);return gone}
-function rebuild(b,A){if(A!==undefined)b.ad=cleanAdds(A);return regen(b,false)}
+   sinon (réglage, secondaire, soutien, rang retiré) : un ajout qu'aucun calcul ne relie plus, et que l'état d'avant (prev) reliait, est élagué (règle 3).
+   Renvoie les ajouts élagués qui ont quitté l'arbre */
+function regen(b,keep,prev){b.ad=cleanAdds(b.ad);const gone=[];let imp=imposed(b);if(!imp)return gone;const was=new Set(prev&&prev.drop||[]);
+  for(let g=0;!keep&&g<99;g++){const d=imp.drop.filter(id=>!was.has(id));if(!d.length)break;for(const id of d){gone.push(TOPO.byId[id]);for(const k of ['sk','pn','up'])delete b.ad[k][id]}imp=imposed(b)}
+  const t=treeOf(imp,b.ad);b.sk=t.sk;b.pn=t.pn;syncPips(b);return gone.filter(n=>!owned(b,n))}
+function rebuild(b,A,prev){if(A!==undefined)b.ad=cleanAdds(A);return regen(b,false,prev)}
 /* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées), secondaire et soutien (ajouts gardés).
    obj = [p, s] sans soutien (forme d'avant la 2.1.0, lien inchangé), [p, s, t] avec. */
 const objOf=(p,s,t)=>p?(t?[p,s,t]:[p,s]):[];
-function setGoals(b,p,s,t){p=isMain(p)?p:null;s=p&&isMain(s)&&s!==p?s:null;t=p&&isSup(t)?t:null;const was=(b.obj||[])[0]||null;
-  b.obj=objOf(p,s,t);if(!p){b.ad=NOADD();return []}if(was!==p){b.ad=NOADD();b.gem={...GOALI[p].gem}}return regen(b,false)}
-/* Rang minimum d'un nœud (imposé), 0 sinon */
-function lockOf(b,n,imp){imp=imp===undefined?imposed(b):imp;if(!imp)return 0;return n.kind==='skill'?(imp.sk[n.id]||0):n.kind==='pip'&&imp.pn[n.id]?1:0}
+function setGoals(b,p,s,t){p=isMain(p)?p:null;s=p&&isMain(s)&&s!==p?s:null;t=p&&isSup(t)?t:null;const was=(b.obj||[])[0]||null,c0=imposed(b);
+  b.obj=objOf(p,s,t);if(!p){b.ad=NOADD();return []}if(was!==p){b.ad=NOADD();b.gem={...GOALI[p].gem};return regen(b,false)}return regen(b,false,c0)}
+/* Rang minimum d'un nœud (imposé), 0 sinon. Un de vos nœuds qu'une étape compte n'est verrouillé que si le combo l'aurait aussi sans lui (QCM du 2026-11-07) */
+function lockOf(b,n,imp){imp=imp===undefined?imposed(b):imp;if(!imp)return 0;if(n.kind==='pip')return imp.pn[n.id]?1:0;if(n.kind!=='skill')return 0;
+  const r=imp.sk[n.id]||0;if(!r||!imp.claim||!imp.claim[n.id])return r;const A=cleanAdds(imp.ad),o=b.obj;delete A.sk[n.id];
+  return Math.min(r,combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null,A).sk[n.id]||0)}
 /* Lien, build enregistré : objectifs inconnus retirés ; arbre qui n'est pas celui que le moteur tire des objectifs et des ajouts (objectif changé depuis)
    → objectifs retirés, arbre gardé tel quel ; noté dans _objLost. Vos ajouts viennent du lien (segment -a) ou du build enregistré (ad) ; sans eux
-   (lien ou build d'avant la 2.3.0) : ajouts = arbre − combo seul, puis combo recalculé avec eux s'il change (QCM du 2026-11-07 : _recalc, message) */
+   (lien ou build d'avant la 2.3.0) : ajouts = arbre − combo seul (rangs au-dessus d'un nœud du combo : up), puis combo recalculé s'il change (_recalc, message) */
 function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=isMain(o[0])?o[0]:null,s=p&&isMain(o[1])&&o[1]!==p?o[1]:null,t=p&&isSup(o[2])?o[2]:null;
   let lost=!!(o[0]&&!p)||!!(o[1]&&o[1]!==o[0]&&!s)||!!(o[2]&&p&&!t);
   const given=b.ad&&typeof b.ad==='object'?cleanAdds(b.ad):null;b.obj=objOf(p,s,t);b.ad=NOADD();
   if(p){const z=imposed(b),fits=A=>{b.ad=A;if(sameTree(treeOf(imposed(b),A),b))return true;b.ad=NOADD();return false};let ok=false;
-    if(given){for(const id in given.sk)if(!((b.sk[id]||0)>=given.sk[id]))delete given.sk[id];for(const id in given.pn)if(!b.pn[id])delete given.pn[id];ok=fits(given)}
+    if(given){for(const g of ['sk','up'])for(const id in given[g])if(!((b.sk[id]||0)>=given[g][id]))delete given[g][id];for(const id in given.pn)if(!b.pn[id])delete given.pn[id];ok=fits(given)}
     const has=Object.keys(z.sk).every(id=>(b.sk[id]||0)>=z.sk[id])&&Object.keys(z.pn).every(id=>b.pn[id]),A=NOADD();
-    if(!ok&&has){for(const id in b.sk)if(b.sk[id]>(z.sk[id]||0))A.sk[id]=b.sk[id];for(const id in b.pn)if(b.pn[id]&&!z.pn[id])A.pn[id]=1;ok=fits(A)}
+    if(!ok&&has){for(const id in b.sk)if(b.sk[id]>(z.sk[id]||0))(z.sk[id]?A.up:A.sk)[id]=b.sk[id];for(const id in b.pn)if(b.pn[id]&&!z.pn[id])A.pn[id]=1;ok=fits(A)}
     if(!ok&&has&&!given){b.ad=A;const imp=imposed(b);Object.defineProperty(b,'_recalc',{value:{links:[z.links,imp.links],wpts:[z.wpts,imp.wpts]},enumerable:false,configurable:true});regen(b,true);ok=true}
     if(!ok){b.obj=[];b.ad=NOADD();lost=true}}
   if(lost)Object.defineProperty(b,'_objLost',{value:true,enumerable:false,configurable:true});return b}

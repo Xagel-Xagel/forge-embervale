@@ -152,8 +152,10 @@ const G=(()=>{
   function carries(bb,n,c){const t={sk:{...bb.sk},pn:{...bb.pn}};if(n.kind==='skill')delete t.sk[n.id];else delete t.pn[n.id];const R=reach(t);
     return Object.keys(c.sk).some(id=>t.sk[id]>0&&!R.has(TOPO.byId[id]))||Object.keys(c.pn).some(id=>!R.has(TOPO.byId[id]))}
   function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);
-    if(!lk)return `<div class="m">Ajouté par vous${c&&carries(bb,n,c)?' · le combo passe par ce nœud, sans le payer':''}</div>`;
-    const w=c.by[n.kind==='pip'?'@'+n.attr:n.id];if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]],t=`« ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}`;
+    const w=c&&c.by[n.kind==='pip'?'@'+n.attr:n.id],at=w?` · compte pour « ${esc(goalName(c.rep[w[0]].id))} » · étape ${w[1]+1}`:'';
+    if(!lk)return `<div class="m">Ajouté par vous${c&&n.kind==='skill'&&c.claim[n.id]?at:''}${c&&carries(bb,n,c)?' · le combo passe par ce nœud, sans le payer':''}</div>`;
+    if(c.conn.includes(n.id))return '<div class="org">Imposé : liaison vers un de vos ajouts</div>';
+    if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]],t=`« ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}`;
       // attribut : au-delà du nombre visé, certains nœuds imposés ne servent que de liaison (on ne sait pas lesquels)
       if(n.kind==='pip'&&TOPO.pips.filter(p=>p.attr===n.attr&&c.pn[p.id]).length>(c.want.pip[n.attr]||0))return `<div class="org">Imposé par ${t}, ou liaison du combo</div>`;
       return `<div class="org">Imposé par ${t}</div>`}

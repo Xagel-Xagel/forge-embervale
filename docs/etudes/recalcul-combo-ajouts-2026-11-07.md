@@ -32,6 +32,16 @@ Indicateur : **profil 6 Sensible [R2 K2 A1]** — R2 : moteur sans modèle à co
 - **Q2 Verrou** → **« Devient imposé »** : un ajout que l'objectif demande (étape atteinte) est verrouillé ; vos rangs au-dessus restent retirables.
 - **Q3 Anciens liens et builds enregistrés avec ajouts (2.0.0 à 2.2.0)** → **« Recalculé + message »** ; sans effet sur le combo, ouvert à l'identique.
 
+## 4 bis. Relecture QA et corrections (avant la PR)
+Quatre relecteurs indépendants (moteur, liens, clics avec fuzz, textes). Constats corrigés :
+- **+1 de rang sur un nœud imposé** : la graine prenait le rang entier, le combo récupérait gratuitement les rangs qu'il avait payés (7 % des clics de rang), et le −1 était refusé → ces rangs vont dans `up` (au-dessus, hors de la graine) : le combo ne change pas, +1 puis −1 annule.
+- **+1 puis −1 après « Acheter le chemin »** : la comparaison « sans votre ajout » faisait relier les autres ajouts par ce nœud, puis tout élaguer → vos nœuds (`sk`) perdent simplement un rang ; leur retrait applique la règle 3 sur l'arbre affiché (`removeAdd`).
+- **Ajout élagué par un réglage sans effet**, nœud compté par une étape sans être relié → une étape paie d'abord le chemin vers votre nœud ; un réglage n'élague que les ajouts qu'il a décrochés (`prev`).
+- **Garde-fou** : comparaison par objectif (principal, secondaire, soutien), puis points ; le nouveau calcul seulement s'il fait mieux (à égalité, l'arbre ne bouge pas).
+- Affichage : « vos ajouts » = arbre − achats des objectifs ; message de verrou nommant le bon objectif ou « liaison vers vos ajouts » ; « Combo recalculé » limité à ce qui change ; segment `-a` canonique seulement ; `loadSaved(null)` sans erreur.
+- **Q4 (QCM)** → un de vos nœuds qu'une étape compte reste **retirable, sauf si le combo l'aurait seul** (`lockOf` le vérifie par un calcul sans lui).
+Vérifications rejouées sur la version corrigée : 23 759 combos sans ajout identiques à `main` ; fuzz de 300 suites de 60 clics sans défaut ; 1 500 liens au hasard rouverts à l'identique ; 530 codes de `main` réencodés octet pour octet ; 3 000 codes hostiles sans exception.
+
 ## 5. Tests prévus
 - Un ajout sur le chemin d'une étape libère des points (cas figé, liaisons en moins).
 - Un retrait recalcule : retirer l'ajout rend exactement le combo sans ajout.

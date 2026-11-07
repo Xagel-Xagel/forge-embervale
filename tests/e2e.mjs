@@ -101,7 +101,7 @@ for (const w of [1300, 400]) for (const scheme of ['light', 'dark']) {
   await page.locator('#gwrap').scrollIntoViewIfNeeded(); await page.waitForTimeout(80); await watchLong(page);
   const pt = await page.evaluate(() => { const n = window.G.nodes.find(x => x.id === 'pip:1wwtpca'); const [x, y] = window.G.screen(n); const r = document.querySelector('#gcv').getBoundingClientRect(); return [r.left + x, r.top + y]; });
   await page.mouse.dblclick(pt[0], pt[1]); await page.waitForTimeout(120);
-  if (!/Combo recalculé : liaisons 30 pts → 27 pts · objectifs \+4 pts/.test(await page.textContent('#toasts'))) errs.push('ajout : pas de message de recalcul');
+  if (!/Combo recalculé : liaisons 30 pts → 27 pts · \+4 pts sur les étapes/.test(await page.textContent('#toasts'))) errs.push('ajout : pas de message de recalcul');
   const lt = (await longs(page)).filter(d => d > LONGTASK); if (lt.length) errs.push(`tâches longues > ${LONGTASK} ms : ${lt.join(', ')}`);
   const ms = await page.evaluate(() => { const b = B(), t = performance.now(); COMBO.clear(); imposed(b); return performance.now() - t; });
   if (ms > LONGTASK / 2) errs.push(`recalcul en ${Math.round(ms)} ms`); else console.log(`  recalcul du combo avec un ajout, dans le navigateur : ${ms.toFixed(1)} ms`);
