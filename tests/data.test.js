@@ -16,43 +16,21 @@ test('chaque compétence correspond à un seul nœud du tracé réel', () => {
   assert.equal(new Set(TREE.nodes.map(n => n[0])).size, TREE.nodes.length, 'identifiant de jeu en double');
   for (const [i, j] of TREE.links) assert.ok(TREE.nodes[i] && TREE.nodes[j] && i !== j, 'liaison invalide ' + i + '-' + j);
 });
-test('objets : catégories et perks connus', () => {
-  for (const w of WEAPONS) { assert.ok(CAT[w[2]], w[0] + ' : catégorie'); assert.ok(WTYPE[w[5]], w[0] + ' : type');
-    // 5 emplacements dans l'ordre des fichiers 1.0 : [perk, valeur > 0] ou ['k', compétence, rangs]
-    assert.equal(w[6].length, 5, w[0] + ' : 5 emplacements de perks');
-    for (const p of w[6]) { if (p[0] === 'k') { assert.ok(SKI[p[1]] && Number.isInteger(p[2]) && p[2] >= 1 && p.length === 3, w[0] + ' : rang ' + p); continue; }
-      assert.ok(WPERK[p[0]] && p.length === 2 && typeof p[1] === 'number' && p[1] > 0, w[0] + ' : perk ' + p); } }
-  for (const k in WPC) assert.ok(WPERK[k] && !(k in WPU), k + ' : perk compté inconnu ou sans unité %');
-  for (const k in WPU) assert.ok(WPERK[k], k + ' : unité d\'un perk inconnu');
-  for (const id in WOC) assert.equal(ITEMS[id] && ITEMS[id].cat, 'wand', id + ' : surcharge hors baguette');
-  for (const it of Object.values(ITEMS)) if (it.perks) for (const p of it.perks) {
-    if (p[0] === 's') assert.ok(ST[p[1]], it.id + ' : stat ' + p[1]);
-    if (p[0] === 'k') assert.ok(SKI[p[1]], it.id + ' : compétence ' + p[1]);
-  }
-  for (const it of Object.values(ITEMS)) if (it.base) for (const k in it.base) assert.ok(ST[k], it.id + ' : stat de base ' + k);
-});
-test('builds prédéfinis : toutes les références existent', () => {
-  for (const p of PRESETS) {
-    for (const [sl, id] of Object.entries(p.gear)) { assert.ok(ITEMS[id], `${p.name} : objet ${id}`); assert.ok(SLOTS.some(s => s[0] === sl), `${p.name} : emplacement ${sl}`); }
-    for (const id in p.sk) assert.ok(SKI[id], `${p.name} : compétence ${id}`);
-    for (const g of Object.values(p.gem || {})) assert.ok(GEMI[g], `${p.name} : gemme ${g}`);
-    assert.ok(['mage', 'heal', 'tank', 'war', 'rng'].includes(p.cat), p.name + ' : catégorie');
+test('objectifs : références valides, rangs et attributs dans les bornes, gemmes connues, une étape au moins', () => {
+  assert.equal(GOALS.length, 12); assert.equal(new Set(GOALS.map(g => g.id)).size, GOALS.length);
+  for (const g of GOALS) {
+    assert.ok(g.n && GOAL_GRP.some(x => x[0] === g.grp) && AREAS.some(a => a[0] === g.area), g.id + ' : nom, groupe ou zone');
+    for (const v of Object.values(g.gem)) assert.ok(GEMI[v], g.id + ' : gemme ' + v);
+    assert.ok(g.steps.length >= 1, g.id);
+    const seen = new Set();
+    for (const [t, why, items] of g.steps) { assert.ok(t && why && Object.keys(items).length, g.id + ' : étape vide');
+      for (const [k, v] of Object.entries(items)) { assert.ok(!seen.has(k), g.id + ' : ' + k + ' deux fois'); seen.add(k);
+        if (isAttr(k)) assert.ok(Number.isInteger(v) && v >= 1 && v <= PIPS.find(p => p[0] === k)[4], g.id + ' : ' + k);
+        else assert.ok(SKI[k] && Number.isInteger(v) && v >= 1 && v <= SKI[k].max, g.id + ' : ' + k); } }
   }
 });
 test('gemmes : 29, identifiants uniques, palier 1 à 7', () => {
   assert.equal(GEMS.length, 29);
   assert.equal(new Set(GEMS.map(g => g[0])).size, GEMS.length);
   for (const g of GEMS) { assert.ok(RAR[g[3]], g[0]); assert.ok(g[4] >= 1 && g[4] <= 7, g[0]); }
-});
-test('ennemis : 8 multiplicateurs entre 0 et 300, faction connue', () => {
-  assert.ok(ENEMIES.length >= 100);
-  for (const e of ENEMIES) {
-    assert.equal(e.m.length, 8, e.n);
-    for (const v of e.m) assert.ok(v >= 0 && v <= 300, e.n + ' : ' + v);
-    assert.ok(FACTIONS[e.f], e.n + ' : faction');
-  }
-  assert.equal(new Set(ENEMIES.map(e => e.n)).size, ENEMIES.length, 'nom d\'ennemi en double');
-});
-test('les Fell sont immunisés au Shroud', () => {
-  for (const e of ENEMIES.filter(e => e.f === 'fell')) assert.equal(e.m[TI.shroud], 0, e.n);
 });

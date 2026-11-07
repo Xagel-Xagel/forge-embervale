@@ -7,7 +7,7 @@
   <header class="top">
     <div>
       <h1>Forge d'<span>Embervale</span></h1>
-      <div class="sub">Simulateur de stuff pour Enshrouded 1.0 · niveau max 50, équipement jusqu'au niveau 55, 212 points de compétence</div>
+      <div class="sub">Arbre de compétences d'Enshrouded 1.0 · choisissez un objectif, le site place vos points et explique pourquoi</div>
     </div>
     <span class="ver">Données : version 1.0 (oct.–nov. 2026)</span>
   </header>
@@ -17,155 +17,116 @@
     <input type="text" class="namein" id="buildName" aria-label="Nom du build">
     <label class="chk"><input type="checkbox" id="cmp"> Comparer A et B</label>
     <span class="sep"></span>
-    <select id="preset" aria-label="Builds prédéfinis"><option value="">Charger un build prédéfini…</option></select>
-    <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
-    <button class="btn" id="reset">Vider</button>
-    <span class="sep"></span>
     <button class="btn" id="save">Enregistrer</button>
     <select id="saved" aria-label="Builds enregistrés"><option value="">Mes builds…</option></select>
     <button class="btn" id="delSaved">Supprimer</button>
     <span class="sep"></span>
     <button class="btn primary" id="share">Partager</button>
     <button class="btn" id="import">Importer un code</button>
+    <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
+    <button class="btn" id="reset">Vider</button>
   </div>
 
-  <!-- Barre collée des panneaux (1.18.0) : « Ma classe » (1.19.0), disposition et mode Organiser ; jamais dans l'adresse (le hash est réservé au code de partage) -->
-  <div class="pbar" id="pBar">
-    <!-- « Ma classe » : un clic = Build optimal ouvert et calculé pour les deux familles d'arme de la classe, arbre centré sur sa zone (setCls, 10-ui.js) -->
-    <div class="clsg" role="group" aria-labelledby="clsLbl"><span class="dsel" id="clsLbl">Ma classe</span>
-      <button type="button" class="btn cls" id="c-war" aria-pressed="false" style="--ac:var(--war)" title="Guerrier : build optimal à la mêlée (une et deux mains), arbre centré sur la zone Guerrier">Guerrier</button>
-      <button type="button" class="btn cls" id="c-rng" aria-pressed="false" style="--ac:var(--rng)" title="Rôdeur : build optimal aux dagues et à l'arc, arbre centré sur la zone Rôdeur">Rôdeur</button>
-      <button type="button" class="btn cls" id="c-mag" aria-pressed="false" style="--ac:var(--mag)" title="Mage : build optimal à la baguette et au bâton, arbre centré sur la zone Mage">Mage</button>
-    </div>
-    <span class="sep"></span>
-    <label class="dsel" for="dispo">Disposition</label>
-    <select id="dispo"><option value="mine" id="dispoMine">Ma disposition</option><option value="theo">Théoricien</option><option value="combat">Combat</option><option value="mini">Minimal</option><option value="all">Tout</option></select>
-    <button class="btn" id="org" aria-pressed="false" title="Taille, ordre et fermeture des panneaux">Organiser</button>
-    <button class="btn primary" id="orgDone" hidden>Terminé</button>
-    <span class="orghint" id="orgHint" hidden>Taille S (replié), M ou L (deux colonnes), Monter, Descendre, Fermer : dans l'en-tête de chaque panneau ; un panneau fermé se rouvre depuis le rail.</span>
-  </div>
-
-  <!-- Rail (≥ 640 px) : afficher ou masquer chaque panneau ; grille de panneaux : 3, 2 ou 1 colonnes (accordéon sous 640 px) -->
-  <div class="playout">
-  <nav class="rail" id="rail" aria-label="Panneaux"></nav>
-  <div class="pgrid" id="pgrid">
-  <p class="pempty" id="pEmpty" hidden>Tous les panneaux sont fermés : rouvrez-en un depuis le rail (ou « Plus » en bas de l'écran), ou choisissez une disposition.</p>
-  <section class="panel pnl" id="p-tree" aria-labelledby="h-sk">
-    <div class="ph"><h2 id="h-sk">Arbre de compétences</h2>
-      <div class="row"><span class="lbl">172 compétences · 59 nœuds d'attribut · 12 départs</span>
-      <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div></div>
-    <div class="pbody" id="pb-tree"><div class="pb">
-      <div class="treehead">
-        <!-- Tuiles Points et Flamme (1.17.0) : le nombre de points à attribuer et le niveau de la Flamme en grand, aussi à 400 px -->
-        <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
-          <div class="ptile">
-            <div class="ptl" id="ptLbl">Points à attribuer</div>
-            <output class="ptn" id="ptLeft" aria-labelledby="ptLbl"></output>
-            <div class="pts"><span id="spent"></span> · <span id="needLvl"></span></div>
-            <div class="bar" id="bar"><i></i></div>
-            <div class="ptin">
-              <label>Niveau<input type="number" id="lvl" min="1" max="50" title="Niveau du personnage (1 à 50) : 2 points par niveau"></label>
-              <label>Exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
+  <div class="main">
+    <div class="side">
+      <!-- 1. Vos points : niveau, exploration, Flamme -->
+      <section class="panel" aria-labelledby="h-pts">
+        <div class="ph"><h2 id="h-pts">Vos points</h2></div>
+        <div class="pb">
+          <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
+            <div class="ptile">
+              <div class="ptl" id="ptLbl">Points à attribuer</div>
+              <output class="ptn" id="ptLeft" aria-labelledby="ptLbl"></output>
+              <div class="pts"><span id="spent"></span> · <span id="needLvl"></span></div>
+              <div class="bar" id="bar"><i></i></div>
+              <div class="ptin">
+                <label>Niveau<input type="number" id="lvl" min="1" max="50" title="Niveau du personnage (1 à 50) : 2 points par niveau"></label>
+                <label>Exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
+              </div>
+            </div>
+            <div class="ptile">
+              <label class="ptl" for="flame">Niveau de la Flamme</label>
+              <div class="ptf"><button type="button" class="pstep" id="flameDn" aria-label="Baisser la Flamme d'un niveau">−</button><input type="number" class="ptn" id="flame" min="1" max="11"><button type="button" class="pstep" id="flameUp" aria-label="Monter la Flamme d'un niveau">+</button></div>
+              <div class="pts">sur 11</div>
+              <div class="pts" id="flameFx"></div>
             </div>
           </div>
-          <div class="ptile">
-            <label class="ptl" for="flame">Niveau de la Flamme</label>
-            <div class="ptf"><button type="button" class="pstep" id="flameDn" aria-label="Baisser la Flamme d'un niveau">−</button><input type="number" class="ptn" id="flame" min="1" max="11"><button type="button" class="pstep" id="flameUp" aria-label="Monter la Flamme d'un niveau">+</button></div>
-            <div class="pts">sur 11</div>
-            <div class="pts" id="flameFx"></div>
+        </div>
+      </section>
+
+      <!-- 2. Objectifs : principal (combo imposé), secondaire (points restants) -->
+      <section class="panel" aria-labelledby="h-obj">
+        <div class="ph"><h2 id="h-obj">Objectifs</h2></div>
+        <div class="pb">
+          <div class="gsel">
+            <label for="goal1">Principal<select id="goal1"></select></label>
+            <label for="goal2">Secondaire<select id="goal2"></select></label>
+          </div>
+          <p class="meta2" id="goalHint"></p>
+        </div>
+      </section>
+
+      <!-- 3. Pourquoi ce combo : étapes de chaque objectif, état et raison -->
+      <section class="panel" aria-labelledby="h-why">
+        <div class="ph"><h2 id="h-why">Pourquoi ce combo</h2></div>
+        <div class="pb" id="why"></div>
+      </section>
+
+      <!-- 4. Gemmes : deux emplacements (Arme 1, Arme 2) ; effets descriptifs, jamais comptés -->
+      <section class="panel" aria-labelledby="h-gem">
+        <div class="ph"><h2 id="h-gem">Gemmes</h2></div>
+        <div class="pb" id="gems"></div>
+      </section>
+    </div>
+
+    <!-- Arbre : graphe (tracé du jeu 1.0) ou liste -->
+    <section class="panel tree" id="p-tree" aria-labelledby="h-sk">
+      <div class="ph"><h2 id="h-sk">Arbre de compétences</h2>
+        <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div>
+      <div class="pb">
+        <div class="areas" id="areas"></div>
+        <div class="filters">
+          <input type="text" id="q" placeholder="Rechercher une compétence (FR ou EN)" aria-label="Rechercher une compétence">
+          <label class="chk"><input type="checkbox" id="onlyOn"> Prises seulement</label>
+        </div>
+        <div id="graphView">
+          <div class="gwrap" id="gwrap">
+            <canvas id="gcv" aria-label="Arbre de compétences en graphe. Utilisez la vue Liste pour une navigation au clavier."></canvas>
+            <div class="ghelp">Glisser pour déplacer · molette ou pincement pour zoomer · clic pour sélectionner · double-clic : +1 rang · clic droit : −1 rang</div>
+            <div class="gtools"><button id="gFit">Tout afficher</button></div>
+            <div class="gcard" id="gcard" hidden></div>
+          </div>
+          <div class="glegend">
+            <span><i style="background:var(--mag);box-shadow:0 0 8px var(--mag)"></i>imposé par l'objectif</span>
+            <span><i style="background:var(--mag);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ember)"></i>ajouté par vous</span>
+            <span><i style="background:var(--g-node);box-shadow:0 0 0 2px var(--mag)"></i>achetable (relié)</span>
+            <span><i style="background:var(--g-node);opacity:.5"></i>verrouillé</span>
+            <span><i style="border:1.5px solid var(--g-label);background:transparent"></i>point de départ</span>
+            <span>petits nœuds : attributs (+1)</span>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div class="areas" id="areas"></div>
-          <div class="filters">
-            <input type="text" id="q" placeholder="Rechercher une compétence (FR ou EN)" aria-label="Rechercher une compétence">
-            <label class="chk"><input type="checkbox" id="onlyOn"> Prises seulement</label>
-          </div>
+        <div id="listView" hidden>
+          <div class="pips" id="pips"></div>
+          <div class="nodes" id="nodes"></div>
         </div>
       </div>
-      <div id="graphView">
-        <div class="gwrap" id="gwrap">
-          <canvas id="gcv" aria-label="Arbre de compétences en graphe. Utilisez la vue Liste pour une navigation au clavier."></canvas>
-          <div class="ghelp">Glisser pour déplacer · molette ou pincement pour zoomer · clic pour sélectionner · double-clic : +1 rang · clic droit : −1 rang · un nœud ne s'achète que s'il touche un départ ou un nœud acquis (règle déduite des fichiers) · tracé du jeu 1.0</div>
-          <div class="gtools"><button id="gFit">Tout afficher</button><button id="gShake">Réorganiser</button></div>
-          <div class="gcard" id="gcard" hidden></div>
-        </div>
-        <div class="glegend" style="margin-top:8px">
-          <span><i style="background:var(--g-node)"></i>non acquis</span>
-          <span><i style="background:var(--mag);box-shadow:0 0 8px var(--mag)"></i>acquis (couleur de la zone)</span>
-          <span><i style="border:1.5px solid var(--g-label);background:transparent"></i>point de départ</span>
-          <span><i style="background:var(--g-node);box-shadow:0 0 0 2px var(--mag)"></i>achetable (relié)</span>
-          <span><i style="background:var(--g-node);opacity:.5"></i>verrouillé</span>
-          <span><i style="border:1.5px dashed var(--shroud);background:transparent"></i>rang donné par l'équipement</span>
-          <span>petits nœuds : attributs (+1)</span>
-        </div>
-      </div>
-      <div id="listView" hidden>
-        <div class="pips" id="pips"></div>
-        <div class="nodes" id="nodes" style="margin-top:10px"></div>
-      </div>
-    </div></div>
-  </section>
-
-    <section class="panel pnl" id="p-eq" aria-labelledby="h-eq">
-      <div class="ph"><h2 id="h-eq">Équipement</h2><span class="lbl" id="eqCount"></span></div>
-      <div class="pbody" id="pb-eq"><div class="pb">
-        <div class="upg">
-          <label for="upg" class="lbl">Améliorations</label>
-          <input type="range" id="upg" min="0" max="5" step="1">
-          <span id="upgTxt" style="font-family:var(--f-mono);font-size:.85rem"></span>
-        </div>
-        <div id="slots" class="pb" style="padding:0"></div>
-      </div></div>
-  </section>
-
-  <section class="panel pnl" id="p-calc" aria-labelledby="h-opt">
-    <div class="ph"><h2 id="h-opt">Calculateur d'optimisation</h2><span class="lbl" id="optFor"></span></div>
-    <div class="pbody" id="pb-calc"><div class="pb">
-      <!-- Choix de la cible : ici si le Calculateur est affiché, sinon dans Build optimal (placeBar, 10-ui.js) -->
-      <div id="optTarget"><div class="optbar" id="optBar">
-        <label>Ennemi ciblé<select id="oEnemy"></select></label>
-        <label>Arme analysée<select id="oSlot"><option value="w1">Arme 1</option><option value="w2">Arme 2</option></select></label>
-        <label class="ofam">Armes à classer<select id="oFam"></select></label>
-      </div></div>
-      <div id="optBody" style="display:flex;flex-direction:column;gap:12px"></div>
-    </div></div>
-  </section>
-
-  <section class="panel pnl" id="p-bo" aria-labelledby="h-bo">
-    <div class="ph"><h2 id="h-bo">Build optimal</h2><span class="lbl" id="boFor"></span></div>
-    <div class="pbody" id="pb-bo"><div class="pb"><div class="ptiles" id="boTiles" role="group" aria-label="Points et Flamme du calcul"></div><div id="boTarget"></div><p class="meta2" id="boTgtNote" hidden></p><div id="boBody"></div></div></div>
-  </section>
-
-  <section class="panel pnl" id="p-def" aria-labelledby="h-def">
-    <div class="ph"><h2 id="h-def">Défense : combien de coups encaissez-vous ?</h2><span class="lbl" id="defFor"></span></div>
-    <div class="pbody" id="pb-def"><div class="pb" id="defBody"></div></div>
-  </section>
-
-  <section class="panel pnl" id="p-tab" aria-labelledby="h-tab">
-    <div class="ph"><h2 id="h-tab">Tables et formules</h2></div>
-    <div class="pbody" id="pb-tab"><div class="pb" id="tabBody"></div></div>
-  </section>
-
-  <section class="panel pnl stats" id="p-fiche" aria-labelledby="h-st">
-    <div class="ph"><h2 id="h-st">Fiche du personnage</h2><span class="lbl" id="stMode"></span></div>
-    <div class="pbody" id="pb-fiche"><div class="pb" id="stats"></div></div>
-  </section>
+    </section>
   </div>
-  </div>
+
+  <!-- A contre B (case « Comparer A et B ») -->
+  <section class="panel" id="p-cmp" aria-labelledby="h-cmp" hidden>
+    <div class="ph"><h2 id="h-cmp">A contre B</h2></div>
+    <div class="pb"><div class="oscroll" id="cmpBody"></div></div>
+  </section>
 
   <p class="foot">
-    Sources : arbre de compétences (tracé, coûts, rangs), anneaux et panoplies 1.0 relevés dans les fichiers du jeu par <a href="https://pindrop.gg/enshrouded/skill-tree" target="_blank" rel="noopener">PinDrop</a> ;
+    Sources : arbre de compétences (tracé, liaisons, coûts, rangs, descriptions) relevé dans les fichiers du jeu 1.0 par <a href="https://pindrop.gg/enshrouded/skill-tree" target="_blank" rel="noopener">PinDrop</a> ;
     valeurs d'attributs (<a href="https://metabot.gg/en/enshrouded/mechanics" target="_blank" rel="noopener">MetaBot</a>, <a href="https://enshrouded.wiki.gg/wiki/Attributes" target="_blank" rel="noopener">wiki Enshrouded</a>) ;
-    dégâts des armes estimés par la formule du wiki au niveau requis ; builds inspirés de <a href="https://www.keengamer.com/articles/guides/enshrouded-1-0-best-builds-weapons-armor-skills/" target="_blank" rel="noopener">KeenGamer</a>.
-    Noms d'objets, de factions et d'une partie des ennemis : noms français officiels du jeu, relevés sur <a href="https://metabot.gg/fr_FR/enshrouded" target="_blank" rel="noopener">MetaBot</a> ; autres ennemis (marqués °) et compétences : traduits ici ; le nom anglais suit en italique.
-    Faiblesses des ennemis : tables 1.0 de <a href="https://pindrop.gg/enshrouded/enemy-weaknesses" target="_blank" rel="noopener">PinDrop</a> et <a href="https://enshrouded.tools/1-0" target="_blank" rel="noopener">enshrouded.tools</a> ; armure d'après le tutoriel en jeu (<a href="https://enshrouded.wiki.gg/wiki/Combat_Mechanics" target="_blank" rel="noopener">wiki</a>).
-    Projet de fan, sans lien avec Keen Games.
+    gemmes 1.0 d'après <a href="https://pindrop.gg/enshrouded/gems" target="_blank" rel="noopener">PinDrop</a> et le wiki.
+    Objectifs : compétences reprises des anciens builds prédéfinis du simulateur, inspirés de <a href="https://www.keengamer.com/articles/guides/enshrouded-1-0-best-builds-weapons-armor-skills/" target="_blank" rel="noopener">KeenGamer</a> et de demandes de joueurs ; l'ordre des étapes et leurs raisons sont des choix de ce simulateur, pas un guide officiel.
+    Un nœud ne s'achète que s'il touche un point de départ ou un nœud acquis qui y est relié (règle déduite des fichiers, comme PinDrop). Projet de fan, sans lien avec Keen Games.
   </p>
 </div>
-<!-- Barre basse (< 640 px) : raccourcis vers les panneaux ; « Plus » ouvre la liste des autres -->
-<nav class="bbar" id="bbar" aria-label="Raccourcis des panneaux"></nav>
-<div class="bmore" id="bmore" hidden></div>
 <!-- Messages (toast) : empilés, lus par les lecteurs d'écran -->
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 

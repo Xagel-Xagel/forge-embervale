@@ -1,5 +1,7 @@
 # Traductions des noms — liste à valider (2026-11-06)
 
+> **Caduque depuis la 2.0.0 (2026-11-07, HISTORY n° 27)** : le « grand ménage » a supprimé les panneaux, l'équipement, les ennemis et leurs noms. Gardée pour l'historique.
+
 Décisions (QCM) : périmètre **objets, ennemis et factions, restes d'interface** (termes de jeu comme « Shroud » hors périmètre) ; source **MetaBot (noms officiels du jeu, 14 langues, build 1285601) + traduction du simulateur signalée** ; affichage **français + anglais en italique** ; recherche **français et anglais**.
 
 Sources : **officiel** = nom lu sur metabot.gg/fr_FR (qui reprend les tables de textes du jeu, relevé le 2026-11-06) ; **déduit** = nom officiel lu dans un autre nom officiel (objet du même nom, pièces d'une panoplie) ; *traduction du simulateur* = aucune source française trouvée, proposée ici et signalée comme telle à l'écran.
