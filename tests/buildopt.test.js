@@ -332,3 +332,113 @@ test('build optimal : « Appliquer » garde une gemme typée compatible avec l\'
   const ok = GEMS.map(g => GEMI[g[0]]).find(g => gemFit(g, w) === true); assert.ok(ok, 'aucune gemme typée compatible avec ' + w.n);
   const b = fromPreset(PRESETS[3]); b.gem.w1 = ok.id; assert.equal(boMerge(r, b, o).gem.w1, ok.id);
 });
+
+// ---------- « Ma classe » (1.19.0, HISTORY n° 26) ----------
+test('Ma classe : familles rangées par classe (oracle littéral) d\'après la zone de leur compétence de dégâts ; les deux tables s\'accordent pour chaque arme', () => {
+  assert.deepEqual(CLS, [['war', 'Guerrier', '--war'], ['rng', 'Rôdeur', '--rng'], ['mag', 'Mage', '--mag']]);
+  assert.deepEqual(BO_CLS, {m1: 'war', m2: 'war', dag: 'rng', bow: 'rng', wand: 'mag', staff: 'mag'});
+  assert.deepEqual(CLS_OF, {melee: 'war', dagger: 'rng', bow: 'rng', wand: 'mag', staff: 'mag'});
+  assert.deepEqual([boClsFams('war'), boClsFams('rng'), boClsFams('mag'), boClsFams(null)], [['m1', 'm2'], ['dag', 'bow'], ['wand', 'staff'], ['m1', 'm2', 'dag', 'bow', 'wand', 'staff']]);
+  assert.deepEqual(['war', 'rng', 'mag'].map(clsFams), ['mêlée (épées, haches, masses, espadons)', 'dagues et arcs', 'baguettes et bâtons']);
+  for (const [id] of WEAPONS) assert.equal(BO_CLS[boFamOf(ITEMS[id])], CLS_OF[famOf(ITEMS[id])], id + ' : build optimal et classement en désaccord');
+  // Source de la convention : la compétence « +5 % de dégâts » de la famille est dans la zone de la classe, et augmente bien les dégâts de ses armes
+  for (const [fk, sk, wid] of [['m1', 'warriorsPath', 'w_graven'], ['m2', 'barbariansPath', 'w_ram'], ['m2', 'titanEdge', 'w_spiked'], ['dag', 'daggerMastery', 'w_adorned'],
+    ['bow', 'marksman', 'w_drak'], ['wand', 'wandMastery', 'w_bloodflow'], ['staff', 'spellslinger', 'w_guidance']]) {
+    assert.equal(SKI[sk].area, BO_CLS[fk], sk + ' : hors de la zone de la classe'); assert.equal(boFamOf(ITEMS[wid]), fk, wid);
+    const b = blankBuild('t'); b.gear.w1 = wid; const d0 = compute(b).weapons[0].hit; b.sk[sk] = 1;
+    assert.ok(compute(b).weapons[0].hit > d0, sk + ' : ne change pas les dégâts de ' + wid);
+  }
+});
+
+test('Ma classe : boRun ne calcule que les familles demandées (ordre de BO_FAM), avec les mêmes résultats que le calcul complet', () => {
+  const all = full(HH, 60, 7);
+  assert.deepEqual(all.fams, ['m1', 'm2', 'dag', 'bow', 'wand', 'staff'], 'sans classe : six familles');
+  for (const [k, want] of [['war', ['m1', 'm2']], ['rng', ['dag', 'bow']], ['mag', ['wand', 'staff']]]) {
+    const o = boDrain(boRun('w1', HH, 4, 7, 5, 'bow', 1e9, null, boClsFams(k))); // 4 points : rapide ; famille analysée (arc) hors de la classe Guerrier : ignorée
+    assert.deepEqual([o.res.map(r => r.fk), o.fams, o.N, o.F], [want, want, 4, 7], k);
+  }
+  { const o = boDrain(boRun('w1', HH, 60, 7, 5, 'bow', 1e9, null, boClsFams('rng'))); // même résultat que le calcul complet (déjà en cache), pour une classe
+    for (const r of o.res) {
+      const a = all.res.find(x => x.fk === r.fk);
+      assert.equal(r.w.id, a.w.id, `rng ${r.fk} : autre arme`);
+      assert.ok(Math.abs(r.s.d - a.s.d) < 1e-9 && r.s.hp === a.s.hp && r.used === a.used, `rng ${r.fk} : résultat différent du calcul complet`);
+    }
+  }
+  assert.deepEqual(boDrain(boRun('w1', HH, 30, 7, 5, null, 1e9, null, [])).res, [], 'aucune famille demandée : aucun résultat');
+});
+
+test('Ma classe : boRun ne LANCE que les familles demandées (progression) ; le plafond de temps n\'est pas consommé par une famille hors classe', () => {
+  const g = boRun('w1', HH, 10, 7, 5, 'bow', 1e9, null, ['m1', 'm2']), seen = []; let r;
+  do { r = g.next(); if (!r.done && r.value) seen.push(r.value.fam); } while (!r.done);
+  assert.deepEqual(seen, ['Mêlée une main', 'Mêlée deux mains'], 'familles lancées');
+  let k = 0; const clock = () => 6000 * k++; // une lecture d'horloge par famille après la première : 6 s, puis 12 s (plafond 10 s)
+  const p = boDrain(boRun('w1', HH, 10, 7, 5, 'wand', 10000, clock, ['m1', 'm2'])); // famille analysée (baguettes) hors classe
+  assert.deepEqual(p.res.map(x => [x.fk, !!x.skip]), [['m1', false], ['m2', false]], 'une famille de la classe sautée : le temps est parti ailleurs');
+});
+
+test('Ma classe : points par zone (oracle littéral) ; la somme des quatre zones = points dépensés (presets, résultats du build optimal)', () => {
+  const b = blankBuild('z'); b.sk.warriorsPath = 2; b.sk.wandMastery = 1; b.pip = {con: 3, dex: 1}; // coût 1 par rang
+  assert.deepEqual(AREAS.map(([k]) => zonePts(b, k)), [0, 5, 1, 1], 'Cœur, Guerrier, Rôdeur, Mage');
+  b.sk.warriorsPath = 9; assert.equal(zonePts(b, 'war'), 6, 'rang au-delà du maximum compté au maximum, comme spentPoints'); assert.equal(spentPoints(b), 8);
+  for (const p of PRESETS) { const x = fromPreset(p); assert.equal(AREAS.reduce((a, [k]) => a + zonePts(x, k), 0), spentPoints(x), p.name); }
+  for (const r of full(FBK, 212, 11).res) assert.equal(AREAS.reduce((a, [k]) => a + zonePts(r.b, k), 0), r.used, r.fl);
+});
+
+test('Ma classe : ligne « Arbre : » d\'un résultat (oracle littéral : 1 pt / 2 pts, zones à 0 point absentes, ordre des zones)', () => {
+  const keepB = builds[0], keepC = cur;
+  try {
+    builds[0] = fromPreset(PRESETS[3]); cur = 0;
+    const b = blankBuild('r'); b.gear.w1 = 'w_graven'; b.sk.warriorsPath = 1; b.pip = {int: 2};
+    const h = boCards({res: [{fk: 'm1', fl: 'Mêlée une main', w: ITEMS.w_graven, b, used: 3, s: {d: 1, hp: 1}}], fams: ['m1'], N: 10, F: 11, slot: 'w1', en: ENEMIES.indexOf(FBK)}, false);
+    assert.ok(h.includes('<p class="zpts">Arbre : <span class="ztag" style="--ac:var(--war)">Guerrier 1 pt</span> <span class="ztag" style="--ac:var(--mag)">Mage 2 pts</span></p>'), 'ligne des zones : ' + (h.match(/<p class="zpts">.*?<\/p>/) || [''])[0]);
+    b.sk = {}; b.pip = {}; assert.ok(boCards({res: [{fk: 'm1', fl: 'Mêlée une main', w: ITEMS.w_graven, b, used: 0, s: {d: 1, hp: 1}}], fams: ['m1'], N: 10, F: 11, slot: 'w1', en: ENEMIES.indexOf(FBK)}, false).includes('<p class="zpts">Arbre : aucun point</p>'), 'arbre vide');
+  } finally { builds[0] = keepB; cur = keepC; }
+});
+
+// Faux calcul qui respecte les familles demandées (rejoue les vrais résultats Fell Black Knight, 212 pts, Flamme 11)
+function* famRun(slot, en, N, F, upg, first, tmax, clock, fams) { const res = {}, fs = fams || BO_FAM.map(f => f[0]);
+  for (const fk of fs) { const r = REAL().res.find(x => x.fk === fk); yield; res[fk] = r; yield {res: {...res}, fam: r.fl}; }
+  return {res: fs.map(fk => res[fk]), ms: 5, N, F, slot, en: ENEMIES.indexOf(en), fams: fs}; }
+
+test('Ma classe (interface) : deux familles calculées et affichées, progression « sur 2 », zones de l\'arbre par résultat ; changer de classe périme les résultats', async () => withUi(async () => {
+  const keepC = myCls, seen = [];
+  try {
+    globalThis.boRun = (...a) => { seen.push(a[8]); return famRun(...a); }; // un générateur ne s'exécute qu'au premier next() : arguments relevés à l'appel
+    myCls = 'rng'; boStart(); assert.deepEqual(seen.at(-1), ['dag', 'bow'], 'familles passées à boRun');
+    await until(() => !BO.busy); assert.deepEqual(BO.out.fams, ['dag', 'bow']); assert.match(BO.prog, /^2 famille\(s\) sur 2 \(dernière : Arcs\)$/, 'progression');
+    const h = boOutHtml();
+    assert.deepEqual([...h.matchAll(/data-boap="(\w+)"/g)].map(m => m[1]), ['dag', 'bow'], 'cartes : celles de la classe seulement');
+    assert.ok(!/Non calculée|En attente/.test(h), 'familles hors classe affichées comme manquantes');
+    for (const fk of ['dag', 'bow']) {
+      const r = BO.out.res.find(x => x.fk === fk), z = AREAS.filter(([k]) => zonePts(r.b, k) > 0);
+      assert.ok(z.length >= 1, fk); for (const [k, l] of z) { const v = zonePts(r.b, k); assert.ok(h.includes(zoneTag(k, `${l} ${v} pt${v > 1 ? 's' : ''}`)), `${fk} : zone ${l} absente`); }
+    }
+    assert.ok(BO.out.res.some(r => AREAS.some(([k]) => zonePts(r.b, k) === 0)), 'témoin : une zone à 0 point');
+    for (const r of BO.out.res) for (const [k, l] of AREAS) if (zonePts(r.b, k) === 0) assert.ok(!h.includes(`>${l} 0 pt<`), `${r.fk} : zone ${l} à 0 point affichée`);
+    assert.ok(boClsLine().includes(zoneTag('rng', 'Ma classe : Rôdeur')) && boClsLine().includes('dagues et arcs') && boClsLine().includes('id="boAllCls"'), 'ligne de la classe');
+    myCls = 'mag'; assert.ok(boOutHtml().includes('relancez') && boOutHtml().includes('classe'), 'classe changée : résultats périmés');
+    const before = clone(B()); boApply('dag'); assert.deepEqual(B(), before, 'classe changée : « Appliquer » bloqué');
+    myCls = null; assert.ok(boClsLine().includes('six familles') && !boClsLine().includes('boAllCls'), 'sans classe : six familles, pas de bouton « Toutes les classes »');
+    boStart(); assert.deepEqual(seen.at(-1), ['m1', 'm2', 'dag', 'bow', 'wand', 'staff'], 'sans classe : six familles calculées'); await until(() => !BO.busy);
+    assert.equal([...boOutHtml().matchAll(/data-boap=/g)].length, 6);
+  } finally { myCls = keepC; }
+}));
+
+test('Ma classe (interface) : choisir une autre classe pendant un calcul l\'arrête (sans message) et relance pour la nouvelle ; « Toutes les classes » la retire', async () => withUi(async () => {
+  const keep = [myCls, area, oFam, treeRefit, globalThis.toast, lay], said = [], seen = [], cnt = [];
+  try {
+    globalThis.toast = t => said.push(t); myCls = null; lay = mkDispo('all'); // Build optimal affiché (bureau)
+    globalThis.boRun = (...a) => { const i = seen.length; seen.push(a[8]); cnt[i] = 0; const r = REAL().res.find(x => x.fk === a[8][0]); return (function* () { yield {res: {[r.fk]: r}, fam: r.fl}; for (;;) { cnt[i]++; yield; } })(); };
+    setCls('war'); await until(() => cnt[0] > 0); assert.ok(BO.busy);
+    setCls('mag'); assert.ok(BO.busy, 'nouveau calcul lancé'); assert.deepEqual(seen, [['m1', 'm2'], ['wand', 'staff']]);
+    const n0 = cnt[0]; await until(() => cnt[1] > 3); assert.equal(cnt[0], n0, 'le calcul de l\'autre classe avance encore');
+    assert.ok(!said.some(t => /arrêté/.test(t)), 'arrêt annoncé alors que le calcul est relancé aussitôt');
+    assert.equal(BO.key, boKey(B()), 'clé du nouveau calcul');
+    // « Toutes les classes » (bouton de la carte, branché par boBind) : classe retirée, calcul arrêté, focus sur « Calculer »
+    const btn = {}, stub = {addEventListener() {}}, root = {querySelector: s => s === '#boAllCls' ? btn : stub};
+    boBind(root); const keepQ = document.querySelector; let f = 0;
+    document.querySelector = s => s === '#boGo' ? {focus() { f++; }} : keepQ(s);
+    try { btn.onclick(); } finally { document.querySelector = keepQ; }
+    assert.deepEqual([myCls, BO.busy, f, said.at(-1)], [null, false, 1, 'Classe retirée et calcul arrêté : le build optimal couvrira de nouveau les six familles d\'arme au prochain calcul']);
+  } finally { [myCls, area, oFam, treeRefit, globalThis.toast, lay] = keep; BO.run++; BO.busy = false; }
+}));

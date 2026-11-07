@@ -51,6 +51,15 @@ label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:non
 .pbar .dsel{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .btn[aria-pressed="true"]{border-color:var(--ember);box-shadow:inset 0 -2px 0 var(--ember)}
 .orghint{font-size:.82rem;color:var(--muted);flex:1 1 20rem;min-width:0}
+/* « Ma classe » (1.19.0) : trois boutons aux couleurs des zones de l'arbre ; pastilles de zone (résultats, prochains points) */
+.clsg{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.btn.cls{display:inline-flex;align-items:center;gap:6px}
+.btn.cls::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--ac);flex:none}
+.btn.cls[aria-pressed="true"]{border-color:var(--ac);color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,var(--surface));box-shadow:inset 0 -2px 0 var(--ac);font-weight:700}
+.ztag{display:inline-block;font-size:.74rem;line-height:1.35;padding:1px 7px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ac) 55%,var(--line));color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--surface));white-space:nowrap;font-weight:500;font-style:normal}
+.mycls{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ac);font-weight:700}
+.zpts{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:0;font-size:.82rem;color:var(--muted)}
+.clsline{margin:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 /* Rail (≥ 640 px) + grille : 3 colonnes ≥ 1000 px, 2 de 640 à 999 px (L = toute la largeur), 1 colonne en dessous (accordéon) */
 .playout{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
 .rail{position:sticky;top:calc(var(--navh,52px) + env(safe-area-inset-top,0px) + 8px);display:flex;flex-direction:column;gap:4px;width:4.6rem}
@@ -78,6 +87,7 @@ label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:non
     padding:4px max(4px, env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(4px, env(safe-area-inset-left,0px))}
   body{padding-bottom:calc(48px + var(--bbh,0px))}
   .pbar .btn,.pbar select,.ptools .btn{min-height:44px;min-width:44px}
+  .pbar .sep{display:none}
 }
 /* Défilement (focus clavier, haut d'un panneau) : rien ne passe sous la barre collée ni sous la barre basse */
 html{scroll-padding-top:calc(var(--navh,52px) + env(safe-area-inset-top,0px) + 8px);scroll-padding-bottom:calc(var(--bbh,0px) + 8px)}

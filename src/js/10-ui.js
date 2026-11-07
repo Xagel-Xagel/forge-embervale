@@ -62,6 +62,12 @@ function openPanel(k){if(!pOk(k)||isOpen(k))return false;lay.closed=lay.closed.f
 /* Aller à un panneau (barre basse, rail, clic dans Tables) : ouvert, déplié, ramené en haut de l'écran (sous la barre collée), focus sur sel ou son bouton Replier */
 function goPanel(k,sel){if(!pOk(k))return;if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false);
   $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
+/* « Ma classe » : afficher un panneau sans retoucher la disposition prête choisie ni « Ma disposition » retenue (ouvert et déplié pour cette visite,
+   la disposition relue au rechargement reste celle du menu) ; depuis « Ma disposition », c'est une retouche ordinaire (retenue). Puis comme goPanel */
+function peekPanel(k,sel){if(!pOk(k))return;
+  if(lay.preset==='mine'){if(!isOpen(k))openPanel(k);if(isFolded(k))foldPanel(k,false)}
+  else{lay.closed=lay.closed.filter(x=>x!==k);if(isAcc())lay.acc=k;else{lay.folded=lay.folded.filter(x=>x!==k);if(lay.size[k]==='S')lay.size[k]='M'}saveLayout();paintLayout()}
+  $('#p-'+k).scrollIntoView({block:'start'});const f=$(sel||'#pf-'+k);if(f)f.focus({preventScroll:true})}
 function setOrg(on){org=!!on;paintLayout()}
 /* Panneau affiché ET dans la fenêtre : sinon un message dit ce qui lui arrive (build optimal arrêté ou calculé) */
 function inView(k){if(!shown(k))return false;const r=$('#p-'+k).getBoundingClientRect();return r.top+r.height>0&&r.top<(window.innerHeight||Infinity)}
@@ -82,7 +88,7 @@ function paintLayout(quiet){const g=$('#pgrid'),acc=isAcc(),vis=lay.order.filter
   placeBar();
   const now=new Set(PIDS.filter(shown));
   if(!quiet){const nw=[...now].filter(k=>!lastShown.has(k));
-    if(nw.includes('tree')&&view==='graph'&&window.G)G.wake();
+    if(nw.includes('tree')&&view==='graph'&&window.G){G.wake();if(treeRefit){treeRefit=false;G.focus(area)}} // classe choisie pendant que l'arbre était caché : centré sur sa zone
     if(nw.some(k=>OPT_PANELS.includes(k)))renderOptNow()} // seuls les panneaux du calculateur affichés sont rendus (20-optimizer.js)
   lastShown=now}
 const ICON={tree:'<circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.4 7.6l3.6 8.6M16.6 7.6l-3.6 8.6M8 6h8"/>',
@@ -92,6 +98,29 @@ const ICON={tree:'<circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><ci
   reg:'<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',cible:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
   plus:'<circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>'};
 const ico=k=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+/* « Ma classe » (1.19.0, HISTORY n° 26) : Guerrier, Rôdeur, Mage = les trois zones de l'arbre (AREAS). Une famille d'arme est rangée dans la zone de ses
+   compétences de dégâts (Voie du guerrier, Voie du barbare ; Maîtrise des dagues, Tireur d'élite ; Maîtrise des baguettes, Lanceur de sorts) : convention
+   du simulateur, le jeu n'impose pas de classe. Un clic : Build optimal ouvert et calculé pour les deux familles de la classe, arbre centré sur sa zone,
+   classement du Calculateur sur la classe ; re-cliquer la classe la retire. Non retenue (comme la cible). La classe ne bride pas l'arbre (décision n° 18). */
+const CLS=AREAS.filter(a=>a[0]!=='core'),CLS_OF={melee:'war',dagger:'rng',bow:'rng',wand:'mag',staff:'mag'}; // CLS_OF : famille de dégâts (CAT[c][1]) → classe
+let myCls=null,treeRefit=false; // treeRefit : arbre caché au choix de la classe, recentré sur sa zone quand il réapparaît (paintLayout)
+const clsName=k=>(CLS.find(c=>c[0]===k)||[,''])[1];
+/* Pastille d'une zone, à sa couleur (texte : nom de la zone par défaut) */
+const zoneTag=(k,t)=>{const a=AREAS.find(x=>x[0]===k);return a?`<span class="ztag" style="--ac:var(${a[2]})">${esc(t??a[1])}</span>`:''};
+/* Points dépensés dans une zone : compétences au coût du rang, nœuds d'attribut à 1 point ; la somme des quatre zones = spentPoints */
+const zonePts=(b,k)=>SK.reduce((a,s)=>a+(s.area===k?s.cost*Math.min(b.sk[s.id]||0,s.max):0),0)+PIPS.reduce((a,p)=>a+(p[3]===k?b.pip[p[0]]||0:0),0);
+function paintCls(){for(const [k] of CLS){const bt=$('#c-'+k);if(bt)bt.setAttribute('aria-pressed',String(myCls===k))}
+  const o=$('#oFamCls');if(o){o.disabled=!myCls;o.textContent=myCls?`Ma classe : ${clsName(myCls)} · ${clsFams(myCls)}`:'Ma classe (à choisir en haut)'}
+  const f=$('#oFam');if(f)f.value=oFam} // liste « Armes à classer » à jour même si le Calculateur est caché (il ne la relit qu'à son rendu)
+function setCls(k){if(!CLS.some(c=>c[0]===k))return false;const run=BO.busy;myCls=myCls===k?null:k;area=myCls||'all';
+  if(myCls)oFam='cls';else if(oFam==='cls')oFam='same';
+  if(run)boStopRun(); // calcul en cours : arrêté ; relancé juste après (autre classe, sans message) ou dit (classe retirée)
+  paintCls();renderSkills();
+  if(myCls){const was=shown('bo');peekPanel('bo','#c-'+k);if(was)renderOptNow()}else renderOptNow(); // panneau qui apparaît : déjà rendu par paintLayout
+  const tv=view==='graph'&&!!window.G&&shown('tree');if(view==='graph'&&window.G){if(tv)G.focus(area);else treeRefit=true} // arbre caché (fermé, replié, accordéon) : recentré quand il réapparaît
+  if(!myCls){toast(`Classe retirée${run?' et calcul arrêté':''} : le build optimal couvrira de nouveau les six familles d'arme au prochain calcul`);return true}
+  const n=clsName(k);boStart(); // message fidèle à l'arbre : centré s'il est affiché, à son ouverture sinon, liste limitée à la zone en vue Liste
+  toast(`${n} : build optimal en calcul pour ${clsFams(k)} ; ${view!=='graph'?`liste de l'arbre limitée à la zone ${n}`:tv?`arbre centré sur la zone ${n}`:`arbre centré sur la zone ${n} à son ouverture`}`);return true}
 /* Barre basse (< 640 px) : Réglages (niveau, exploration, Flamme : tuiles de l'Arbre), Arbre, Équipement, Cible (Calculateur), Plus (les autres) */
 const BBAR=[['reg','Réglages','tree','#lvl'],['tree','Arbre','tree'],['eq','Équipement','eq'],['cible','Cible','calc','#oEnemy']],BMORE=['fiche','bo','def','tab'];
 function moreOpen(on){$('#bmore').hidden=!on;$('#bb-plus').setAttribute('aria-expanded',String(on))}
@@ -115,6 +144,7 @@ function initPanels(){
   $('#bb-plus').onclick=()=>{const on=$('#bmore').hidden;moreOpen(on);if(on)$('#bm-'+BMORE[0]).focus()}; // ouvert : focus sur le premier choix
   $('#bmore').onkeydown=$('#bb-plus').onkeydown=e=>{if(e.key==='Escape'&&!$('#bmore').hidden){moreOpen(false);$('#bb-plus').focus()}};
   $('#dispo').onchange=e=>{if(applyDispo(e.target.value))toast('Disposition : '+(e.target.value==='mine'?'Ma disposition':DISPOS[e.target.value].l))};
+  for(const [k] of CLS)$('#c-'+k).onclick=()=>setCls(k);
   $('#org').onclick=()=>setOrg(!org);$('#orgDone').onclick=()=>{setOrg(false);$('#org').focus()};
   const mq=matchMedia('(max-width:639px)'),onMq=()=>{moreOpen(false);paintLayout()};if(mq.addEventListener)mq.addEventListener('change',onMq);else if(mq.addListener)mq.addListener(onMq); // vieux Safari : addListener // passage bureau ↔ téléphone : accordéon ou grille
   lay=loadLayout();paintLayout(true)}
@@ -197,9 +227,9 @@ function renderSkills(){
   $('#bar').className='bar'+(over?' over':'');$('#bar').firstElementChild.style.width=Math.min(100,sp/Math.max(1,bu)*100)+'%';
   $('#flameDn').disabled=b.flame<=1;$('#flameUp').disabled=b.flame>=11;$('#flameFx').textContent=flameFx(b,o);
   const ae=$('#areas');ae.innerHTML='';
-  [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const pts=k==='all'?sp:SK.filter(s=>s.area===k).reduce((a,s)=>a+s.cost*(b.sk[s.id]||0),0)+PIPS.filter(p=>p[3]===k).reduce((a,p)=>a+(b.pip[p[0]]||0),0);
+  [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const pts=k==='all'?sp:zonePts(b,k);
     const bt=document.createElement('button');bt.className='area';bt.style.setProperty('--ac',`var(${c})`);bt.setAttribute('aria-pressed',area===k);
-    bt.innerHTML=`${n} <small>${pts} pts</small>`;bt.onclick=()=>{area=k;renderSkills();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
+    bt.innerHTML=`${n} <small>${pts} pts</small>${k===myCls?'<span class="mycls">ma classe</span>':''}`;bt.onclick=()=>{area=k;renderSkills();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
   $('#vGraph').setAttribute('aria-pressed',view==='graph');$('#vList').setAttribute('aria-pressed',view==='list');
   $('#graphView').hidden=view!=='graph';$('#listView').hidden=view!=='list';
   if(view==='graph'){if(window.G)G.refresh(o);return}

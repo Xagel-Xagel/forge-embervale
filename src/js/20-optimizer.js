@@ -7,6 +7,10 @@ let planN=10,planMem=null,oEnemy=Math.max(0,ENEMIES.findIndex(e=>e.n==='Fell Bla
 const DEF={hit:600,type:'cut',armP:300,armM:200,cap:60,crowd:false,aura:false};
 const famOf=w=>CAT[w.cat][1];
 const FAM={melee:'Mêlée (épées, haches, masses, espadons)',dagger:'Dagues',bow:'Arcs',wand:'Baguettes',staff:'Bâtons'};
+/* « Ma classe » (10-ui.js) : familles de dégâts d'une classe, et leur nom (« baguettes et bâtons ») */
+const clsFamKeys=k=>Object.keys(CLS_OF).filter(f=>CLS_OF[f]===k),clsFams=k=>clsFamKeys(k).map(f=>FAM[f].toLowerCase()).join(' et ');
+/* Zone de l'arbre d'un achat proposé (compétence ou nœud d'attribut) : lien entre le résultat et l'arbre */
+const invArea=x=>x.kind==='skill'?(SKI[x.id]||{}).area:(TOPO.byId[x.id]||{}).area;
 const xm=v=>v===0?'immunisé':'×'+fmt(v/100,2);
 function heat(v){if(v===0)return 'class="hc imm"';const d=v-100;if(!d)return 'class="hc"';
   const p=Math.round(Math.min(45,8+Math.abs(d)*0.75));return `class="hc" style="background:color-mix(in srgb,var(${d>0?'--good':'--bad'}) ${p}%,var(--surface))"`}
@@ -116,23 +120,23 @@ function optCalc(b,o,en){
   const cEq=`<div class="ocard"><div class="oh"><h3>Vos armes contre cette cible</h3></div>${eq}
     <div class="meta2">Hors coups critiques sur point faible, attaques impitoyables (×${fmt(o.merciless/100,1)}) et furtives (×${fmt(o.sneak/100,1)}), qui multiplient encore ces valeurs.</div></div>`;
   // 3. classement des armes
-  const fam=oFam==='same'?(wc?famOf(wc.w):'all'):oFam;
-  const list=WEAPONS.map(x=>ITEMS[x[0]]).filter(w=>fam==='all'||famOf(w)===fam).map(w=>{const c=weaponCalc(w,o,o.raw,o.R,o.attr);return {w,c,v:vsEnemy(c,o,en)}}).sort((a,b)=>b.v.avg-a.v.avg);
+  const cf=oFam==='cls'&&myCls?clsFamKeys(myCls):null,fam=cf?'cls':oFam==='same'||oFam==='cls'?(wc?famOf(wc.w):'all'):oFam; // « Ma classe » retirée : comme « même famille »
+  const list=WEAPONS.map(x=>ITEMS[x[0]]).filter(w=>cf?cf.includes(famOf(w)):fam==='all'||famOf(w)===fam).map(w=>{const c=weaponCalc(w,o,o.raw,o.R,o.attr);return {w,c,v:vsEnemy(c,o,en)}}).sort((a,b)=>b.v.avg-a.v.avg);
   const ref=wc?vsEnemy(wc,o,en).avg:0;
   const rows=list.slice(0,12).map((x,i)=>{const same=wc&&x.w.id===wc.w.id;const dv=ref&&wc&&x.c.unit===wc.unit?x.v.avg/ref-1:null;
     return `<tr${same?' class="cur"':''}><td class="n">${i+1}</td><td class="nm"><b>${nmH(x.w)}</b><small>${x.c.catName} · ${wtypeTxt(x.w)} · niv. ${x.w.lv}</small></td>
     <td><span ${heat(x.v.m)}>${xm(x.v.m)}</span></td><td>${fmt(x.v.avg)}<small>${x.c.unit==='Puissance'?' pui.':''}</small></td>
     <td class="${dv===null?'d-0':dv>0.001?'d-up':dv<-0.001?'d-dn':'d-0'}">${same?'équipée':dv===null?'—':(dv>0?'+':'')+fmt(dv*100,1)+' %'}</td>
     <td class="act">${same?'':`<button class="btn sm" data-eq="${x.w.id}" data-sl="w1">Arme 1</button><button class="btn sm" data-eq="${x.w.id}" data-sl="w2">Arme 2</button>`}</td></tr>`});
-  const cRank=`<div class="ocard"><div class="oh"><h3>Meilleures armes contre ${nmF(en)}</h3><span class="lbl">${fam==='all'?'toutes familles':FAM[fam]}</span></div>
-    ${fam==='all'?'<p class="meta2">Attention : « Dégâts » (mêlée, dagues, baguettes) et « Puissance » (arcs, bâtons) ne se comparent pas directement.</p>':''}
+  const cRank=`<div class="ocard"><div class="oh"><h3>Meilleures armes contre ${nmF(en)}</h3><span class="lbl">${cf?'classe '+clsName(myCls)+' : '+clsFams(myCls):fam==='all'?'toutes familles':FAM[fam]}</span></div>
+    ${new Set(list.map(x=>x.c.unit)).size>1?'<p class="meta2">Attention : « Dégâts » (mêlée, dagues, baguettes) et « Puissance » (arcs, bâtons) ne se comparent pas directement.</p>':''}
     ${optTable(rows,['#','Arme','Type','Moyenne','vs équipée',''],'named')}
     <div class="meta2">Calculé avec vos attributs et compétences actuels : la même arme gagne ou perd des places selon le build.</div></div>`;
   // 4. investissements
   let cInv;
   if(!wc)cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3></div><p class="empty">Équipez une arme en ${oSlot==='w1'?'arme 1':'arme 2'} pour voir les points les plus rentables.</p></div>`;
   else{const inv=investments(b,oSlot,en);const free=budget(b)-spentPoints(b);
-    const ir=inv.slice(0,10).map((x,i)=>`<tr${x.cost>free?' class="over"':''}><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''} sur le chemin`:''}</small></td>
+    const ir=inv.slice(0,10).map((x,i)=>`<tr${x.cost>free?' class="over"':''}><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${zoneTag(invArea(x))} ${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''} sur le chemin`:''}</small></td>
       <td>${x.cost} pt${x.cost>1?'s':''}</td><td class="d-up">+${fmt(x.gain*100,1)} %</td><td>${fmt(x.per*100,2)} %</td>
       <td class="act"><button class="btn sm" data-inv="${i}">${x.cost>free?'Acheter (dépasse)':'Acheter'}</button></td></tr>`);
     cInv=`<div class="ocard"><div class="oh"><h3>Où placer vos prochains points</h3><span class="lbl">${free>=0?free+' pts libres':'budget dépassé de '+(-free)+' pts'}</span></div>
@@ -148,7 +152,7 @@ function optCalc(b,o,en){
   /* Plan « Répartir au mieux » : gardé (planMem) tant que l'emplacement A/B, la cible, l'arme analysée et le build ne changent pas ; replier, fermer ou rouvrir un panneau ne l'efface pas */
   const pk=planKey(b),showPlan=(out,P,N)=>{
     if(!P||!P.steps.length){out.innerHTML='<p class="empty">Aucun point ne peut augmenter les dégâts de cette arme contre cette cible.</p>';return}
-    let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
+    let acc=0;const rows=P.steps.map((x,i)=>{acc+=x.cost;return `<tr><td class="n">${i+1}</td><td class="nm"><b>${esc(x.label)}</b><small>${zoneTag(invArea(x))} ${esc(x.en)} · rang ${x.rank}/${x.max}${x.via?` · via ${x.via} nœud${x.via>1?'s':''}`:''}</small></td><td>${x.cost} pt${x.cost>1?'s':''}</td><td>${acc}</td></tr>`});
     out.innerHTML=`${optTable(rows,['#','Nœud','Coût','Cumul'],'named')}<p class="verdict">${P.used} / ${N} points : dégâts moyens ${fmt(P.base)} → <b>${fmt(P.avg)}</b> <span class="d-up">(+${fmt(P.gain*100,1)} %)</span>${P.used<N?' · plus rien d\'autre n\'augmente ces dégâts':''}</p>
       <div class="row"><button class="btn sm primary" id="planApply">Appliquer le plan</button><span class="meta2">Méthode : gloutons puis amélioration locale (pas une preuve d'optimalité).</span></div>`;
     out.querySelector('#planApply').onclick=()=>{planMem=null;builds[cur]=Object.assign(P.t,{name:b.name});renderAll();toast(`Plan appliqué : ${P.used} pts, +${fmt(P.gain*100,1)} %`)}};
@@ -216,7 +220,7 @@ function enemyOpts(){return Object.entries(FACTIONS).map(([k,v])=>`<optgroup lab
 (function initOpt(){
   const sel=$('#oEnemy');if(!sel)return;
   sel.innerHTML=enemyOpts();
-  $('#oFam').innerHTML='<option value="same">Même famille que l\'arme analysée</option><option value="all">Toutes les armes</option>'+Object.entries(FAM).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  $('#oFam').innerHTML='<option value="same">Même famille que l\'arme analysée</option><option value="cls" id="oFamCls" disabled>Ma classe (à choisir en haut)</option><option value="all">Toutes les armes</option>'+Object.entries(FAM).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   sel.onchange=e=>{oEnemy=+e.target.value;renderOptNow()};
   $('#oSlot').onchange=e=>{oSlot=e.target.value;renderOptNow()};
   $('#oFam').onchange=e=>{oFam=e.target.value;renderOptNow()};

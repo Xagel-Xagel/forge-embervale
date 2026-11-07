@@ -6,7 +6,7 @@ Simulateur de stuff pour **Enshrouded 1.0**, en français, dans une seule page w
 - Arbre de compétences 1.0 au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian, avec la règle de liaison aux points de départ.
 - Fiche en direct, comparaison de deux builds A/B, 15 builds prédéfinis, sauvegarde locale et code de partage dans le lien.
 - Calculateur d'optimisation : faiblesses de 101 ennemis × 8 types de dégâts, classement des armes contre une cible, meilleurs points à investir, build optimal, calcul des dégâts subis.
-- Six onglets (Arbre, Équipement, Calculateur, Build optimal, Défense, Tables), collés en haut de l'écran ; la page rouvre sur le dernier onglet.
+- Sept panneaux (Arbre, Équipement, Fiche, Calculateur, Build optimal, Défense, Tables) en grille, repliables et réordonnables, quatre dispositions prêtes (accordéon sur téléphone) ; **« Ma classe »** (Guerrier, Rôdeur, Mage) : build optimal de la classe en un clic, arbre centré sur sa zone.
 
 **Utiliser l'outil : https://xagel-xagel.github.io/forge-embervale/**
 

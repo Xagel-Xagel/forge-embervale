@@ -7,6 +7,9 @@
 const BO_FAM=[['m1','Mêlée une main',c=>CAT[c][1]==='melee'&&CAT[c][2]===1],['m2','Mêlée deux mains',c=>CAT[c][1]==='melee'&&CAT[c][2]===2],
   ['dag','Dagues',c=>c==='dag'],['bow','Arcs',c=>c==='bow'],['wand','Baguettes',c=>c==='wand'],['staff','Bâtons',c=>c==='staff']];
 const boFamOf=w=>w?(BO_FAM.find(f=>f[2](w.cat))||[])[0]||null:null;
+/* Classe de chaque famille (« Ma classe », 10-ui.js) : celle de la famille de dégâts de ses armes (CLS_OF) ; familles d'une classe, dans l'ordre de BO_FAM */
+const BO_CLS=Object.fromEntries(BO_FAM.map(([fk,,f])=>[fk,CLS_OF[CAT[Object.keys(CAT).find(f)][1]]]));
+const boClsFams=k=>BO_FAM.filter(f=>!k||BO_CLS[f[0]]===k).map(f=>f[0]);
 const BO_AS=['head','chest','hands','legs','feet'];
 const BO_AOPT=Object.fromEntries(BO_AS.map(sl=>[sl,Object.values(ITEMS).filter(i=>i.kind==='armor'&&i.slot===sl).map(i=>i.id)]));
 const BO_RP=[];RINGS.forEach((x,i)=>RINGS.forEach((y,j)=>{if(i<j)BO_RP.push([x[0],y[0]])})); // deux anneaux différents (doublon en jeu non vérifié)
@@ -80,11 +83,13 @@ function* boFinish(r,slot,en,N){let b=r.b,same=false;const lim={n:300};
 function* boFamily(fk,slot,en,N,F,upg){const fl=BO_FAM.find(f=>f[0]===fk)[1];let best=null;
   for(const w of boWeapons(fk,upg)){const r=yield* boWeapon(w,slot,en,N,F,upg);if(!best||boGt(r.s,best.s))best=r}
   return best?Object.assign(yield* boFinish(best,slot,en,N),{fk,fl}):{fk,fl,none:true}}
-/* Toutes les familles (celle de l'arme analysée d'abord, toujours calculée) ; rend aussi la progression {res, fam} après chaque famille ;
-   passé tmax ms de calcul (horloge clock, Date.now par défaut), les familles suivantes sont marquées skip (non calculées) */
-function* boRun(slot,en,N,F,upg,first,tmax,clock){const now=clock||Date.now,t0=now(),res={},lim=tmax??BO_TMAX;const order=[...BO_FAM].sort((a,b)=>(b[0]===first)-(a[0]===first));
+/* Les familles demandées (fams : identifiants de BO_FAM ; absent = toutes ; « Ma classe » : les deux de la classe), celle de l'arme analysée d'abord,
+   toujours calculée ; rend aussi la progression {res, fam} après chaque famille ; passé tmax ms de calcul (horloge clock, Date.now par défaut),
+   les familles suivantes sont marquées skip (non calculées). Résultat : une entrée par famille demandée, dans l'ordre de BO_FAM, et la liste fams */
+function* boRun(slot,en,N,F,upg,first,tmax,clock,fams){const now=clock||Date.now,t0=now(),res={},lim=tmax??BO_TMAX,FS=BO_FAM.filter(f=>!fams||fams.includes(f[0]));
+  const order=[...FS].sort((a,b)=>(b[0]===first)-(a[0]===first));
   for(const [i,[fk,fl]] of order.entries()){if(i&&now()-t0>lim){res[fk]={fk,fl,skip:true};continue}res[fk]=yield* boFamily(fk,slot,en,N,F,upg);yield {res:{...res},fam:fl}}
-  return {res:BO_FAM.map(f=>res[f[0]]),ms:now()-t0,N,F,slot,en:ENEMIES.indexOf(en)}}
+  return {res:FS.map(f=>res[f[0]]),ms:now()-t0,N,F,slot,en:ENEMIES.indexOf(en),fams:FS.map(f=>f[0])}}
 const boDrain=g=>{let r;do r=g.next();while(!r.done);return r.value};
 /* Build à appliquer : le résultat + ce que l'optimiseur ne choisit pas, repris du build actuel (nom, niveau, exploration, améliorations, autre arme,
    pièce ou anneau d'un emplacement laissé vide parce qu'aucun ne change dégâts ni PV) ; gemme gardée si elle reste compatible (les gemmes ne sont pas chiffrées) */
@@ -99,10 +104,13 @@ function boMerge(r,b,o){const m=clone(r.b),ot=o.slot==='w1'?'w2':'w1',bg=b.gem||
 const BO={run:0,busy:false,out:null,part:null,prog:'',key:'',N:[null,null],F:[null,null],stop:false,err:'',cpu:0,open:new Set()};
 const boDef=(b,k)=>k==='N'?Math.max(0,Math.min(212,budget(b))):Math.max(1,Math.min(11,b.flame));
 const boN=b=>BO.N[cur]??boDef(b,'N'),boF=b=>BO.F[cur]??boDef(b,'F');
-const boKey=b=>[cur,oEnemy,oSlot,boN(b),boF(b),b.upg].join('|');
-function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat" id="boCard">
+const boKey=b=>[cur,oEnemy,oSlot,boN(b),boF(b),b.upg,myCls||'-'].join('|');
+/* En tête de la carte : la classe choisie (« Ma classe », barre collée) et ses deux familles, ou les six familles */
+function boClsLine(){const k=myCls;return k?`<p class="clsline">${zoneTag(k,'Ma classe : '+clsName(k))} <span>${esc(clsFams(k))}</span><button type="button" class="btn sm" id="boAllCls">Toutes les classes</button></p>`
+  :'<p class="clsline meta2">Toutes les classes : six familles d\'arme. Choisissez <b>Ma classe</b> en haut de la page pour ne calculer que les deux de votre classe.</p>'}
+function boCard(b,en){const dis=BO.busy?' disabled':'';return `<div class="oflat" id="boCard">${boClsLine()}
   <p class="meta2">Pour chaque famille d'arme, l'optimiseur part d'un arbre vide et choisit l'arme, les armures, les anneaux et l'arbre qui font le plus de dégâts contre <b>${nmF(en)}</b> ; l'arme va en ${oSlot==='w1'?'arme 1':'arme 2'} (emplacement analysé).</p>
-  <div class="row"><button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button><span class="meta2">avec les points et la Flamme ci-dessus</span></div>
+  <div class="row"><button class="btn sm primary" id="boGo"${dis}>Calculer le build optimal</button><span class="meta2">${myCls?esc(clsName(myCls)+' : '+clsFams(myCls))+', ':''}avec les points et la Flamme ci-dessus</span></div>
   <div id="boProg">${boProgHtml()}</div><div id="boOut">${boOutHtml()}</div>
   <div class="meta2"><b>Heuristique, pas une preuve d'optimalité</b> : gloutons, alternance équipement / arbre et amélioration locale. Pas de classement entre familles (« Dégâts » et « Puissance » ne se comparent pas, la vitesse d'attaque n'est pas comptée).
     Perks d'arme comptés : chance et dégâts de coup critique (emplacements débloqués par les améliorations du build). Non comptés : autres perks d'arme (Lourd, Sans pitié…), surcharge, gemmes (non choisies), armure des pièces, attaques des ennemis, points faibles, attaques impitoyables et furtives. Deux anneaux différents (doublon en jeu non vérifié).</div></div>`}
@@ -127,11 +135,11 @@ function boProgHtml(){if(BO.busy)return `<p class="meta2"><button type="button" 
 function boOutHtml(){try{const b=B(),valid=BO.key===boKey(b);
   if(BO.busy)return BO.part&&valid?boCards(BO.part,true):'';
   if(!BO.out)return BO.stop&&!BO.err?'<p class="meta2">Calcul arrêté avant la fin de la première famille : aucun résultat.</p>':'';
-  if(!valid)return '<p class="meta2">Réglages changés depuis le dernier calcul (emplacement A/B, cible, arme analysée, points, Flamme ou améliorations) : relancez le calcul.</p>';
+  if(!valid)return '<p class="meta2">Réglages changés depuis le dernier calcul (emplacement A/B, cible, arme analysée, points, Flamme, améliorations ou classe) : relancez le calcul.</p>';
   return `${boCards(BO.out,false)}<p class="meta2">${BO.stop?'Calcul arrêté avant la fin. ':''}Calculé en ${fmt(BO.out.ms/1000,1)} s.</p>`}
   catch(e){try{console.error('Build optimal (affichage) :',e)}catch(x){}return '<p class="over-msg" role="alert">Erreur d\'affichage des résultats du build optimal : relancez le calcul.</p>'}}
 function boCards(o,partial){const b=B(),en=ENEMIES[o.en],cw=compute(b).weapons[o.slot==='w1'?0:1],cf=cw?boFamOf(cw.w):null,cs=cw?boScore(b,o.slot,en):null;
-  return `<div class="bogrid">${BO_FAM.map(([fk,fl])=>{const r=o.res.find(x=>x&&x.fk===fk),box=t=>`<div class="wrow"><div class="wl">${fl}</div><p class="meta2">${t}</p></div>`;
+  return `<div class="bogrid">${BO_FAM.filter(f=>!o.fams||o.fams.includes(f[0])).map(([fk,fl])=>{const r=o.res.find(x=>x&&x.fk===fk),box=t=>`<div class="wrow"><div class="wl">${fl}</div><p class="meta2">${t}</p></div>`;
     if(!r)return box(partial?'En attente…':o.err?'Non calculée (erreur pendant le calcul).':'Non calculée (calcul arrêté).');
     if(r.skip)return box(`Non calculée : temps de calcul maximal atteint (${BO_TMAX/1000} s) sur cet appareil.`);
     if(r.none)return box('Aucune arme de cette famille dans les données.');
@@ -142,7 +150,8 @@ function boCards(o,partial){const b=B(),en=ENEMIES[o.en],cw=compute(b).weapons[o
     const g=GEMI[(m.gem||{})[o.slot]],g0=GEMI[(b.gem||{})[o.slot]];
     const gem=`<li>Gemme : ${g?esc(g.fr)+' (conservée)':g0?`à choisir (${esc(g0.fr)} retirée : type de dégâts non utilisé par cette arme ; effet non chiffré)`:'à choisir (effet non chiffré)'}</li>`;
     return `<div class="wrow${cf===fk?' sel':''}"><div class="wl">${fl}${cf===fk?' · famille de votre arme':''}</div><div><b>${nmH(r.w)}</b> <small class="meta2">${wc.catName} · ${wtypeTxt(r.w)}</small></div>
-      <div class="big"><div><b>${fmt(ms.d)}</b><span>${wc.unit==='Puissance'?'puissance moyenne':'dégâts moyens'} / coup</span></div><div><b>${fmt(ms.hp)}</b><span>PV</span></div><div><b>${r.used}</b><span>points sur ${o.N}</span></div></div>${imm}${vs}
+      <div class="big"><div><b>${fmt(ms.d)}</b><span>${wc.unit==='Puissance'?'puissance moyenne':'dégâts moyens'} / coup</span></div><div><b>${fmt(ms.hp)}</b><span>PV</span></div><div><b>${r.used}</b><span>points sur ${o.N}</span></div></div>
+      <p class="zpts">Arbre : ${AREAS.map(([k,l])=>[k,l,zonePts(r.b,k)]).filter(x=>x[2]>0).map(([k,l,v])=>zoneTag(k,`${l} ${v} pt${v>1?'s':''}`)).join(' ')||'aucun point'}</p>${imm}${vs}
       <details class="why" data-fk="${fk}"${BO.open.has(fk)?' open':''}><summary>Équipement et compétences</summary><ul>${gear}${gem}<li>Attributs : ${PIPS.map(p=>p[2]+' '+c.attr[p[0]]).join(' · ')}</li>${boRoles(m,o.slot,en)}
         ${free>0?`<li>${free} point${free>1?'s':''} libre${free>1?'s':''} : aucun achat repéré (seul ou par paire) n'augmente encore les dégâts ni les PV.</li>`:''}</ul></details>
       <div class="row">${partial?'<button class="btn sm" disabled>Appliquer à la fin du calcul</button>':`<button class="btn sm primary" data-boap="${fk}">Appliquer</button>`}</div></div>`}).join('')}</div>`}
@@ -155,11 +164,11 @@ function boPaint(){const p=$('#boProg');if(p)p.innerHTML=boProgHtml();const el=$
   for(const [id,lim] of [['#boGo'],['#boN'],['#boF'],['#boFdn',F<=1],['#boFup',F>=11]]){const e=$(id);if(e)e.disabled=BO.busy||!!lim}}
 function boProgress(){const t=$('#boProgTxt');if(t)t.textContent=`Calcul en cours… ${BO.prog}`;const el=$('#boOut');if(el)el.innerHTML=boOutHtml()}
 function boStart(){const b=B(),en=ENEMIES[oEnemy],N=boN(b),F=boF(b),my=++BO.run;Object.assign(BO,{key:boKey(b),busy:true,out:null,part:null,stop:false,prog:'',err:'',cpu:0});BO.open.clear();
-  const cw=compute(b).weapons[oSlot==='w1'?0:1],base={N,F,slot:oSlot,en:oEnemy};let s0=0;
+  const cw=compute(b).weapons[oSlot==='w1'?0:1],fams=boClsFams(myCls),base={N,F,slot:oSlot,en:oEnemy,fams};let s0=0; // « Ma classe » : ses deux familles seulement
   const clock=()=>BO.cpu+(s0?Date.now()-s0:0); // temps de calcul seul : un onglet en arrière-plan (tranches ralenties) ne fait pas sauter de famille
-  const g=boRun(oSlot,en,N,F,b.upg,cw?boFamOf(cw.w):null,BO_TMAX,clock);
+  const g=boRun(oSlot,en,N,F,b.upg,cw?boFamOf(cw.w):null,BO_TMAX,clock,fams);
   const tick=()=>{if(my!==BO.run)return;s0=Date.now();
-    try{let r,ch=false;do{r=g.next();if(!r.done&&r.value){BO.part=Object.assign({res:Object.values(r.value.res)},base);BO.prog=`${Object.keys(r.value.res).length} famille(s) sur ${BO_FAM.length} (dernière : ${r.value.fam})`;ch=true}}while(!r.done&&Date.now()-s0<30);
+    try{let r,ch=false;do{r=g.next();if(!r.done&&r.value){BO.part=Object.assign({res:Object.values(r.value.res)},base);BO.prog=`${Object.keys(r.value.res).length} famille(s) sur ${fams.length} (dernière : ${r.value.fam})`;ch=true}}while(!r.done&&Date.now()-s0<30);
       BO.cpu+=Date.now()-s0;s0=0;if(r.done){BO.busy=false;BO.out=r.value;BO.part=null;boPaint();if(!inView('bo'))toast('Build optimal calculé : résultats dans le panneau Build optimal')}else{if(ch)boProgress();setTimeout(tick,0)}}
     catch(e){if(s0)BO.cpu+=Date.now()-s0;s0=0;boFail(e)}};
   boPaint();setTimeout(tick,0)}
@@ -180,5 +189,6 @@ function boRead(e,k){const b=B(),mn=k==='N'?0:1,mx=k==='N'?212:11,d=boDef(b,k),r
 function boBind(root){const go=root.querySelector('#boGo');if(!go)return;
   go.onclick=()=>{boRead($('#boN'),'N');boRead($('#boF'),'F');boStart()}; // champs des tuiles (boTiles), relus au clic : les tuiles peuvent avoir été refaites
   root.querySelector('#boProg').onclick=e=>{if(e.target.closest('#boStop'))boStopRun()};
+  const all=root.querySelector('#boAllCls');if(all)all.onclick=()=>{setCls(myCls);$('#boGo').focus()}; // « Toutes les classes » : retire la classe (le bouton disparaît, focus sur Calculer)
   const out=root.querySelector('#boOut');out.onclick=e=>{const ap=e.target.closest('button[data-boap]');if(ap)boApply(ap.dataset.boap)};
   out.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.fk){if(d.open)BO.open.add(d.dataset.fk);else BO.open.delete(d.dataset.fk)}},true)}

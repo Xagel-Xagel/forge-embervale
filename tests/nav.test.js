@@ -501,3 +501,173 @@ test('build optimal périmé, aucun panneau du calculateur affiché : arrêté e
     })));
   } finally { Object.assign(BO, keepBO); globalThis.innerHeight = keepH; }
 });
+
+// ---- « Ma classe » (1.19.0, HISTORY n° 26) : barre collée Guerrier · Rôdeur · Mage. Oracles littéraux : familles, textes et zones écrits ici.
+const CLS_TXT = {war: ['Guerrier', 'mêlée (épées, haches, masses, espadons)'], rng: ['Rôdeur', 'dagues et arcs'], mag: ['Mage', 'baguettes et bâtons']};
+const withCls = fn => { const keep = [myCls, area, oFam, treeRefit, view, G.focus]; try { return fn(); } finally { [myCls, area, oFam, treeRefit, view, G.focus] = keep; } };
+
+test('Ma classe (DOM observé) : chaque classe dans chaque disposition, bureau et accordéon — bouton pressé, Build optimal ouvert, déplié et calculé, arbre centré sur la zone, classement sur la classe ; re-cliquer la retire', () => withCls(() => {
+  const said = [], keepT = globalThis.toast;
+  try {
+    globalThis.toast = t => said.push(t);
+    for (const phone of [false, true]) for (const d of ['theo', 'combat', 'mini', 'all']) for (const k of ['war', 'rng', 'mag'])
+      withMq(phone, () => fakeDom(el => noLs(() => withLay(mkDispo(d), () => spyOn(['boStart', ...OPT], calls => {
+        const tag = `${phone ? 'téléphone' : 'bureau'} · ${d} · ${k}`, foc = []; G.focus = a => foc.push(a);
+        myCls = null; area = 'all'; oFam = 'same'; treeRefit = false; view = 'graph'; paintLayout(true);
+        const mine = {order: ['tab', 'def', 'bo', 'calc', 'fiche', 'eq', 'tree'], size: {tree: 'S', eq: 'L', fiche: 'M', calc: 'M', bo: 'M', def: 'M', tab: 'M'}, folded: ['tree'], closed: ['bo']};
+        lay.mine = clone(mine); // « Ma disposition » retenue (Build optimal fermé) : le clic ne doit pas la remplacer
+        const f0 = el('c-' + k).focused, s0 = el('p-bo').scrolls;
+        assert.equal(setCls(k), true, tag);
+        assert.deepEqual([lay.preset, lay.mine, el('dispo').value], [d, mine, d], tag + ' : disposition choisie et « Ma disposition » intactes');
+        assert.deepEqual([myCls, area, oFam], [k, k, 'cls'], tag + ' : état');
+        assert.deepEqual(['war', 'rng', 'mag'].map(c => el('c-' + c).getAttribute('aria-pressed')), ['war', 'rng', 'mag'].map(c => String(c === k)), tag + ' : aria-pressed');
+        assert.ok(isOpen('bo') && shown('bo'), tag + ' : Build optimal ouvert et déplié');
+        if (phone) assert.equal(lay.acc, 'bo', tag + ' : accordéon sur Build optimal');
+        assert.equal(el('p-bo').scrolls, s0 + 1, tag + ' : panneau ramené à l\'écran');
+        assert.equal(el('c-' + k).focused, f0 + 1, tag + ' : focus gardé sur le bouton de la classe');
+        assert.deepEqual(calls.filter(c => c === 'boStart'), ['boStart'], tag + ' : un calcul lancé');
+        if (shown('tree')) assert.deepEqual([foc, treeRefit], [[k], false], tag + ' : arbre affiché, centré tout de suite');
+        else assert.deepEqual([foc, treeRefit], [[], true], tag + ' : arbre caché, centré à son retour');
+        assert.deepEqual([el('oFamCls').disabled, el('oFamCls').textContent, el('oFam').value], [false, `Ma classe : ${CLS_TXT[k][0]} · ${CLS_TXT[k][1]}`, 'cls'], tag + ' : option du classement, choisie même Calculateur caché');
+        assert.equal(said.at(-1), `${CLS_TXT[k][0]} : build optimal en calcul pour ${CLS_TXT[k][1]} ; arbre centré sur la zone ${CLS_TXT[k][0]}${shown('tree') ? '' : ' à son ouverture'}`, tag + ' : message fidèle à l\'état de l\'arbre');
+        assert.ok(!said.some(t => /Ma disposition/.test(t)), tag + ' : message « Ma disposition remplacée »');
+        calls.length = 0; assert.equal(setCls(k), true, tag + ' : re-clic');
+        assert.deepEqual([myCls, area, oFam], [null, 'all', 'same'], tag + ' : classe retirée');
+        assert.ok(['war', 'rng', 'mag'].every(c => el('c-' + c).getAttribute('aria-pressed') === 'false'), tag + ' : plus aucun bouton pressé');
+        assert.deepEqual([el('oFamCls').disabled, el('oFamCls').textContent, el('oFam').value, calls.includes('boStart')], [true, 'Ma classe (à choisir en haut)', 'same', false], tag + ' : option désactivée, « même famille », pas de calcul');
+        assert.equal(said.at(-1), 'Classe retirée : le build optimal couvrira de nouveau les six familles d\'arme au prochain calcul', tag);
+      })))));
+    const n = said.length; assert.deepEqual([setCls('core'), setCls('zz'), setCls(undefined), myCls, said.length], [false, false, false, null, n], 'classe inconnue : refusée, sans message');
+  } finally { globalThis.toast = keepT; }
+}));
+
+test('Ma classe : depuis « Ma disposition », Build optimal ouvert et retenu (retouche ordinaire, sans message) ; vue Liste : message « liste limitée à la zone »', () => withCls(() => fakeDom(() => noLs(() => withLay(mkDispo('theo'), () => spyOn(['boStart', ...OPT], () => {
+  const said = [], keepT = globalThis.toast;
+  try {
+    globalThis.toast = t => said.push(t); myCls = null; view = 'graph';
+    setSize('eq', 'L'); assert.equal(lay.preset, 'mine'); assert.deepEqual(lay.mine.closed, ['bo', 'def', 'tab']);
+    said.length = 0; setCls('mag');
+    assert.deepEqual([lay.preset, isOpen('bo'), lay.mine.closed, lay.mine.size.eq], ['mine', true, ['def', 'tab'], 'L'], 'Build optimal ajouté à « Ma disposition », le reste gardé');
+    assert.ok(!said.some(t => /Ma disposition/.test(t)), 'aucun message de remplacement');
+    setCls('mag'); view = 'list'; said.length = 0; setCls('rng');
+    assert.equal(said.at(-1), 'Rôdeur : build optimal en calcul pour dagues et arcs ; liste de l\'arbre limitée à la zone Rôdeur');
+  } finally { globalThis.toast = keepT; }
+}))))));
+
+test('Ma classe : changer de classe garde « Ma classe » dans le classement ; une famille choisie à la main est rendue à « même famille » au retrait seulement si c\'était la classe', () => withCls(() => fakeDom(() => noLs(() => withLay(mkDispo('all'), () => spyOn(['boStart', 'toast', ...OPT], () => {
+  myCls = null; oFam = 'same'; setCls('war'); setCls('mag'); assert.deepEqual([myCls, area, oFam], ['mag', 'mag', 'cls'], 'Guerrier → Mage');
+  oFam = 'bow'; setCls('mag'); assert.deepEqual([myCls, oFam], [null, 'bow'], 'famille choisie à la main : gardée au retrait');
+}))))));
+
+test('Ma classe : arbre caché au choix de la classe → centré sur sa zone quand il réapparaît, une seule fois', () => withCls(() => withMq(true, () => fakeDom(() => noLs(() => withLay(mkDispo('theo'), () => spyOn(['boStart', 'toast', ...OPT], () => {
+  const foc = [], keepW = G.wake; let w = 0; G.focus = a => foc.push(a); G.wake = () => { w++; };
+  try {
+    myCls = null; view = 'graph'; paintLayout(true);
+    setCls('rng'); assert.deepEqual([foc, treeRefit, shown('tree')], [[], true, false], 'accordéon : Build optimal déplié, arbre replié');
+    foldPanel('tree', false); assert.deepEqual([w, foc, treeRefit], [1, ['rng'], false], 'arbre déplié : réveillé puis centré sur Rôdeur');
+    foldPanel('bo', false); foldPanel('tree', false); assert.deepEqual(foc, ['rng'], 'pas recentré une deuxième fois');
+  } finally { G.wake = keepW; }
+})))))));
+
+test('Ma classe (DOM observé) : classement du Calculateur limité aux familles de la classe, « Dégâts » / « Puissance » signalé quand ils se mêlent ; zone de chaque point proposé', () => withCls(() => fakeDom(el => noLs(() => withLay(mkDispo('all'), () => {
+  const keepB = builds[0], keepC = cur;
+  try {
+    builds[0] = blankBuild('Classes'); cur = 0; // aucune arme : chaque ligne du classement porte ses boutons Arme 1 / Arme 2
+    for (const [k, fams, mixed] of [['war', ['melee'], false], ['rng', ['dagger', 'bow'], true], ['mag', ['wand', 'staff'], true]]) {
+      myCls = k; oFam = 'cls'; optCalc(B(), compute(B()), ENEMIES[oEnemy]);
+      const h = el('optBody').innerHTML, ids = [...new Set([...h.matchAll(/data-eq="(\w+)"/g)].map(m => m[1]))];
+      assert.equal(ids.length, Math.min(12, WEAPONS.filter(w => fams.includes(CAT[w[2]][1])).length), k + ' : les 12 premières armes de la classe');
+      assert.deepEqual(ids.filter(id => !fams.includes(CAT[ITEMS[id].cat][1])), [], k + ' : arme hors classe');
+      assert.equal(h.includes('ne se comparent pas directement'), mixed, k + ' : avertissement Dégâts / Puissance');
+      assert.ok(h.includes(`classe ${CLS_TXT[k][0]} : ${CLS_TXT[k][1]}`), k + ' : étiquette du classement');
+    }
+    myCls = null; oFam = 'cls'; optCalc(B(), compute(B()), ENEMIES[oEnemy]); // classe retirée hors de la barre : comme « même famille » (aucune arme → toutes)
+    assert.equal(new Set([...el('optBody').innerHTML.matchAll(/data-eq="(\w+)"/g)].map(m => m[1])).size, 12);
+    // zones : chaque point proposé porte la pastille de sa zone (compétence : sa zone ; nœud d'attribut : celle de l'attribut)
+    assert.deepEqual([invArea({kind: 'skill', id: 'warriorsPath'}), invArea({kind: 'skill', id: 'marksman'}), invArea({kind: 'skill', id: 'wandMastery'}), invArea({kind: 'skill', id: 'zz'})], ['war', 'rng', 'mag', undefined]);
+    assert.deepEqual(['str', 'con', 'end', 'dex', 'int', 'spi'].map(a => invArea({kind: 'pip', id: TOPO.pips.find(p => p.attr === a).id})), ['war', 'war', 'rng', 'rng', 'mag', 'mag']);
+    builds[0] = fromPreset(PRESETS[3]); myCls = null; oFam = 'same'; optCalc(B(), compute(B()), ENEMIES[oEnemy]);
+    const inv = el('optBody')._inv.slice(0, 10), h = el('optBody').innerHTML; assert.ok(inv.length >= 3, 'Barbare : des points à proposer');
+    for (const x of inv) assert.ok(h.includes(`${zoneTag(invArea(x))} ${esc(x.en)} · rang ${x.rank}/${x.max}`), x.label + ' : zone absente');
+    assert.equal(zoneTag('mag'), '<span class="ztag" style="--ac:var(--mag)">Mage</span>'); assert.equal(zoneTag(undefined), '');
+  } finally { builds[0] = keepB; cur = keepC; }
+})))));
+
+// ---- « Ma classe » : manques relevés par la revue QA (mutations survivantes) ----
+test('Ma classe : passer d\'une classe à l\'autre, panneaux déjà affichés (Tout) : classement du Calculateur et carte du Build optimal refaits', () => withCls(() => fakeDom(el => noLs(() => withLay(mkDispo('all'), () => spyOn(['boStart', 'toast'], () => {
+  const keepB = builds[0], keepC = cur;
+  try {
+    builds[0] = blankBuild('Classes'); cur = 0; myCls = null; paintLayout(true);
+    setCls('war'); assert.ok(el('optBody').innerHTML.includes('classe Guerrier : '), 'témoin : classement Guerrier');
+    setCls('mag');
+    const h = el('optBody').innerHTML, ids = [...new Set([...h.matchAll(/data-eq="(\w+)"/g)].map(m => m[1]))];
+    assert.ok(h.includes('classe Mage : baguettes et bâtons'), 'classement pas refait pour Mage');
+    assert.ok(ids.length > 0 && ids.every(id => ['wand', 'staff'].includes(CAT[ITEMS[id].cat][1])), 'armes hors classe encore classées');
+    assert.ok(el('boBody').innerHTML.includes(zoneTag('mag', 'Ma classe : Mage')) && !el('boBody').innerHTML.includes('Ma classe : Guerrier'), 'carte du Build optimal pas refaite');
+  } finally { builds[0] = keepB; cur = keepC; }
+}))))));
+
+test('Ma classe : retirer la classe pendant un calcul, Build optimal caché : un seul message, qui dit l\'arrêt', () => withCls(() => fakeDom(() => noLs(() => withLay(mkDispo('theo'), () => spyOn(['boStart', ...OPT], () => {
+  const said = [], keepT = globalThis.toast, keepBO = {busy: BO.busy, key: BO.key};
+  try {
+    globalThis.toast = t => said.push(t); myCls = 'war'; oFam = 'cls'; BO.busy = true; BO.key = boKey(B()); // calcul de la classe en cours ; Build optimal fermé (Théoricien)
+    assert.equal(shown('bo'), false, 'témoin : panneau caché');
+    setCls('war');
+    assert.deepEqual([BO.busy, said], [false, ['Classe retirée et calcul arrêté : le build optimal couvrira de nouveau les six familles d\'arme au prochain calcul']]);
+  } finally { globalThis.toast = keepT; Object.assign(BO, keepBO, {busy: false}); }
+}))))));
+
+test('Ma classe : changer de classe pendant un calcul, Build optimal replié et hors de l\'écran (téléphone) : relancé sans message d\'arrêt', () => withCls(() => withMq(true, () => fakeDom(el => noLs(() => withLay(mkDispo('theo'), () => spyOn(['boStart', ...OPT], () => {
+  const said = [], keepT = globalThis.toast, keepH = globalThis.innerHeight, keepBO = {busy: BO.busy, key: BO.key};
+  try {
+    globalThis.toast = t => said.push(t); myCls = null; view = 'graph'; paintLayout(true);
+    setCls('war'); BO.busy = true; BO.key = boKey(B()); // calcul Guerrier en cours (boStart remplacé)
+    foldPanel('tree', false); globalThis.innerHeight = 800; el('p-bo').top = 5000; el('p-bo').bottom = 5400; // accordéon sur l'Arbre : Build optimal replié, loin sous l'écran
+    assert.deepEqual([shown('bo'), inView('bo')], [false, false], 'témoin');
+    said.length = 0; setCls('mag');
+    assert.deepEqual(said.filter(t => /arrêté/.test(t)), [], 'message d\'arrêt alors que le calcul est relancé');
+    assert.deepEqual([myCls, BO.busy, said.length], ['mag', false, 1], 'ancien calcul arrêté, un seul message (celui de la classe)');
+  } finally { globalThis.toast = keepT; globalThis.innerHeight = keepH; Object.assign(BO, keepBO, {busy: false}); }
+})))))));
+
+test('Ma classe : boutons branchés par initPanels ; bouton de zone de l\'arbre marqué « ma classe » (lui seul) ; classe jamais retenue (stockage, adresse)', () => withCls(() => fakeDom(el => noLs(() => withLay(lay, () => spyOn(['boStart', 'toast', ...OPT], () => {
+  const keepH = location.hash, keepR = history.replaceState, keepLs = globalThis.localStorage, wrote = []; let rep = 0;
+  try {
+    initPanels(); applyDispo('all'); myCls = null; location.hash = '#b3-abc'; history.replaceState = () => { rep++; };
+    globalThis.localStorage = {getItem: () => null, setItem: (k, v) => wrote.push(v)};
+    el('areas').kids.length = 0; el('c-rng').onclick();
+    assert.equal(myCls, 'rng', '#c-rng non branché');
+    const marked = el('areas').kids.filter(b => /class="mycls"/.test(b.innerHTML)).map(b => b.innerHTML.split(' ')[0]);
+    assert.deepEqual(marked, ['Rôdeur'], 'bouton de zone marqué');
+    area = 'war'; el('areas').kids.length = 0; renderSkills(); // zone affichée ≠ classe : la marque suit la classe
+    assert.deepEqual(el('areas').kids.map(b => /class="mycls"/.test(b.innerHTML)), [false, false, false, true, false], 'Tout, Cœur, Guerrier, Rôdeur, Mage');
+    el('c-rng').onclick(); el('c-war').onclick(); applyDispo('theo');
+    assert.ok(wrote.length > 0, 'témoin : disposition enregistrée');
+    assert.deepEqual(wrote.filter(v => /myCls|"(war|rng|mag)"/.test(v)), [], 'classe écrite dans le stockage');
+    assert.deepEqual([location.hash, rep], ['#b3-abc', 0], 'adresse touchée');
+  } finally { location.hash = keepH; history.replaceState = keepR; globalThis.localStorage = keepLs; }
+}))))));
+
+test('Ma classe : pastille de zone sur chaque étape du plan « Répartir au mieux »', () => withCls(() => fakeDom(el => noLs(() => withLay(mkDispo('all'), () => {
+  const keepB = builds[0], keepC = cur, keepM = planMem;
+  try {
+    builds[0] = blankBuild('Plan'); builds[0].gear.w1 = WEAPONS[0][0]; cur = 0; myCls = null; oFam = 'same';
+    optCalc(B(), compute(B()), ENEMIES[oEnemy]); el('planN').value = '12'; el('planGo').onclick();
+    const st = planMem.P.steps, h = el('planOut').innerHTML; assert.ok(st.length >= 3, 'témoin : plan de plusieurs étapes');
+    for (const x of st) assert.ok(h.includes(`${zoneTag(invArea(x))} ${esc(x.en)} · rang ${x.rank}/${x.max}`), x.label + ' : zone absente du plan');
+  } finally { builds[0] = keepB; cur = keepC; planMem = keepM; }
+})))));
+
+test('Ma classe : graphe — nœuds non acquis des deux autres zones estompés (Cœur, départs et nœuds acquis nets) ; libellé de la classe en grand (oracles littéraux)', () => withCls(() => {
+  const keepB = builds[0], keepC = cur;
+  try {
+    builds[0] = blankBuild('Graphe'); cur = 0;
+    const N = id => G.nodes.find(n => n.id === id), pip = a => G.nodes.find(n => n.kind === 'pip' && n.attr === a), start = G.nodes.find(n => n.kind === 'start');
+    myCls = null; assert.deepEqual(G.nodes.filter(n => G.dim(n)), [], 'sans classe : rien d\'estompé');
+    myCls = 'war';
+    assert.deepEqual([N('wizard'), N('marksman'), N('warriorsPath'), N('doubleJump'), start, pip('int'), pip('dex'), pip('str')].map(n => G.dim(n)), [true, true, false, false, false, true, true, false]);
+    builds[0].sk.wizard = 1; assert.equal(G.dim(N('wizard')), false, 'nœud acquis : net');
+    assert.deepEqual([G.zoneStyle('war'), G.zoneStyle('mag')], [{t: ' · ma classe', px: 16, a: 1}, {t: '', px: 13, a: .55}]);
+    myCls = null; assert.deepEqual(G.zoneStyle('war'), {t: '', px: 13, a: .85});
+  } finally { builds[0] = keepB; cur = keepC; }
+}));

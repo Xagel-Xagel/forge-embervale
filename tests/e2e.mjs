@@ -155,6 +155,38 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   await overflow(page, w, 'Organiser', errs);
   await page.screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-organiser.png`), fullPage: false});
   await page.click('#orgDone');
+  // « Ma classe » (1.19.0) : chaque classe dans chaque disposition — un clic : bouton pressé, Build optimal ouvert, déplié et à l'écran, focus gardé,
+  // zone de l'arbre marquée, classement du Calculateur sur la classe ; disposition Tout : calcul fini avec les deux familles de la classe (oracle littéral)
+  // et zones de l'arbre dans les résultats ; captures par classe (+ arbre au bureau) ; re-cliquer la classe la retire
+  const CF = {war: 'm1,m2', rng: 'dag,bow', mag: 'wand,staff'}, ZN = {war: 'Guerrier', rng: 'Rôdeur', mag: 'Mage'};
+  for (const d of ['theo', 'combat', 'mini', 'all']) for (const k of ['war', 'rng', 'mag']) {
+    const tag = `classe ${k} (${d})`;
+    await page.evaluate(d => { applyDispo(d); window.scrollTo(0, 0); }, d); // disposition remise à sa définition (Build optimal fermé sauf dans Tout)
+    await page.click('#c-' + k); // setCls est synchrone : état lisible tout de suite
+    if (await page.inputValue('#dispo') !== d) errs.push(`${tag} : la disposition a changé (${await page.inputValue('#dispo')})`);
+    const st = await page.evaluate(() => { const r = document.querySelector('#p-bo').getBoundingClientRect();
+      return {pressed: ['war', 'rng', 'mag'].map(c => document.querySelector('#c-' + c).getAttribute('aria-pressed')).join(), bo: !document.querySelector('#p-bo').hidden && !document.querySelector('#pb-bo').hidden,
+        top: Math.round(r.top), bar: Math.round(document.querySelector('#pBar').getBoundingClientRect().bottom), vh: innerHeight, focus: document.activeElement.id,
+        zone: [...document.querySelectorAll('#areas .area')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent).join('|'), fam: document.querySelector('#oFam').value}; });
+    if (st.pressed !== ['war', 'rng', 'mag'].map(c => String(c === k)).join()) errs.push(`${tag} : boutons ${st.pressed}`);
+    if (!st.bo) errs.push(`${tag} : Build optimal pas ouvert et déplié`);
+    else if (st.top < st.bar - 1 || st.top >= st.vh) errs.push(`${tag} : Build optimal hors de l'écran (haut à ${st.top} px, barre à ${st.bar} px)`);
+    if (st.focus !== 'c-' + k) errs.push(`${tag} : focus sur ${st.focus}`);
+    if (!st.zone.startsWith(ZN[k]) || !/ma classe/i.test(st.zone)) errs.push(`${tag} : zone de l'arbre « ${st.zone} »`);
+    if (st.fam !== 'cls') errs.push(`${tag} : classement sur ${st.fam}`);
+    if (phone && (await shownList(page)).join() !== 'bo') errs.push(`${tag} : accordéon ${(await shownList(page)).join()}`);
+    await overflow(page, w, tag, errs);
+    if (d !== 'all') continue;
+    const ok = await page.waitForFunction(() => !BO.busy && BO.out, null, {timeout: 30000}).then(() => true, () => false);
+    const fk = ok ? await page.evaluate(() => [...document.querySelectorAll('#boOut [data-boap]')].map(b => b.dataset.boap).join()) : '';
+    if (fk !== CF[k]) errs.push(`${tag} : cartes ${fk || 'aucune'} au lieu de ${CF[k]}`);
+    else if (!/Arbre :/.test(await page.textContent('#boOut'))) errs.push(`${tag} : zones de l'arbre absentes des résultats`);
+    await page.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+    await page.screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-classe-${k}.png`)});
+    if (!phone) await page.locator('#p-tree').screenshot({path: join(root, `tests/screenshots/${w}-${scheme}-classe-${k}-arbre.png`)});
+  }
+  await page.click('#c-mag');
+  if (await page.evaluate(() => myCls !== null || document.querySelector('#c-mag').getAttribute('aria-pressed') !== 'false' || document.querySelector('#oFam').value !== 'same')) errs.push('re-clic sur la classe : pas retirée');
   const name = `tests/screenshots/${w}-${scheme}.png`;
   console.log(errs.length ? '✗' : '✓', name, errs.join(' | '));
   fail += errs.length; await page.close();
@@ -200,6 +232,48 @@ for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400
   if (await page.inputValue('#dispo') !== 'theo' || (await openList(page)).join() !== DISPO.theo.join()) errs.push('mémoire illisible : Théoricien attendu');
   if (await page.evaluate(() => location.hash) !== '') errs.push('un panneau a écrit dans l\'adresse');
   console.log(errs.length ? '✗' : '✓', 'Organiser : taille, ordre, fermeture, « Ma disposition » retenue', errs.join(' | '));
+  fail += errs.length; await page.close();
+}
+// « Ma classe » ne touche ni la disposition choisie ni « Ma disposition » retenue (revue QA) : Fiche fermée (« Ma disposition »), Théoricien, clic Guerrier
+// → Théoricien gardé, Build optimal affiché pour la visite, « Ma disposition » du stockage intacte ; rechargement : Théoricien tel que défini ; « Ma disposition » : Fiche fermée
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  const mineSaved = () => page.evaluate(k => JSON.stringify((JSON.parse(localStorage.getItem(k) || 'null') || {}).mine || null), LSK);
+  await page.goto(url); await page.waitForTimeout(500);
+  await page.click('#r-fiche'); await page.waitForTimeout(60);
+  const before = await mineSaved();
+  if (before === 'null' || !before.includes('fiche')) errs.push('« Ma disposition » (Fiche fermée) non enregistrée : ' + before);
+  await dispo(page, 'theo'); await page.click('#c-war'); await page.waitForTimeout(150);
+  if (await page.inputValue('#dispo') !== 'theo') errs.push('clic sur une classe : disposition passée à ' + await page.inputValue('#dispo'));
+  if (!(await shownList(page)).includes('bo')) errs.push('clic sur une classe : Build optimal pas affiché');
+  if (await mineSaved() !== before) errs.push('clic sur une classe : « Ma disposition » enregistrée modifiée');
+  if (/Ma disposition/.test(await page.textContent('#toasts'))) errs.push('clic sur une classe : message « Ma disposition remplacée »');
+  await page.reload(); await page.waitForTimeout(500);
+  if (await page.inputValue('#dispo') !== 'theo' || (await openList(page)).join() !== DISPO.theo.join()) errs.push('rechargement : Théoricien attendu tel que défini (Build optimal provisoire)');
+  await dispo(page, 'mine');
+  if ((await openList(page)).includes('fiche')) errs.push('« Ma disposition » rendue sans sa Fiche fermée');
+  console.log(errs.length ? '✗' : '✓', '« Ma classe » : disposition et « Ma disposition » intactes', errs.join(' | '));
+  fail += errs.length; await page.close();
+}
+// « Ma classe » dans le graphe (revue QA) : build vide, même cadrage avant et après Guerrier → un nœud Mage non acquis s'estompe (pixel plus proche du fond),
+// un nœud Guerrier non acquis ne change pas ; contre-épreuve : classe retirée, le nœud Mage revient
+{
+  const page = await browser.newPage({viewport: {width: 1300, height: 900}});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(600);
+  await page.click('#reset'); await page.waitForTimeout(80);
+  const probe = () => page.evaluate(async () => { G.focus('all'); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const c = document.querySelector('#gcv').getContext('2d'), d = Math.min(2, devicePixelRatio || 1), px = (x, y) => [...c.getImageData(Math.round(x * d), Math.round(y * d), 1, 1).data];
+    const bg = px(2, 2), dist = id => { const [x, y] = G.screen(G.nodes.find(n => n.id === id)), p = px(x, y); return Math.hypot(p[0] - bg[0], p[1] - bg[1], p[2] - bg[2]); };
+    return {mag: dist('wizard'), war: dist('warriorsPath')}; });
+  const a = await probe(); await page.click('#c-war'); await page.waitForTimeout(150); const b = await probe();
+  await page.click('#c-war'); await page.waitForTimeout(150); const c = await probe();
+  if (!(a.mag > 12)) errs.push(`témoin : nœud Mage indiscernable du fond avant la classe (${Math.round(a.mag)})`);
+  else if (!(b.mag < a.mag * 0.7)) errs.push(`nœud Mage non estompé avec Guerrier (écart au fond ${Math.round(a.mag)} → ${Math.round(b.mag)})`);
+  if (Math.abs(b.war - a.war) > 3) errs.push(`nœud Guerrier changé (${Math.round(a.war)} → ${Math.round(b.war)})`);
+  if (Math.abs(c.mag - a.mag) > 3) errs.push(`classe retirée : nœud Mage pas revenu (${Math.round(a.mag)} → ${Math.round(c.mag)})`);
+  console.log(errs.length ? '✗' : '✓', '« Ma classe » : zones estompées dans le graphe', `(Mage ${Math.round(a.mag)} → ${Math.round(b.mag)} → ${Math.round(c.mag)})`, errs.join(' | '));
   fail += errs.length; await page.close();
 }
 // Téléphone : accordéon (un seul déplié), barre basse (Réglages → #lvl, Cible → #oEnemy, Plus → Défense), Échap ferme « Plus »
