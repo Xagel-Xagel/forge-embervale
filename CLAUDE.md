@@ -3,7 +3,7 @@
 Planificateur d'**arbre de compétences** pour **Enshrouded 1.0** (2.0.0, « grand ménage », HISTORY n° 27) : objectifs prêts (principal + secondaire) dont le combo est imposé selon les points et la Flamme, et expliqué ; ajouts libres ; gemmes ; builds A/B, enregistrés, partagés. L'équipement n'est pas pris en compte.
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
-- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 19 au 2026-11-07).
+- Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 20 au 2026-11-07, 2.0.0).
 
 L'utilisateur (Vincent) parle français : **réponses, interface, commentaires et messages de commit en français.**
 
