@@ -3,10 +3,18 @@ test('budget max = 212 points (niveau 50 + 114 d\'exploration)', () => {
   assert.equal(budget(blankBuild()), 212);
   assert.equal(budget({lvl: 1, exp: 0}), 0);
 });
-test('build vide : 100 PV, 100 mana, 100 vigueur, 10 % de critique, +80 % de dégâts critiques', () => {
+test('build vide : 100 PV, 100 mana, 100 vigueur, attributs à 0', () => {
   const o = compute(blankBuild());
   assert.equal(o.hp, 100); assert.equal(o.mana, 100); assert.equal(o.sta, 100);
-  assert.equal(o.critC, 10); assert.equal(o.critD, 80);
+  for (const [k] of PIPS) assert.equal(o.attr[k], 0, k);
+});
+test('Flamme : +1 attribut tous les 2 niveaux par nœud de Flamme ; Rôdeur +1 DEX et END par rang ; santé selon Athlète, Vigueur voilée, Essences de vie', () => {
+  const b = blankBuild(); b.flame = 11; for (const [id] of FLAME_NODES) b.sk[id] = 1; b.sk.ranger = 2; b.pip = {str: 2, dex: 1, int: 3}; delete b.pn; normalize(b);
+  const o = compute(b), A = o.attr;
+  assert.deepEqual([A.str, A.con, A.end, A.dex, A.int, A.spi].map((v, i) => v - (b.pip[PIPS[i][0]] || 0)), [5, 5, 7, 7, 5, 5]);
+  b.sk.athlete = 3; b.sk.veiledVigor = 2; b.sk.lifeEssences = 1; const p = compute(b);
+  assert.equal(p.hp, 100 + 50 * p.attr.con + 9 * p.attr.str + 6 * p.attr.dex + 3 * p.attr.int);
+  b.flame = 1; assert.equal(compute(b).attr.str, b.pip.str, 'Flamme 1 : rien');
 });
 test('attributs : CON +50 PV, ESP +20 mana, END +10 vigueur', () => {
   const b = blankBuild(); b.pip = {con: 2, spi: 3, end: 4}; delete b.pn; normalize(b);
@@ -24,15 +32,9 @@ test('tracé réel : 243 nœuds, 312 liaisons, tout est relié aux 12 départs',
   assert.ok(TOPO.E.every(([p, q]) => p.kind !== 'hub' && q.kind !== 'hub'));
 });
 test('chemin : Dijkstra multi-cibles = coût et chemin de pathTo', () => {
-  const b = fromPreset(PRESETS[4]); const R = reach(b), D = dijkstra(b, R);
+  const b = goalBuild('assassin'); const R = reach(b), D = dijkstra(b, R);
   for (const n of TOPO.N) { if (R.has(n)) continue; const p = pathTo(b, n);
     assert.deepEqual(trace(D, n).map(x => x.id), p.map(x => x.id), n.id); assert.equal(D.dist.get(n), pathCost(b, p), n.id); }
-});
-for (const p of PRESETS) test(`preset « ${p.name} » : relié à un départ et dans le budget`, () => {
-  const b = fromPreset(p); const R = reach(b);
-  const lost = TOPO.N.filter(n => owned(b, n) && !R.has(n));
-  assert.equal(lost.length, 0, 'nœuds non reliés : ' + lost.map(n => n.id).join(', '));
-  assert.ok(spentPoints(b) <= 212, spentPoints(b) + ' points');
 });
 test('un nœud ne s\'achète que s\'il touche un nœud acquis', () => {
   const b = blankBuild();
@@ -46,7 +48,7 @@ test('un nœud ne s\'achète que s\'il touche un nœud acquis', () => {
 test('retirer un nœud élague tout ce qui n\'est plus relié à un départ', () => {
   let cas = 0;
   for (const attr of ['int', 'spi', 'con']) {
-    const b = fromPreset(PRESETS[0]); const before = spentPoints(b);
+    const b = goalBuild('storm'); const before = spentPoints(b);
     const pip = TOPO.pips.find(p => p.attr === attr && b.pn[p.id] && [...p.nb].some(n => n.kind === 'start'));
     if (!pip) continue; cas++;
     delete b.pn[pip.id]; syncPips(b); prune(b);
@@ -54,27 +56,6 @@ test('retirer un nœud élague tout ce qui n\'est plus relié à un départ', ()
     assert.equal(TOPO.N.filter(n => owned(b, n) && !reach(b).has(n)).length, 0, attr + ' : nœud orphelin restant');
   }
   assert.ok(cas > 0, 'aucun nœud d\'attribut voisin d\'un départ : test vide');
-});
-// Revue des presets sur le tracé réel (1.10.0) : 277 → 155 points de liaison. Plafond par preset = valeur mesurée ce jour-là.
-test('presets : points perdus en liaisons plafonnés (revue 1.10.0)', () => {
-  const MAX = {'Mage de bataille': 5, 'Rôdeur archer': 11, 'Guerrier épée et bouclier': 6, 'Barbare deux mains': 5, 'Assassin aux dagues': 9, 'Soigneur de groupe': 8, 'Sadi Fourbe': 22,
-    'Sorcier de feu': 8, 'Mage de foudre (baguette)': 8, 'Mage de glace (contrôle)': 12, 'Nécromancien invocateur': 12, 'Arcaniste du bâton (critiques)': 12, 'Paladin soigneur': 15,
-    'Gardien du Shroud (soutien)': 12, 'Prêtre du feu (soin offensif)': 10,
-    'Mage critique (baguette)': 26}; // 26 (1.17.0, HISTORY n° 23 ; 24 en 1.14.0) : Précision fatale est en zone Rôdeur (choix « chance d'abord » de l'utilisateur) et Arts sombres remplace Pyromane (bâton Oracle's Everblue) ; mesuré
-  for (const p of PRESETS) { const perte = spentPoints(fromPreset(p)) - spentPoints({sk: p.sk, pip: p.pip});
-    assert.ok(p.name in MAX, p.name + ' : plafond à définir'); assert.ok(perte <= MAX[p.name], `${p.name} : ${perte} points de liaison (plafond ${MAX[p.name]})`); }
-});
-test('presets mage et soin : 2 CON demandés, au plus 1 de plus en liaison (plus de traversée de la zone Guerrier pour la CON)', () => {
-  for (const p of PRESETS.filter(q => q.cat === 'mage' || q.cat === 'heal')) { const b = fromPreset(p);
-    assert.equal(p.pip.con, 2, p.name); assert.ok(b.pip.con <= 3, p.name + ' : ' + b.pip.con + ' CON');
-    assert.ok(Object.keys(b.pn).some(id => TOPO.byId[id].attr === 'con' && [...TOPO.byId[id].nb].some(m => m.kind === 'start')), p.name + ' : aucun CON voisin d\'un départ'); }
-});
-test('normalize : aucune liaison inutile laissée dans les presets', () => {
-  for (const p of PRESETS) { const b = fromPreset(p);
-    for (const n of TOPO.N) { const extra = n.kind === 'skill' ? b.sk[n.id] > 0 && !(n.id in p.sk) : n.kind === 'pip' && b.pn[n.id] && b.pip[n.attr] > (p.pip[n.attr] || 0);
-      if (!extra) continue; const t = JSON.parse(JSON.stringify(b)); if (n.kind === 'skill') delete t.sk[n.id]; else delete t.pn[n.id]; syncPips(t);
-      assert.ok(TOPO.N.some(m => owned(t, m) && !reach(t).has(m)), p.name + ' : ' + n.id + ' retirable sans rien couper'); }
-  }
 });
 test('normalize : comptes d\'attributs respectés, clés inconnues retirées sans perdre les autres', () => {
   const b = blankBuild(); b.pip = {int: 4, dex: 2}; delete b.pn; normalize(b);

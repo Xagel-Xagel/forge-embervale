@@ -9,7 +9,7 @@ const G=(()=>{
   const cv=$('#gcv'),wrap=$('#gwrap'),card=$('#gcard');const ctx=cv.getContext('2d');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
   const {N,E}=TOPO;const V=N.filter(n=>n.kind!=='hub');let W=0,H=0,dpr=1,curR=new Set();
-  const cam={x:0,y:0,k:.8};let alpha=0,dirty=true,hover=null,sel=null,lastO=null,drag=null,fitted=false,hoverTarget=null,hoverAmt=0,leaveT=0;
+  const cam={x:0,y:0,k:.8};let alpha=0,dirty=true,hover=null,sel=null,imp=null,drag=null,fitted=false,hoverTarget=null,hoverAmt=0,leaveT=0;
   const glowCache={};
   function glow(col){if(!glowCache[col]){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=.6;x.fillStyle=gr;x.fillRect(0,0,64,64);glowCache[col]=c}return glowCache[col]}
   /* Libellés des trois zones, au bord extérieur de leurs nœuds (comme le planificateur PinDrop) */
@@ -32,7 +32,8 @@ const G=(()=>{
   const b=()=>B();
   function isOn(n){return n.kind==='start'?curR.has(n):owned(b(),n)}
   function avail(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;if(owned(b(),n))return false;for(const m of n.nb)if(curR.has(m))return true;return false}
-  function gearOf(n){return n.kind==='skill'&&lastO?(lastO.gearRk[n.id]||0):0}
+  /* Ajouté par l'utilisateur : acquis au-delà du rang imposé par l'objectif (anneau pointillé) */
+  function isAdd(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;const bb=b();return n.kind==='skill'?(bb.sk[n.id]||0)>lockOf(bb,n,imp):!!bb.pn[n.id]&&!lockOf(bb,n,imp)}
   let colors={};
   function readColors(){const cs=getComputedStyle(document.documentElement);const g=v=>cs.getPropertyValue(v).trim();
     colors={bg:g('--g-bg'),node:g('--g-node'),edge:g('--g-edge'),label:g('--g-label'),ring:g('--g-ring'),shroud:g('--shroud'),core:g('--core'),war:g('--war'),rng:g('--rng'),mag:g('--mag'),ember:g('--ember')};for(const k in glowCache)delete glowCache[k];dirty=true}
@@ -40,26 +41,21 @@ const G=(()=>{
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
   new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
   const areaCol=a=>colors[a]||colors.ember;
-  /* « Ma classe » (10-ui.js) : nœud non acquis d'une des deux autres zones → estompé (Cœur, départs et nœuds acquis restent nets) ;
-     libellé de zone : celui de la classe en grand et marqué, les autres plus pâles */
-  const dim=n=>!!myCls&&n.area!==myCls&&n.area!=='core'&&!isOn(n);
-  const zoneStyle=k=>k===myCls?{t:' · ma classe',px:16,a:1}:{t:'',px:13,a:myCls?.55:.85};
 
   function matchSet(){const q=query.toLowerCase();if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
-    for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0||gearOf(n)>0;if(okQ&&okO)s.add(n)}return s}
+    for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||(n.sk.fr+' '+n.sk.en).toLowerCase().includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0;if(okQ&&okO)s.add(n)}return s}
 
-  /* Graphe caché (panneau replié ou fermé, vue Liste) : W = 0, plus rien n'est dessiné ; à la réouverture, wake le recale (canvas vidé, redessiné à l'image suivante).
-     Taille inchangée (observateur appelé juste après wake) : le canvas n'est pas vidé une seconde fois, donc pas d'image vide */
+  /* Graphe caché (vue Liste) : W = 0, plus rien n'est dessiné ; à son retour, l'observateur de taille le recale (canvas vidé seulement si la taille change) */
   function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
     if(r.width!==W||r.height!==H||d!==dpr){dpr=d;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}if(!fitted)fit(area)}
-  new ResizeObserver(resize).observe(wrap); // #gwrap suit le panneau Arbre : taille S ↔ M ↔ L, repli, accordéon, fenêtre (même effet que G.wake)
+  new ResizeObserver(resize).observe(wrap); // #gwrap : vue Liste ↔ Graphe, largeur de la fenêtre
   const toS=(x,y)=>[(x-cam.x)*cam.k+W/2,(y-cam.y)*cam.k+H/2];
   const toW=(sx,sy)=>[(sx-W/2)/cam.k+cam.x,(sy-H/2)/cam.k+cam.y];
 
   function draw(){
-    dirty=false;curR=reach(b());ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,W,H);
+    dirty=false;curR=reach(b());imp=imposed(b());ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,W,H);
     const ms=matchSet();const hl=hover&&hoverAmt>0?new Set([hover,...hover.nb]):null;
-    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);if(dim(n))a=Math.min(a,.4);return a}; // dim : « Ma classe »
+    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);return a};
     ctx.setTransform(dpr*cam.k,0,0,dpr*cam.k,dpr*(W/2-cam.x*cam.k),dpr*(H/2-cam.y*cam.k));
     // liens
     for(const [p,q] of E){const on=isOn(p)&&isOn(q);const fq=Math.min(fa(p),fa(q));
@@ -81,8 +77,8 @@ const G=(()=>{
       if(n.kind==='skill'){const s=n.sk,rk=b().sk[n.id]||0;
         if(s.max>1){for(let i=0;i<s.max;i++){const a0=-Math.PI/2+i*(2*Math.PI/s.max)+.22,a1=a0+2*Math.PI/s.max-.44;
           ctx.beginPath();ctx.arc(n.x,n.y,r+3,a0,a1);ctx.lineWidth=1.8;ctx.strokeStyle=i<rk?col:colors.edge;ctx.stroke()}}
-        const g=gearOf(n);if(g){ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(n.x,n.y,r+6.5,0,7);ctx.lineWidth=1.2;ctx.strokeStyle=colors.shroud;ctx.stroke();ctx.setLineDash([])}
         if(s.nw){ctx.beginPath();ctx.arc(n.x+r*.75,n.y-r*.75,1.8,0,7);ctx.fillStyle=colors.ember;ctx.fill()}}
+      if(on&&isAdd(n)){ctx.setLineDash([2.5,2]);ctx.beginPath();ctx.arc(n.x,n.y,r+(n.kind==='skill'&&n.sk.max>1?6.5:3.5),0,7);ctx.lineWidth=1.4;ctx.strokeStyle=colors.ember;ctx.stroke();ctx.setLineDash([])} // ajouté par vous
       if(n===sel){ctx.beginPath();ctx.arc(n.x,n.y,r+(n.kind==='skill'?9:5),0,7);ctx.lineWidth=1.5/cam.k;ctx.strokeStyle=colors.ring;ctx.stroke()}
     }
     ctx.globalAlpha=1;
@@ -91,8 +87,8 @@ const G=(()=>{
     const fade=Math.max(0,Math.min(1,(cam.k-.75)/.45));
     // zones, gardées dans le cadre ; puis les noms par priorité (sélection, survol, recherche, acquis), sans chevauchement
     const placed=[],free=x=>!placed.some(q=>x[0]<q[2]&&x[2]>q[0]&&x[1]<q[3]&&x[3]>q[1]);
-    for(const z of zones){const zs=zoneStyle(z.k);ctx.font=`700 ${zs.px}px "Alegreya SC", Georgia, serif`;
-      const t=z.l.toUpperCase()+zs.t,w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
+    for(const z of zones){const zs={px:13,a:.85};ctx.font=`700 ${zs.px}px "Alegreya SC", Georgia, serif`;
+      const t=z.l.toUpperCase(),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
       placed.push([sx-w/2-4,sy,sx+w/2+4,sy+zs.px+3]);ctx.globalAlpha=zs.a;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
     const lab=[];
     for(const n of V){let a=0,txt='',pr=0;
@@ -150,7 +146,11 @@ const G=(()=>{
   cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);const [wx,wy]=toW(...p);const k=Math.min(4,Math.max(.2,cam.k*Math.exp(-e.deltaY*.0015)));
     cam.k=k;cam.x=wx-(p[0]-W/2)/k;cam.y=wy-(p[1]-H/2)/k;dirty=true},{passive:false});
 
-  function change(n,d){const bb=b();if(n.kind==='skill'){if(d>0){if(!addRank(bb,n.id)){showCard();return}}else remRank(bb,n.id)}else if(n.kind==='pip'){if(d>0){if(!addPipNode(bb,n)){showCard();return}}else remPipNode(bb,n)}else return;renderAll()}
+  function change(n,d){const bb=b();let ok=false;if(n.kind==='skill')ok=d>0?addRank(bb,n.id):remRank(bb,n.id);else if(n.kind==='pip')ok=d>0?addPipNode(bb,n):remPipNode(bb,n);else return;if(ok)renderAll();else showCard()}
+  /* Origine d'un nœud acquis : étape de l'objectif qui l'impose, liaison du combo, ou ajout */
+  function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);if(!lk)return '<div class="m">Ajouté par vous</div>';
+    const w=c.by[n.kind==='pip'?'@'+n.attr:n.id];if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]];return `<div class="org">Imposé par « ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}</div>`}
+    return '<div class="org">Imposé : liaison du combo (chemin vers une compétence de l\'objectif)</div>'}
   function select(n){sel=n;showCard();dirty=true}
   function lockHtml(bb,n,lock){if(!lock)return '';const pth=pathTo(bb,n);if(!pth)return '<div class="m">Aucun chemin vers ce nœud.</div>';
     const steps=pth.slice(0,-1).filter(x=>!owned(bb,x));const names=steps.map(x=>x.kind==='skill'?x.sk.fr:PIPS.find(p=>p[0]===x.attr)[1]+' +1');
@@ -162,19 +162,17 @@ const G=(()=>{
       card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Point de départ · gratuit</div><h3>Étincelle</h3><div class="en">Spark</div><div class="d">Permet de réapparaître à l'autel de la Flamme. Ses voisins s'achètent sans autre prérequis.</div><div class="m">Relié à : ${esc(nb.join(', '))}</div>`}
     else if(sel.kind==='pip'){const P=PIPS.find(p=>p[0]===sel.attr);const v=bb.pip[sel.attr]||0;const own=!!bb.pn[sel.id];const lock=!own&&!canBuy(bb,sel);
       card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Nœud d'attribut · 1 point</div><h3>${P[1]} +1</h3><div class="d">${{str:'+5 % de dégâts de mêlée par point.',con:'+50 de santé par point.',end:'+10 de vigueur par point.',dex:'+5 % de dégâts à l\'arc et aux dagues par point.',int:'+5 % de dégâts magiques par point.',spi:'+20 de mana par point.'}[sel.attr]}</div>
-       <div class="step"><button data-d="-1" aria-label="Retirer ce nœud" ${own?'':'disabled'}>−</button><span class="rk">${own?'acquis':lock?'verrouillé':'disponible'}</span><button data-d="1" aria-label="Acquérir ce nœud" ${own||lock?'disabled':''}>+</button></div><div class="m">${P[1]} : ${v}/${P[4]} nœuds acquis</div>${lockHtml(bb,sel,lock)}`}
-    else{const s=sel.sk,v=bb.sk[s.id]||0,g=gearOf(sel);const lock=!v&&!canBuy(bb,sel);
+       ${origin(bb,sel)}<div class="step"><button data-d="-1" aria-label="Retirer ce nœud" ${own&&!lockOf(bb,sel)?'':'disabled'}>−</button><span class="rk">${own?'acquis':lock?'verrouillé':'disponible'}</span><button data-d="1" aria-label="Acquérir ce nœud" ${own||lock?'disabled':''}>+</button></div><div class="m">${P[1]} : ${v}/${P[4]} nœuds acquis</div>${lockHtml(bb,sel,lock)}`}
+    else{const s=sel.sk,v=bb.sk[s.id]||0,lk=lockOf(bb,sel);const lock=!v&&!canBuy(bb,sel);
       card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">${AREAS.find(a=>a[0]===s.area)[1]}${s.nw?' · nouveau en 1.0':''}</div><h3>${esc(s.fr)}</h3><div class="en">${esc(s.en)}</div><div class="d">${esc(s.d)}</div>
-       <div class="step"><button data-d="-1" aria-label="Retirer un rang" ${v?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button data-d="1" aria-label="Ajouter un rang" ${v<s.max&&!lock?'':'disabled'}>+</button><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?' / rang':''}</span></div>
-       ${g?`<div class="m" style="color:var(--shroud)">+${g} rang${g>1?'s':''} apporté${g>1?'s':''} par l'équipement</div>`:''}${lockHtml(bb,sel,lock)}`}
+       ${origin(bb,sel)}<div class="step"><button data-d="-1" aria-label="Retirer un rang" ${v>lk?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button data-d="1" aria-label="Ajouter un rang" ${v<s.max&&!lock?'':'disabled'}>+</button><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?' / rang':''}</span></div>
+       ${lk?`<div class="m">Rang imposé : ${lk}/${s.max}</div>`:''}${lockHtml(bb,sel,lock)}`}
     card.querySelector('.x').onclick=()=>{sel=null;card.hidden=true;dirty=true};
     card.querySelectorAll('[data-d]').forEach(bt=>bt.onclick=()=>change(sel,+bt.dataset.d));
     const pb=card.querySelector('.pathb');if(pb)pb.onclick=()=>{const pth=pathTo(bb,sel);if(pth){buyPath(bb,pth);renderAll()}};
   }
-  $('#gFit').onclick=()=>{area='all';fit();renderSkills()};
-  $('#gShake').onclick=()=>{if(reduce.matches){home();return}for(const n of V){n.x+=(Math.random()-.5)*60;n.y+=(Math.random()-.5)*60}alpha=.8;dirty=true};
+  $('#gFit').onclick=()=>{area='all';fit();renderTree()};
   resize();fit();
-  /* wake : quand le panneau Arbre apparaît (paintLayout) ou change de taille, taille recalée sans toucher au cadrage (premier cadrage si le graphe était caché au démarrage) */
-  return {refresh(o){lastO=o;showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},wake(){resize()},screen(n){return toS(n.x,n.y)},dim,zoneStyle,nodes:N,edges:E};
+  return {refresh(){showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
 })();
 window.G=G;

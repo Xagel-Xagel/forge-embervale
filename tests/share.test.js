@@ -1,7 +1,7 @@
 // Codes de partage : stabilité et rétrocompatibilité. Si un de ces tests casse, des liens déjà partagés sont cassés.
-test('aller-retour encode/decode (b3) pour chaque preset', () => {
-  for (const p of PRESETS) {
-    const b = fromPreset(p); const code = encode(b);
+test('aller-retour encode/decode (b3) pour chaque objectif, seul et avec chaque secondaire', () => {
+  for (const g of GOALS) for (const s of [null, ...GOALS.map(x => x.id)]) { if (s === g.id) continue;
+    const b = goalBuild(g.id, s), p = {name: g.id + ' + ' + s}; const code = encode(b);
     assert.match(code, /^b3-[0-9a-z-]+$/, 'caractères interdits dans le hash');
     const d = decode(code);
     assert.ok(d, p.name);
@@ -12,6 +12,7 @@ test('aller-retour encode/decode (b3) pour chaque preset', () => {
     assert.deepEqual(d.pip, b.pip, p.name + ' : attributs');
     for (const s of SK) assert.equal(d.sk[s.id] || 0, b.sk[s.id] || 0, p.name + ' : ' + s.id);
     assert.deepEqual([d.lvl, d.exp, d.flame, d.upg], [b.lvl, b.exp, b.flame, b.upg]);
+    assert.deepEqual(d.obj, b.obj, p.name + ' : objectifs');
   }
 });
 // Code b2 figé le 2026-11-05 (Mage de bataille, version 8). Ne jamais modifier ces valeurs :
@@ -74,7 +75,6 @@ test('tables figées du partage : rien de réordonné, tout identifiant vivant p
   assert.equal(fnv(FZ.sk.join(' ')), 'e77d2ca9', 'compétences (b1, b2)');
   assert.equal(fnv(FZ.b2), '2c0e4952', 'anciens nœuds d\'attribut (b2)');
   assert.deepEqual(FZ.b1, [['str', 11], ['con', 11], ['end', 8], ['dex', 7], ['int', 11], ['spi', 11]]);
-  for (const id of Object.keys(ITEMS)) assert.ok(FZ.items.includes(id), 'objet à ajouter en fin de FZ.items : ' + id);
   for (const g of GEMS) assert.ok(FZ.gems.includes(g[0]), 'gemme à ajouter en fin de FZ.gems : ' + g[0]);
   for (const n of TOPO.N) {
     if (n.kind === 'pip') assert.ok(FZ.at.includes(n.gid), 'nœud d\'attribut à ajouter en fin de FZ.at : ' + n.gid);
@@ -126,7 +126,7 @@ test('un build enregistré avant le tracé réel (1.8) se recharge : choix conse
   const older = {...old, pn: undefined}; delete older.pn;
   assert.ok(loadSaved(older).pip.int >= 11, 'comptes d\'attributs perdus');
   // build enregistré au nouveau format : rechargé à l'identique, sans migration ; un nœud disparu (patch) ne fait perdre que lui
-  const fresh = fromPreset(PRESETS[1]); const again = loadSaved(JSON.parse(JSON.stringify(fresh)));
+  const fresh = goalBuild('archer'); const again = loadSaved(JSON.parse(JSON.stringify(fresh)));
   assert.deepEqual(again.pn, fresh.pn); assert.deepEqual(again.sk, fresh.sk); assert.equal(again._mig, undefined);
   const patched = JSON.parse(JSON.stringify(fresh)); const keep = Object.keys(patched.pn); patched.pn['pip:retire-par-un-patch'] = 1; patched.pip.dex++;
   const p2 = loadSaved(patched); for (const id of keep) assert.ok(p2.pn[id], 'nœud valide perdu : ' + id);
@@ -146,4 +146,35 @@ test('un code b3 dont un nœud a disparu du tracé (patch) : migré et signalé,
   const n = TOPO.byId.wizard, g = n.gid; delete TOPO.byGid[g];
   let d; try { d = decode(REF_B3); } finally { TOPO.byGid[g] = n; }
   assert.equal(d._mig.from, 'b3'); assert.equal(d._mig.gone, 1); assert.notEqual(d.sk.wizard, 3, 'rang du nœud disparu non lu'); assert.equal(d.sk.thunder, 3);
+});
+
+// ---- 2.0.0 : objectifs dans le lien (segment -o), équipement inerte ----
+test('tables figées des objectifs et des emplacements : rien de réordonné, tout objectif vivant présent', () => {
+  // Empreintes figées le 2026-11-07. Ne jamais modifier : ajouter EN FIN seulement.
+  assert.equal(fnv(FZ.goals.slice(0, 12).join(' ')), fnv('tank sword barb archer assassin mageCrit fire ice storm necro healer paladin'), 'objectifs');
+  assert.deepEqual(FZ.slots, ['head', 'chest', 'hands', 'legs', 'feet', 'w1', 'w2', 'r1', 'r2']);
+  for (const g of GOALS) assert.ok(FZ.goals.includes(g.id), 'objectif à ajouter en fin de FZ.goals : ' + g.id);
+  assert.equal(new Set(FZ.goals).size, FZ.goals.length, 'doublon dans FZ.goals');
+});
+test('segment -o : principal seul, principal + secondaire, arbre libre sans segment ; somme de contrôle', () => {
+  const a = goalBuild('tank'), b = goalBuild('tank', 'healer'), c = blankBuild();
+  assert.match(encode(a), /-o00zz-[0-9a-z]{2}$/); assert.match(encode(b), /-o00[0-9a-z]{2}-[0-9a-z]{2}$/); assert.doesNotMatch(encode(c), /-o/);
+  assert.deepEqual(decode(encode(b)).obj, ['tank', 'healer']); assert.deepEqual(decode(encode(a)).obj, ['tank', null]);
+  const code = encode(b); for (let i = 1; i < code.length; i++) assert.equal(decode(code.slice(0, i)), null, 'coupure au caractère ' + i);
+  // secondaire sans principal dans le build : pas de segment (rien d'imposé)
+  const d = blankBuild(); d.obj = [null, 'healer']; assert.doesNotMatch(encode(d), /-o/);
+});
+test('objectif inconnu (lien d\'une version plus récente) ou changé depuis : retiré, arbre gardé tel quel, signalé', () => {
+  const b = goalBuild('mageCrit', 'storm'), p = encode(b).split('-').slice(0, -1), sum = s => s + '-' + b3sum(s);
+  const q = p.map(x => x[0] === 'o' && x.length === 5 ? 'o' + (FZ.goals.length + 3).toString(36).padStart(2, '0') + x.slice(3) : x);
+  const d = decode(sum(q.join('-')));
+  assert.ok(d); assert.deepEqual(d.obj, []); assert.equal(d._objLost, true); assert.deepEqual(d.sk, b.sk); assert.deepEqual(d.pn, b.pn);
+  // combo imposé absent de l'arbre du lien (objectif modifié par une version suivante) : objectifs retirés, arbre inchangé
+  const t = JSON.parse(JSON.stringify(b)); delete t.sk.fatalPrecision; prune(t); const e = decode(encode(t));
+  assert.deepEqual(e.obj, []); assert.equal(e._objLost, true); assert.deepEqual(e.sk, t.sk);
+  assert.equal(decode(encode(b))._objLost, undefined, 'lien intact : rien de signalé');
+});
+test('équipement d\'un ancien lien : relu et réécrit à l\'identique, jamais compté', () => {
+  const d = decode(REF_B3); assert.deepEqual(d.gear, REF_B3_BUILD.gear); assert.equal(encode(d), REF_B3);
+  const o = compute(d), e = JSON.parse(JSON.stringify(d)); e.gear = {}; assert.deepEqual(compute(e).attr, o.attr); assert.equal(compute(e).hp, o.hp);
 });

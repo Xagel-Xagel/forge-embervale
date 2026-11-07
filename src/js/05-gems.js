@@ -1,4 +1,5 @@
-/* Gemmes d'arme (1.0) : [id, nom FR, nom EN, rareté, palier, type de dégâts que l'arme doit infliger pour déclencher l'effet, effet, valeurs de base de la carte] */
+/* Gemmes d'arme (1.0) : [id, nom FR, nom EN, rareté, palier, type de dégâts que l'arme doit infliger pour déclencher l'effet, effet, valeurs de base de la carte]
+   2.0.0 : deux emplacements (Arme 1, Arme 2), sans arme choisie ; effets descriptifs, jamais comptés dans les chiffres */
 const RAR={c:['Commune','#8a8f98'],u:['Peu commune','#3f9a5b'],r:['Rare','#3b78c4'],e:['Épique','#8b52c9'],l:['Légendaire','#d08a1e']};
 const GEMS=[
  ['g_bleed','Gemme de saignement','Gem of Bleeding','c',1,['cut'],'Les critiques tranchants font saigner (dégâts sur la durée).','8 · 6 s'],
@@ -32,6 +33,5 @@ const GEMS=[
  ['g_hyper','Gemme d\'hyperspécialisation','Gem of Hyperspecialization','l',7,[],'Après une capacité spéciale, les kills rendent de la Concentration (Focus).','3 s · 10'],
 ];
 const GEMI={};GEMS.forEach(([id,fr,en,r,t,types,d,v])=>GEMI[id]={id,fr,en,r,t,types,d,v});
-const PERKTYPE={dCut:'cut',dPierce:'pierce',dBlunt:'blunt',dPoison:'poison',venom:'poison',mFire:'fire',mIce:'ice',mShock:'shock',mShroud:'shroud'};
-/* Déclenchement : types de la répartition et des perks « Lourd » des 5 emplacements (l'arme améliorée au maximum, choix assumé : le curseur Améliorations n'y joue pas) */
-function gemFit(g,w){if(!g||!w||!g.types.length)return null;const t=new Set([...w.split.map(x=>x[0]),...w.wperks.map(p=>PERKTYPE[p[0]]).filter(Boolean)]);return g.types.some(x=>t.has(x))}
+/* Type de dégâts qui déclenche une gemme (colonne 6 de GEMS), pour la carte de la gemme */
+const GTYPE={cut:'tranchants',pierce:'perçants',blunt:'contondants',fire:'de feu'};
