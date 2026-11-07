@@ -10,3 +10,6 @@ globalThis.lostOf = b => TOPO.N.filter(n => owned(b, n) && !reach(b).has(n));
 // État de l'interface gardé et rendu après une fonction (builds, onglet, vue…)
 globalThis.keepUi = fn => { const keep = [JSON.parse(JSON.stringify(builds)), cur, compare, area, onlyOn, query, view];
   try { return fn(); } finally { [builds, cur, compare, area, onlyOn, query, view] = [keep[0].map(x => fitGoals(normalize(Object.assign(blankBuild(), x)))), ...keep.slice(1)]; } };
+// 2.3.0 : niveau et exploration qui donnent B points ; messages (toast) recueillis le temps d'une fonction
+globalThis.ptsAt = B => { const lv = Math.min(50, 1 + Math.floor(B / 2)); return [lv, B - 2 * (lv - 1)]; };
+globalThis.quiet = fn => { const keep = globalThis.toast, msgs = []; globalThis.toast = t => msgs.push(t); try { return fn(msgs); } finally { globalThis.toast = keep; } };

@@ -46,7 +46,7 @@ function renderGoals(){const b=B(),[p,s,t]=b.obj||[];$('#goal1').value=p||'';$('
 function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill').length,pp=gone.length-sk;toast(`Plus reliés à un point de départ, donc retirés : ${sk?sk+' compétence'+(sk>1?'s':''):''}${sk&&pp?' et ':''}${pp?pp+' nœud'+(pp>1?'s':'')+" d'attribut":''}`)}}
 /* i : 0 principal, 1 secondaire, 2 soutien */
 function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i===1?v||null:i===2?o[1]||null:(v&&o[1]!==v?o[1]||null:null),t=i===2?v||null:o[2]||null;
-  const before=Object.keys(addsOf(b).sk).length+Object.keys(addsOf(b).pn).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s,t));
+  const A=addsOf(b),before=Object.keys(A.sk).length+Object.keys(A.pn).length+Object.keys(A.up).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s,t));
   if(p&&newP)toast(`Combo « ${goalName(p)} » posé, avec ses gemmes${before?' ; vos nœuds placés à la main sont retirés':''}`);else if(!p)toast('Arbre libre : tout est modifiable, rien n\'est imposé');
   renderAll()}
 
@@ -61,8 +61,8 @@ function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spent
   el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
     return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
       `<p>${esc(st.why)}</p><div class="chips">${Object.entries(st.items).map(([k,w])=>itemChip(k,w,c,st)).join('')}</div></details>`).join('')+'</div>'}).join('')+
-    `<p class="meta2">Liaisons ${pts(c.links)} · vos ajouts ${pts(sp-c.spent)} · ${sp>bu?`<span class="over-msg">${pts(sp-bu)} en trop</span>`:`libres ${pts(bu-sp)}`}</p>${res}`+
-    `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié.</p>`}
+    `<p class="meta2">Liaisons ${pts(c.links)} · vos ajouts ${pts(sp-c.buy)} · ${sp>bu?`<span class="over-msg">${pts(sp-bu)} en trop</span>`:`libres ${pts(bu-sp)}`}</p>${res}`+
+    `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié. Vos ajouts comptent comme déjà acquis : le combo passe par eux sans les payer s'il y gagne (étapes plus avancées ou moins de points) ; il dispose toujours de tout votre budget, vos ajouts viennent en plus. Un de vos nœuds qu'une étape compte devient imposé, sauf si le combo ne l'aurait pas sans lui. Le combo se recalcule à chaque ajout, retrait ou réglage.</p>`}
 
 /* ---- Gemmes (Arme 1, Arme 2) : effets descriptifs, jamais comptés ---- */
 function renderGems(){const b=B(),el=$('#gems');el.innerHTML='';b.gem=b.gem||{};
@@ -74,19 +74,45 @@ function renderGems(){const b=B(),el=$('#gems');el.innerHTML='';b.gem=b.gem||{};
     el.appendChild(row)}
   el.insertAdjacentHTML('beforeend','<p class="meta2">Les gemmes se posent sur l\'arme ; leur effet est décrit, il n\'entre dans aucun chiffre ici (l\'équipement n\'est pas pris en compte).</p>')}
 
-/* ---- Arbre : achats et retraits (invariant : canBuy, prune ; nœuds imposés verrouillés) ---- */
+/* ---- Arbre : achats et retraits (invariant : canBuy, prune ; nœuds imposés verrouillés) ----
+   Avec objectif (2.3.0) : un achat ou un retrait passe par vos ajouts (b.ad), puis le combo est recalculé depuis les départs (regen, 06-objectifs.js) */
 function lockedMsg(n){const pth=pathTo(B(),n);toast(pth?`Verrouillé : il faut d'abord un nœud relié (chemin le plus court : ${pts(pathCost(B(),pth))})`:'Verrouillé : aucun chemin vers ce nœud')}
-function imposedMsg(b){toast(`Imposé par l'objectif « ${goalName(b.obj[0])} » : choisissez « Aucun (arbre libre) » pour le retirer`)}
-function addRank(b,id){const s=SKI[id],n=TOPO.byId[id];if(!s)return false;if(!(b.sk[id]>0)&&!canBuy(b,n)){lockedMsg(n);return false}b.sk[id]=Math.min(s.max,(b.sk[id]||0)+1);return true}
-function remRank(b,id){const v=(b.sk[id]||0)-1;if(v<0)return false;if(v<lockOf(b,TOPO.byId[id])){imposedMsg(b);return false}if(v>0)b.sk[id]=v;else{delete b.sk[id];goneMsg(prune(b))}return true}
-function addPipNode(b,n){if(b.pn[n.id])return false;if(!canBuy(b,n)){lockedMsg(n);return false}b.pn[n.id]=1;syncPips(b);return true}
-function remPipNode(b,n){if(!b.pn[n.id])return false;if(lockOf(b,n)){imposedMsg(b);return false}delete b.pn[n.id];syncPips(b);goneMsg(prune(b));return true}
+/* Nœud verrouillé : l'objectif qui le demande (étape), ou liaison vers vos ajouts */
+function imposedMsg(b,n){const c=imposed(b),w=c&&n?c.by[n.kind==='pip'?'@'+n.attr:n.id]:null;
+  if(c&&n&&c.conn.includes(n.id))toast('Liaison vers un de vos ajouts : retirez d\'abord l\'ajout qu\'elle relie');
+  else toast(`Imposé par l'objectif « ${goalName(w?c.rep[w[0]].id:b.obj[0])} » : choisissez « Aucun (arbre libre) » pour le retirer`)}
+const withGoal=b=>isMain((b.obj||[])[0]);
+/* f modifie vos ajouts (b.ad) ; keep : juste après un ajout (aucun ajout élagué). Le message dit ce que le recalcul a changé, et seulement cela */
+function viaAdds(b,f,keep){const c0=imposed(b);f(b.ad);const gone=regen(b,keep,c0),c1=imposed(b);
+  if(c0&&c1){const d=c1.wpts-c0.wpts,m=[];if(c0.links!==c1.links)m.push(`liaisons ${pts(c0.links)} → ${pts(c1.links)}`);if(d)m.push(`${d>0?'+':'−'}${pts(Math.abs(d))} sur les étapes`);if(m.length)toast('Combo recalculé : '+m.join(' · '))}
+  return gone}
+const carriedMsg=()=>toast('Retiré de vos ajouts, mais le combo passe par ce nœud : il reste, imposé');
+/* +1 rang : sur un nœud imposé, votre rang au-dessus (up : le combo ne change pas) ; sinon, votre nœud (sk : le combo passe par lui sans le payer) */
+function addRank(b,id){const s=SKI[id],n=TOPO.byId[id];if(!s)return false;const r=b.sk[id]||0;if(r>=s.max)return false;if(!r&&!canBuy(b,n)){lockedMsg(n);return false}
+  if(!withGoal(b)){b.sk[id]=r+1;return true}const up=!!b.ad.up[id]||!b.ad.sk[id]&&lockOf(b,n)>0;viaAdds(b,A=>{(up?A.up:A.sk)[id]=r+1},true);return true}
+/* −1 rang : jamais sous l'imposé ; votre rang au-dessus disparaît au rang du combo (+1 puis −1 ne change rien) ; votre nœud perd un rang, ou part (règle 3) */
+function remRank(b,id){const v=(b.sk[id]||0)-1,n=TOPO.byId[id];if(v<0)return false;const lk=lockOf(b,n);if(v<lk){imposedMsg(b,n);return false}
+  if(!withGoal(b)){if(v>0)b.sk[id]=v;else{delete b.sk[id];goneMsg(prune(b))}return true}
+  if(b.ad.up[id])viaAdds(b,A=>{if(v>lk)A.up[id]=v;else delete A.up[id]},true);
+  else if(b.ad.sk[id]){if(v>0)goneMsg(viaAdds(b,A=>{A.sk[id]=v},false));else goneMsg(removeAdd(b,n))}
+  else{imposedMsg(b,n);return false}return true}
+/* Retirer un de vos nœuds : vos ajouts qu'il était seul à relier partent avec lui (règle 3 ; les éléments d'étape du combo comptent comme reliés,
+   le combo les recalcule), puis le combo est recalculé sans lui */
+function removeAdd(b,n){const c=imposed(b),t={sk:{...b.sk},pn:{...b.pn}};if(n.kind==='skill')delete t.sk[n.id];else delete t.pn[n.id];
+  const seen=new Set([TOPO.core]);for(const m of TOPO.N)if(m!==n&&owned(t,m)&&(m.kind==='skill'?(c.want.sk[m.id]||0)>0&&c.sk[m.id]:m.kind==='pip'&&c.pn[m.id]&&(c.want.pip[m.attr]||0)>0))seen.add(m);
+  const st=[...seen];while(st.length){const u=st.pop();for(const v of u.nb)if(!seen.has(v)&&(v.kind==='start'||owned(t,v))){seen.add(v);st.push(v)}}
+  const gone=[];viaAdds(b,A=>{for(const k of ['sk','pn','up'])delete A[k][n.id];for(const k of ['sk','pn','up'])for(const id of Object.keys(A[k]))if(!seen.has(TOPO.byId[id])){gone.push(TOPO.byId[id]);for(const g of ['sk','pn','up'])delete A[g][id]}},true);
+  if(owned(b,n))carriedMsg();return gone.filter(m=>!owned(b,m))}
+function addPipNode(b,n){if(b.pn[n.id])return false;if(!canBuy(b,n)){lockedMsg(n);return false}if(withGoal(b))viaAdds(b,A=>{A.pn[n.id]=1},true);else{b.pn[n.id]=1;syncPips(b)}return true}
+function remPipNode(b,n){if(!b.pn[n.id])return false;if(lockOf(b,n)){imposedMsg(b,n);return false}
+  if(!withGoal(b)){delete b.pn[n.id];syncPips(b);goneMsg(prune(b));return true}goneMsg(removeAdd(b,n));return true}
 function addPip(b,k){const R=reach(b);const n=TOPO.pips.filter(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,R)).sort((x,y)=>x.idx-y.idx)[0];
   if(!n){toast(TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id])?"Aucun nœud de cet attribut n'est relié pour l'instant : utilisez « Acheter le chemin »":'Tous les nœuds de cet attribut sont acquis');return false}return addPipNode(b,n)}
 /* −1 attribut : le nœud non imposé dont le retrait coupe le moins */
 function remPip(b,k){const imp=imposed(b);let best=null,bc=Infinity;for(const p of TOPO.pips){if(p.attr!==k||!b.pn[p.id]||lockOf(b,p,imp))continue;const t=JSON.parse(JSON.stringify(b));delete t.pn[p.id];syncPips(t);const c=prune(t).length;if(c<bc){bc=c;best=p}}
-  if(!best){imposedMsg(b);return false}return remPipNode(b,best)}
-function buyTo(b,n){const pth=pathTo(b,n);if(pth){buyPath(b,pth);renderAll()}}
+  if(!best){imposedMsg(b,TOPO.pips.find(p=>p.attr===k&&b.pn[p.id]));return false}return remPipNode(b,best)}
+/* « Acheter le chemin » : avec objectif, le chemin entre dans vos ajouts */
+function buyTo(b,n){const pth=pathTo(b,n);if(!pth)return;if(withGoal(b))viaAdds(b,A=>{for(const x of pth)if(!owned(b,x)){if(x.kind==='skill')A.sk[x.id]=1;else if(x.kind==='pip')A.pn[x.id]=1}},true);else buyPath(b,pth);renderAll()}
 function renderTree(){const b=B(),sp=spentPoints(b),ae=$('#areas');ae.innerHTML='';
   [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const bt=document.createElement('button');bt.className='area';bt.style.setProperty('--ac',`var(${c})`);bt.setAttribute('aria-pressed',area===k);
     bt.innerHTML=`${n} <small>${pts(k==='all'?sp:zonePts(b,k))}</small>`;bt.onclick=()=>{area=k;renderTree();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
@@ -137,8 +163,8 @@ $('#reset').onclick=()=>{builds[cur]=blankBuild('Build '+'AB'[cur]);renderAll();
 function goStep(id){const p=$('#'+id);if(!p)return false;const h=p.querySelector('h2'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   p.scrollIntoView({behavior:calm?'auto':'smooth',block:'start'});if(h){h.tabIndex=-1;h.focus({preventScroll:true})}return true}
 document.querySelectorAll('.steps [data-go]').forEach(b=>{b.onclick=()=>goStep(b.dataset.go)});
-/* Réglages : les ajouts encore reliés sont gardés, le combo imposé est recalculé */
-function setting(k,v){const b=B(),A=addsOf(b);b[k]=v;if((b.obj||[])[0])goneMsg(rebuild(b,A));renderAll()}
+/* Réglages : le combo imposé est recalculé, les ajouts encore reliés sont gardés */
+function setting(k,v){const b=B(),c0=imposed(b);b[k]=v;if(withGoal(b))goneMsg(regen(b,false,c0));renderAll()}
 [['#lvl','lvl',1,50],['#exp','exp',0,114],['#flame','flame',1,11]].forEach(([s,k,mn,mx])=>{$(s).onchange=e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=mn;setting(k,Math.max(mn,Math.min(mx,v)))}});
 function stepFlame(d){setting('flame',Math.max(1,Math.min(11,B().flame+d)));const bt=$(d<0?'#flameDn':'#flameUp');if(bt.disabled)$('#flame').focus()} // à la borne : focus sur le champ
 $('#flameDn').onclick=()=>stepFlame(-1);$('#flameUp').onclick=()=>stepFlame(1);
@@ -151,11 +177,15 @@ function saveCur(){const s=lsGet();const b=JSON.parse(JSON.stringify(B()));const
 $('#save').onclick=saveCur;
 /* Build enregistré : ceux d'avant le tracé réel (1.8 et avant) sont migrés ; objectifs vérifiés (fitGoals) */
 function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringify(s)));b.upg=Math.max(0,Math.min(5,Math.round(+b.upg)||0));if(!b.gem||typeof b.gem!=='object')b.gem={};
-  if(s.tv)normalize(b);else{delete b.pn;b.tv=1;migrate(b,'saved')}return fitGoals(b)}
+  if(!s||typeof s!=='object'||!('ad' in s))delete b.ad; // build d'avant la 2.3.0 : ajouts déduits de l'arbre (fitGoals)
+  if(s&&s.tv)normalize(b);else{delete b.pn;b.tv=1;migrate(b,'saved')}return fitGoals(b)}
 $('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!notices(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
 $('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
 /* Lien ou build ancien : ce qui a été ajouté pour le relier, objectif retiré ; true si un message a été montré */
-function notices(b){const lost=b&&b._objLost;if(lost)toast((b.obj||[])[0]?'Objectif secondaire ou de soutien retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');return migNotice(b)||!!lost}
+function notices(b){const lost=b&&b._objLost,rc=b&&b._recalc;if(lost)toast((b.obj||[])[0]?'Objectif secondaire ou de soutien retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');
+  if(rc){const d=rc.wpts[1]-rc.wpts[0],m=[];if(rc.links[0]!==rc.links[1])m.push(`liaisons ${pts(rc.links[0])} → ${pts(rc.links[1])}`);if(d)m.push(`${d>0?'+':'−'}${pts(Math.abs(d))} sur les étapes`);
+    toast(`Lien ou build d'avant la 2.3.0 : combo recalculé avec vos ajouts, comptés comme déjà acquis${m.length?' ('+m.join(' · ')+')':''}`)}
+  return migNotice(b)||!!lost||!!rc}
 function migNotice(b){const g=b&&b._mig;if(!g||!(g.pts>0||g.gone>0))return false;
   const names=[...g.addSk.map(id=>SKI[id].fr),...Object.entries(g.addPip).map(([a,n])=>PIPS.find(p=>p[0]===a)[1]+' +'+n)];const over=spentPoints(b)-budget(b);
   const m=modal(`<h2>${g.from==='b3'?'Lien fait sur un tracé antérieur':(g.from==='saved'?'Build enregistré':'Lien')+" d'avant le tracé réel"}</h2><p class="sub">${g.from==='b3'?"Ce lien a été créé avant la dernière mise à jour du tracé de l'arbre (patch du jeu).":(g.from==='saved'?'Ce build a été enregistré':'Ce code '+esc(g.from)+'- a été créé')+" avant la version 1.9.0, qui reprend le vrai tracé de l'arbre du jeu."} Vos choix sont conservés${g.gone?`, sauf ${g.gone} nœud${g.gone>1?'s':''} qui n'existe${g.gone>1?'nt':''} plus`:''} (compétences et rangs, attributs, gemmes).${names.length?` Pour les relier à un point de départ, ces nœuds ont été ajoutés (+${pts(g.pts)}) :`:''}</p>
@@ -169,6 +199,6 @@ $('#share').onclick=()=>{const code=encode(B());try{history.replaceState(null,''
 $('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b3-</code> ; les anciens <code>b2-</code> et <code>b1-</code> marchent aussi (adaptés au tracé réel de l'arbre). L'équipement que portent les codes est ignoré. Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b3-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b3-, b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
   m.querySelector('#go').onclick=()=>{const b=decode(m.querySelector('#impCode').value);if(!b){m.querySelector('#impErr').hidden=false;return}builds[cur]=b;m.remove();renderAll();if(!notices(b))toast('Build importé dans '+'AB'[cur])};m.querySelector('#cls').onclick=()=>m.remove()};
 function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const b=decode(h);if(b){builds[0]=b;cur=0;compare=false;
-  if(b._mig){try{history.replaceState(null,'','#'+encode(b))}catch(e){}}setTimeout(()=>notices(b),0);return true}
+  if(b._mig||b._recalc){try{history.replaceState(null,'','#'+encode(b))}catch(e){}}setTimeout(()=>notices(b),0);return true}
   setTimeout(()=>toast('Lien de partage illisible (incomplet ou abîmé) : builds par défaut affichés'),0)}return false}
 window.addEventListener('hashchange',()=>{if(fromHash())renderAll()});
