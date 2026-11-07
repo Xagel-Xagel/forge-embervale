@@ -2,6 +2,12 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.2.0 — 2026-11-07 · Haut de page explicite : 5 étapes
+- **Fil des étapes** sous le titre : 1. Réglez vos points · 2. Choisissez vos objectifs · 3. Lisez pourquoi · 4. Ajoutez compétences et gemmes · 5. Enregistrez, partagez, comparez. Un clic descend à l'étape.
+- Chaque panneau porte son numéro et une phrase qui dit à quoi il sert (Exploration = racines du Shroud et puits d'élixir trouvés).
+- En haut ne restent que le **build affiché** (A ou B) et son nom, libellés. Les autres boutons passent dans l'étape 5, en trois groupes : « Dans ce navigateur » (Enregistrer, Mes builds, Supprimer), « Par lien » (Partager, Importer un code), « Entre A et B » (Comparer, Copier vers l'autre, Vider ce build).
+- Les gemmes passent sous l'arbre (étape 4) ; sur ordinateur, l'arbre n'est plus collé en haut de l'écran. Aucun lien ni build enregistré n'est touché.
+
 ## 2.1.0 — 2026-11-07 · 3e objectif « Soutien »
 - **Soutien**, 3e menu des objectifs, après le principal et le secondaire : il place les **derniers points** sur des compétences de soutien, au choix du joueur : **Survie (santé)**, **Endurance (vigueur)**, **Résistances**, **Mana**. Compétences seules (ni attribut ni gemme) ; mêmes règles (étapes dans l'ordre, chemin le moins cher, arrêt au premier achat trop cher, nœud de Flamme sauté à la Flamme 1). Contenu, ordre des étapes et raisons : hypothèse du simulateur.
 - Nœuds du soutien verrouillés comme ceux des autres objectifs ; changer de soutien garde vos ajouts encore reliés. « Pourquoi ce combo » montre l'étiquette « Soutien » ; A contre B l'ajoute à la ligne Objectifs.

@@ -33,7 +33,7 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), GEMI, GTYPE
   06-objectifs.js    GOALS (12 objectifs, étapes et raisons), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache), imposed, addsOf, rebuild, setGoals, lockOf, fitGoals, goalBuild
-  10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, partage, builds enregistrés
+  10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, fil des étapes (goStep), partage, builds enregistrés
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom ; imposé plein, ajouté en pointillé), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)

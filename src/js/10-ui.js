@@ -133,6 +133,10 @@ $('#buildName').oninput=e=>{B().name=e.target.value||'Sans nom';renderTabs();$('
 $('#cmp').onchange=e=>{compare=e.target.checked;renderCmp();if(compare)$('#p-cmp').scrollIntoView({block:'nearest'})};
 $('#copyAB').onclick=()=>{builds[1-cur]=JSON.parse(JSON.stringify(B()));renderAll();toast('Copié vers '+'AB'[1-cur])};
 $('#reset').onclick=()=>{builds[cur]=blankBuild('Build '+'AB'[cur]);renderAll();toast('Build '+'AB'[cur]+' vidé : arbre libre')};
+/* Fil des étapes : descend au panneau et y met le focus (jamais de hash : il est réservé au code de partage) */
+function goStep(id){const p=$('#'+id);if(!p)return false;const h=p.querySelector('h2'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  p.scrollIntoView({behavior:calm?'auto':'smooth',block:'start'});if(h){h.tabIndex=-1;h.focus({preventScroll:true})}return true}
+document.querySelectorAll('.steps [data-go]').forEach(b=>{b.onclick=()=>goStep(b.dataset.go)});
 /* Réglages : les ajouts encore reliés sont gardés, le combo imposé est recalculé */
 function setting(k,v){const b=B(),A=addsOf(b);b[k]=v;if((b.obj||[])[0])goneMsg(rebuild(b,A));renderAll()}
 [['#lvl','lvl',1,50],['#exp','exp',0,114],['#flame','flame',1,11]].forEach(([s,k,mn,mx])=>{$(s).onchange=e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=mn;setting(k,Math.max(mn,Math.min(mx,v)))}});

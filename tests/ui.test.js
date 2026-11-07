@@ -61,3 +61,19 @@ test('graphe : nœud imposé sans anneau « ajouté », avec son étape ; nœud 
   assert.equal(G.isAdd(n), true); assert.match(G.origin(b, n), /Ajouté par vous/);
 }));
 test('recherche sans accents ni majuscules', () => { assert.ok(fold('Égorgeur').includes(fold('EGORGEUR'))); assert.equal(fold('Pyromane'), 'pyromane'); });
+// Haut de page explicite (2.2.0) : fil des étapes 1 → 5, chaque étape mène à un panneau existant, aucun bouton perdu
+test('fil des étapes : 5 étapes dans l\'ordre, chacune vers un panneau numéroté ; tous les boutons du haut gardés', () => {
+  const {readFileSync} = process.getBuiltinModule('node:fs'), html = readFileSync(new URL('../src/page.html', 'file://' + process.cwd() + '/tests/'), 'utf8');
+  const go = [...html.matchAll(/data-go="([\w-]+)"><b>(\d)<\/b>/g)].map(m => [m[1], m[2]]);
+  assert.deepEqual(go.map(g => g[1]), ['1', '2', '3', '4', '5']);
+  for (const [id, n] of go) { const sec = html.match(new RegExp(`<section[^>]*id="${id}"[^>]*>\\s*<div class="ph"><h2[^>]*><span class="num">(\\d)</span>`)); assert.ok(sec, 'panneau ' + id); assert.equal(sec[1], n, 'numéro du panneau ' + id); }
+  for (const id of ['buildTabs', 'buildName', 'cmp', 'save', 'saved', 'delSaved', 'share', 'import', 'copyAB', 'reset']) assert.equal(html.split(`id="${id}"`).length, 2, 'bouton #' + id);
+  assert.ok(!/href="#/.test(html), 'aucun lien vers le hash (réservé au code de partage)');
+});
+test('goStep : descend au panneau, focus sur son titre, sans toucher l\'adresse ; panneau inconnu refusé', () => {
+  const calls = [], h = {focus: o => calls.push(['focus', o])}, p = {querySelector: q => q === 'h2' ? h : null, scrollIntoView: o => calls.push(['scroll', o])};
+  const keep = document.querySelector, rs = history.replaceState; let n = 0; history.replaceState = () => { n++; };
+  document.querySelector = q => q === '#p-why' ? p : q === '#nope' ? null : keep(q);
+  try { assert.equal(goStep('p-why'), true); assert.equal(goStep('nope'), false); } finally { document.querySelector = keep; history.replaceState = rs; }
+  assert.deepEqual(calls, [['scroll', {behavior: 'smooth', block: 'start'}], ['focus', {preventScroll: true}]]); assert.equal(h.tabIndex, -1); assert.equal(n, 0);
+});
