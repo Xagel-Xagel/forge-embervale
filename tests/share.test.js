@@ -186,3 +186,19 @@ test('segment -o : principal ou secondaire inconnu signalé ; « zz » en princi
   assert.equal(with_('zzzz'), null); assert.equal(with_('zz03'), null);
   const c = with_('0303'); assert.deepEqual(c.obj, ['archer', null]); assert.equal(c._objLost, undefined);
 });
+
+// ---- 2.1.0 : soutien dans le segment -o (2 caractères de plus, seulement s'il y en a un) ----
+test('soutien : aller-retour principal + soutien et principal + secondaire + soutien ; sans soutien, code inchangé', () => {
+  for (const t of SUPS) for (const s of [null, 'healer']) { const b = goalBuild('tank', s, 'x', t.id), code = encode(b), d = decode(code);
+    assert.match(code, new RegExp(`-o00${s ? '[0-9a-z]{2}' : 'zz'}${FZ.goals.indexOf(t.id).toString(36).padStart(2, '0')}-[0-9a-z]{2}$`));
+    assert.deepEqual(d.obj, ['tank', s, t.id]); assert.equal(d._objLost, undefined); assert.deepEqual(d.sk, b.sk); assert.deepEqual(d.pn, b.pn); assert.equal(encode(d), code); }
+  const a = goalBuild('tank', 'healer'), code = encode(a); assert.match(code, /-o00[0-9a-z]{2}-[0-9a-z]{2}$/, 'sans soutien : 4 caractères');
+  assert.deepEqual(decode(code).obj, ['tank', 'healer']); assert.equal(encode(decode(code)), code, 'lien 2.0.0 rouvert à l\'identique');
+});
+test('soutien : inconnu ou objectif ordinaire en soutien → retiré et signalé, le reste gardé ; « zz » en soutien refusé', () => {
+  const b = goalBuild('archer', 'tank'), p = encode(b).split('-').slice(0, -1), sum = s => s + '-' + b3sum(s), with_ = o => decode(sum(p.map(x => x[0] === 'o' && x.length === 5 ? 'o' + o : x).join('-')));
+  const ob = p.find(x => x[0] === 'o').slice(1), far = (FZ.goals.length + 40).toString(36).padStart(2, '0');
+  const u = with_(ob + far); assert.deepEqual(u.obj, ['archer', 'tank']); assert.equal(u._objLost, true, 'soutien inconnu');
+  const v = with_(ob + '00'); assert.deepEqual(v.obj, ['archer', 'tank']); assert.equal(v._objLost, true, 'Tank en soutien');
+  assert.equal(with_(ob + 'zz'), null);
+});

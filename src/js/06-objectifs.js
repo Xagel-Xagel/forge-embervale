@@ -3,7 +3,7 @@
    jusqu'à la 1.19.0 ; Tank = « Sadi Fourbe »), rangés en étapes. L'ORDRE DES ÉTAPES ET LEURS RAISONS SONT DES CHOIX DU SIMULATEUR (hypothèse),
    pas un guide officiel ; les effets cités viennent des descriptions des compétences (SK, fichiers du jeu 1.0).
    {id (place figée : FZ.goals), n nom, grp groupe du menu, area couleur, gem gemmes posées, steps : [titre, raison, {compétence: rang | attribut: nœuds}]} */
-const GOAL_GRP=[['war','Guerrier'],['rng','Rôdeur'],['mag','Mage'],['sup','Soutien']];
+const GOAL_GRP=[['war','Guerrier'],['rng','Rôdeur'],['mag','Mage'],['sup','Soins']];
 const GOALS=[
  {id:'tank',n:"Tank (d'après Sadi Fourbe)",grp:'war',area:'war',gem:{w1:'g_armor',w2:'g_reap'},steps:[
   ['Attirer les coups',"Némésis attire l'attention des ennemis : c'est vous qu'ils frappent, pas le groupe.",{nemesis:3}],
@@ -95,22 +95,44 @@ const GOALS=[
   ['Parer',"Parade puissante et Déviation arcanique (+10 de mana par parade réussie, par rang).",{powerParry:3,arcaneDeflect:3}],
   ['Mana et survie',"Esprit, Essences de vie, Constitution, Peau épaisse, Exalté et Double saut.",{spi:6,lifeEssences:3,con:2,thickSkin:1,exalted:1,doubleJump:1}]]},
 ];
-const GOALI={};GOALS.forEach(g=>GOALI[g.id]=g);
+/* Objectifs de soutien (2.1.0) : 3e objectif, passé en dernier sur les points restants. COMPÉTENCES SEULES (ni attribut ni gemme), choisies par le joueur.
+   Contenu, ordre des étapes et raisons : CHOIX DU SIMULATEUR (hypothèse) ; les effets cités viennent des descriptions de SK. Place figée : fin de FZ.goals. */
+const SUPS=[
+ {id:'survie',n:'Survie (santé)',area:'war',steps:[
+  ['Santé selon vos attributs',"Athlète, Vigueur voilée et Essences de vie : +3 × Force, Dextérité ou Intelligence de santé max par rang.",{athlete:3,veiledVigor:3,lifeEssences:3}],
+  ['Constitution de la Flamme',"Peau épaisse : +1 Constitution tous les 2 niveaux de Flamme.",{thickSkin:1}],
+  ['Relever le groupe',"Réanimation curative : +8 % de santé aux joueurs réanimés par rang.",{healingRevive:3}]]},
+ {id:'vigueur',n:'Endurance (vigueur)',area:'rng',steps:[
+  ['Régénérer la vigueur',"Rebond (+10 % de régén. de vigueur de base par rang) et Rôdeur (+1 Dextérité, +1 Endurance et régén. de vigueur par rang).",{rebound:3,ranger:3}],
+  ['Courir',"Coureur : +5 % de vitesse de sprint par rang, sprint moins coûteux.",{runner:3}],
+  ['Parer pour la vigueur',"Déviation vigoureuse : +15 vigueur par rang à chaque parade réussie.",{vigDeflect:3}],
+  ['Endurance de la Flamme',"Endurance de la Flamme : +1 Endurance tous les 2 niveaux de Flamme.",{enduranceFlame:1}]]},
+ {id:'resist',n:'Résistances',area:'mag',steps:[
+  ['Résistances élémentaires',"Résistances au feu, à la glace et à la foudre : +5 % chacune par rang.",{fireResistance:3,iceResistance:3,shockResistance:3}],
+  ['Résister au Shroud',"Résistance au Shroud : +5 % par rang.",{shroudResistance:3}],
+  ['Pour le groupe',"Aura de terre : +10 % de résistances pour vous et les alliés proches.",{earthAura:3}],
+  ['Entouré',"Tour (+10 % de résistance physique) et Gardien (+10 % de résistance magique) avec 3 ennemis ou plus à 20 m.",{tower:1,warden:1}]]},
+ {id:'mana',n:'Mana',area:'mag',steps:[
+  ['Régénérer le mana',"Courants de mana : +5 de régén. de mana de base par rang.",{manaCurrents:3}],
+  ['Mana en défense',"Déviation arcanique (+10 mana par rang à chaque parade réussie) et Absorption (4 % de chance de convertir les dégâts magiques reçus en mana).",{arcaneDeflect:3,absorb:3}],
+  ['Esprit de la Flamme',"Concentration arcanique : +1 Esprit tous les 2 niveaux de Flamme.",{arcaneConc:1}]]}];
+const GOALI={};GOALS.forEach(g=>GOALI[g.id]=g);SUPS.forEach(g=>GOALI[g.id]={...g,sup:1});
+const isMain=id=>!!GOALI[id]&&!GOALI[id].sup,isSup=id=>!!GOALI[id]&&!!GOALI[id].sup;
 const isAttr=k=>PIPS.some(p=>p[0]===k);
 const itemName=k=>isAttr(k)?PIPS.find(p=>p[0]===k)[1]:SKI[k].fr;
 const goalName=id=>GOALI[id]?GOALI[id].n:'';
 
 /* Calcul d'un combo : pour chaque élément des étapes, dans l'ordre, achat du chemin le moins cher depuis l'arbre relié (pathTo, dijkstra : 04-tree.js),
    puis des rangs ; ARRÊT au premier achat trop cher pour les points restants. Les liaisons devenues inutiles sont retirées en fin d'étape (comme normalize).
-   Nœud de Flamme sauté à la Flamme 1 (il n'y donne rien). Puis l'objectif secondaire, sur les points restants. Résultat mis en cache. */
+   Nœud de Flamme sauté à la Flamme 1 (il n'y donne rien). Puis l'objectif secondaire, sur les points restants, et enfin le soutien (2.1.0) sur les derniers. Résultat mis en cache. */
 const pipCount=(b,k)=>TOPO.pips.reduce((a,p)=>a+(p.attr===k&&b.pn[p.id]?1:0),0);
 const orphan=b=>{const R=reach(b);return TOPO.N.some(n=>(n.kind==='skill'||n.kind==='pip')&&owned(b,n)&&!R.has(n))};
 function cleanLinks(b,want,links){for(const id of [...links].reverse()){const n=TOPO.byId[id];if(!owned(b,n)){links.delete(id);continue}
   if(n.kind==='skill'){if(want.sk[id]||b.sk[id]!==1)continue;delete b.sk[id];if(orphan(b))b.sk[id]=1;else links.delete(id)}
   else{if(pipCount(b,n.attr)<=(want.pip[n.attr]||0))continue;delete b.pn[id];if(orphan(b))b.pn[id]=1;else links.delete(id)}}
   syncPips(b)}
-function runGoal(b,g,left,want,links){
-  const rep={id:g.id,steps:[],pts:0},s0=spentPoints(b);let stop=null;
+function runGoal(b,g,left,want,links,role){
+  const rep={id:g.id,role,steps:[],pts:0},s0=spentPoints(b);let stop=null;
   const C=()=>{const a=spentPoints(b);cleanLinks(b,want,links);left+=a-spentPoints(b)};
   const buy=(pth,target)=>{for(const x of pth)if(x!==target&&!owned(b,x))links.add(x.id);buyPath(b,pth)};
   g.steps.forEach(([t,why,items],i)=>{const st={t,why,items,st:'ok',skip:[]};rep.steps.push(st);
@@ -129,9 +151,9 @@ function runGoal(b,g,left,want,links){
     C();if(stop){st.st=spentPoints(b)>sp0?'part':'no';st.miss=stop.miss;st.at=stop.k}});
   rep.pts=spentPoints(b)-s0;return {rep,left}}
 const COMBO=new Map();
-function combo(p,s,lvl,exp,flame){const key=[p,s,lvl,exp,flame].join('|');if(COMBO.has(key))return COMBO.get(key);
+function combo(p,s,lvl,exp,flame,t){t=isSup(t)?t:null;const key=[p,s,lvl,exp,flame,t].join('|');if(COMBO.has(key))return COMBO.get(key);
   const b=blankBuild();Object.assign(b,{lvl,exp,flame});const want={sk:{},pip:{}},links=new Set(),rep=[];let left=budget(b);
-  for(const id of [p,s===p?null:s]){if(!GOALI[id])continue;const r=runGoal(b,GOALI[id],left,want,links);left=r.left;rep.push(r.rep)}
+  for(const [id,role] of [[isMain(p)?p:null,'p'],[isMain(s)&&s!==p?s:null,'s'],[t,'t']]){if(!id)continue;const r=runGoal(b,GOALI[id],left,want,links,role);left=r.left;rep.push(r.rep)}
   syncPips(b);const wpts=Object.entries(want.sk).reduce((a,[id,r])=>a+SKI[id].cost*r,0)+Object.values(want.pip).reduce((a,v)=>a+v,0);
   const by={};rep.forEach((r,gi)=>r.steps.forEach((st,si)=>{for(const k in st.items){const key=isAttr(k)?'@'+k:k;if(!by[key])by[key]=[gi,si]}}));
   const out={sk:b.sk,pn:b.pn,pip:b.pip,rep,spent:spentPoints(b),links:spentPoints(b)-wpts,left,by,want};
@@ -139,22 +161,25 @@ function combo(p,s,lvl,exp,flame){const key=[p,s,lvl,exp,flame].join('|');if(COM
 
 /* Build et objectifs : arbre = combo imposé ∪ ajouts de l'utilisateur. Un nœud imposé ne se retire pas (rang minimum = rang imposé) ;
    un changement de réglage (niveau, exploration, Flamme) ou de secondaire garde les ajouts encore reliés ; un nouveau principal repart du combo seul. */
-function imposed(b){const o=b.obj||[];return o[0]&&GOALI[o[0]]?combo(o[0],o[1]||null,b.lvl,b.exp,b.flame):null}
+function imposed(b){const o=b.obj||[];return isMain(o[0])?combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null):null}
 function addsOf(b,imp){imp=imp===undefined?imposed(b):imp;const sk={},pn={};
   for(const id in b.sk)if(b.sk[id]>((imp&&imp.sk[id])||0))sk[id]=b.sk[id];
   for(const id in b.pn)if(b.pn[id]&&!(imp&&imp.pn[id]))pn[id]=1;return {sk,pn}}
 function rebuild(b,A){const imp=imposed(b);if(!imp)return [];b.sk={...imp.sk};b.pn={...imp.pn};
   if(A){for(const id in A.sk)if(SKI[id])b.sk[id]=Math.min(SKI[id].max,Math.max(b.sk[id]||0,A.sk[id]));for(const id in A.pn)if(TOPO.byId[id])b.pn[id]=1}
   syncPips(b);return prune(b)}
-/* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées), secondaire (ajouts gardés) */
-function setGoals(b,p,s){p=GOALI[p]?p:null;s=p&&GOALI[s]&&s!==p?s:null;const was=(b.obj||[])[0]||null,A=was===p?addsOf(b):null;
-  b.obj=p?[p,s]:[];if(!p)return [];if(was!==p)b.gem={...GOALI[p].gem};return rebuild(b,A)}
+/* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées), secondaire et soutien (ajouts gardés).
+   obj = [p, s] sans soutien (forme d'avant la 2.1.0, lien inchangé), [p, s, t] avec. */
+const objOf=(p,s,t)=>p?(t?[p,s,t]:[p,s]):[];
+function setGoals(b,p,s,t){p=isMain(p)?p:null;s=p&&isMain(s)&&s!==p?s:null;t=p&&isSup(t)?t:null;const was=(b.obj||[])[0]||null,A=was===p?addsOf(b):null;
+  b.obj=objOf(p,s,t);if(!p)return [];if(was!==p)b.gem={...GOALI[p].gem};return rebuild(b,A)}
 /* Rang minimum d'un nœud (imposé), 0 sinon */
 function lockOf(b,n,imp){imp=imp===undefined?imposed(b):imp;if(!imp)return 0;return n.kind==='skill'?(imp.sk[n.id]||0):n.kind==='pip'&&imp.pn[n.id]?1:0}
 /* Lien, build enregistré : objectifs inconnus retirés ; combo imposé absent de l'arbre (objectif changé depuis) → objectifs retirés, arbre gardé tel quel ; noté dans _objLost */
-function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=GOALI[o[0]]?o[0]:null,s=p&&GOALI[o[1]]&&o[1]!==p?o[1]:null;let lost=!!(o[0]&&!p)||!!(o[1]&&o[1]!==o[0]&&!s);
-  b.obj=p?[p,s]:[];const imp=imposed(b);
+function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=isMain(o[0])?o[0]:null,s=p&&isMain(o[1])&&o[1]!==p?o[1]:null,t=p&&isSup(o[2])?o[2]:null;
+  let lost=!!(o[0]&&!p)||!!(o[1]&&o[1]!==o[0]&&!s)||!!(o[2]&&p&&!t);
+  b.obj=objOf(p,s,t);const imp=imposed(b);
   if(imp&&(Object.keys(imp.sk).some(id=>(b.sk[id]||0)<imp.sk[id])||Object.keys(imp.pn).some(id=>!b.pn[id]))){b.obj=[];lost=true}
   if(lost)Object.defineProperty(b,'_objLost',{value:true,enumerable:false,configurable:true});return b}
 /* Build d'un objectif (démarrage, tests) */
-function goalBuild(p,s,name){const b=blankBuild(name||goalName(p));setGoals(b,p,s);return b}
+function goalBuild(p,s,name,t){const b=blankBuild(name||goalName(p));setGoals(b,p,s,t);return b}

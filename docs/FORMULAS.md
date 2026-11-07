@@ -40,4 +40,5 @@ Implémenté dans `compute()` (src/js/02-calc.js). Quelques compétences convert
 | Combo imposé (`combo`) | pour chaque élément des étapes, dans l'ordre : chemin le moins cher depuis l'arbre relié (`pathTo`, Dijkstra pondéré par les coûts), puis les rangs ; **arrêt au premier achat trop cher** ; liaisons devenues inutiles retirées en fin d'étape | **hypothèse** (algorithme du simulateur) |
 | Nœuds de Flamme à la Flamme 1 | sautés (ils n'y donnent rien) | déduit de la règle « +1 tous les 2 niveaux » |
 | Objectif secondaire | même calcul sur les points restants, après le principal (qui reste identique) | **hypothèse** |
+| Objectif de soutien (2.1.0) | même calcul sur les derniers points, après principal et secondaire (identiques) ; compétences seules ; contenu, ordre et raisons : `SUPS` (06-objectifs.js) | **hypothèse** du simulateur |
 | Nœud imposé | rang minimum = rang imposé ; ajouts libres au-dessus (invariant de l'arbre gardé) | choix du simulateur |

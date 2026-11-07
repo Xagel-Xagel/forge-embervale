@@ -2,6 +2,12 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.1.0 — 2026-11-07 · 3e objectif « Soutien »
+- **Soutien**, 3e menu des objectifs, après le principal et le secondaire : il place les **derniers points** sur des compétences de soutien, au choix du joueur : **Survie (santé)**, **Endurance (vigueur)**, **Résistances**, **Mana**. Compétences seules (ni attribut ni gemme) ; mêmes règles (étapes dans l'ordre, chemin le moins cher, arrêt au premier achat trop cher, nœud de Flamme sauté à la Flamme 1). Contenu, ordre des étapes et raisons : hypothèse du simulateur.
+- Nœuds du soutien verrouillés comme ceux des autres objectifs ; changer de soutien garde vos ajouts encore reliés. « Pourquoi ce combo » montre l'étiquette « Soutien » ; A contre B l'ajoute à la ligne Objectifs.
+- Le groupe de menu « Soutien » (Soigneur de groupe, Paladin soigneur) devient « Soins ».
+- **Liens** : soutien en fin de segment `-o` (2 caractères de plus, seulement s'il y en a un) ; les liens sans soutien, dont tous ceux de la 2.0.0, sont inchangés et s'ouvrent à l'identique. Un soutien inconnu est retiré et signalé, le reste gardé.
+
 ## 2.0.0 — 2026-11-07 · Grand ménage : l'arbre et ses objectifs
 - **Une page simple, centrée sur l'arbre de compétences.** À gauche : vos points (niveau, exploration, Flamme), vos objectifs, « Pourquoi ce combo », les gemmes ; à droite : l'arbre (graphe ou liste), qui reste en vue sur ordinateur. Une seule colonne sur téléphone.
 - **Objectifs** : 12 objectifs prêts (Guerrier : Tank d'après Sadi Fourbe, Épée et bouclier, Barbare deux mains ; Rôdeur : Archer, Assassin aux dagues ; Mage : Mage critique, Sorcier de feu, Mage de glace, Mage de foudre, Nécromancien ; Soutien : Soigneur de groupe, Paladin soigneur). Le **principal** place vos points étape par étape selon votre budget et votre Flamme ; le **secondaire** prend les points restants. Chaque étape dit pourquoi elle est là, si elle est complète (✓), en partie (◐, avec les points qui manquent) ou pas encore (○). Ordre des étapes et raisons : choix du simulateur, marqués « hypothèse ».

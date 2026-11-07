@@ -72,7 +72,14 @@ for (const w of [1300, 400]) for (const scheme of ['light', 'dark']) {
   if (!/il manque \d+ pts? pour/.test(await page.textContent('#why'))) errs.push('niveau 12 : étape en partie non signalée');
   await page.evaluate(() => { const d = document.querySelector('#why details.part') || document.querySelector('#why details'); d.open = true; document.querySelector('#why details').open = true; });
   await page.locator('#why').screenshot({path: shot('1300-pourquoi')});
+  // 2.1.0 : 3e objectif « Soutien » (derniers points), gardé au changement de principal, partagé par le lien
+  await page.fill('#lvl', '50'); await page.press('#lvl', 'Tab'); await page.selectOption('#goal1', 'archer'); await page.selectOption('#goal2', ''); await page.selectOption('#goal3', 'resist'); await page.waitForTimeout(50);
+  const w3 = await page.textContent('#why'); if (!/Soutien/.test(w3) || !/Résistances élémentaires/.test(w3)) errs.push('soutien absent de « Pourquoi ce combo »');
+  if (!/-o03zz[0-9a-z]{2}-/.test(await page.evaluate(() => encode(B())))) errs.push('soutien absent du code de partage');
+  await page.evaluate(() => { for (const d of document.querySelectorAll('#why .wgoal:last-of-type details')) d.open = true; });
+  await page.locator('#why').screenshot({path: shot('1300-soutien')});
   await page.selectOption('#goal1', ''); await page.waitForTimeout(50);
+  if (!(await page.isDisabled('#goal3'))) errs.push('arbre libre : menu Soutien actif');
   if (!/Arbre libre/.test(await page.textContent('#toasts'))) errs.push('arbre libre : aucun message');
   report(!errs.length, 'objectifs (menus, réglages, temps, verrou)', errs); await page.close();
 }

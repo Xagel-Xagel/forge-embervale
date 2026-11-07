@@ -38,18 +38,20 @@ function renderPoints(){const b=B(),sp=spentPoints(b),bu=budget(b),over=sp>bu,o=
 
 /* ---- Objectifs ---- */
 const goalOpts=none=>`<option value="">${none}</option>`+GOAL_GRP.map(([g,l])=>`<optgroup label="${l}">`+GOALS.filter(x=>x.grp===g).map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join('')+'</optgroup>').join('');
-function renderGoals(){const b=B(),[p,s]=b.obj||[];$('#goal1').value=p||'';$('#goal2').value=s||'';$('#goal2').disabled=!p;
+const supOpts=()=>`<option value="">Aucun</option>`+SUPS.map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join('');
+function renderGoals(){const b=B(),[p,s,t]=b.obj||[];$('#goal1').value=p||'';$('#goal2').value=s||'';$('#goal2').disabled=!p;$('#goal3').value=t||'';$('#goal3').disabled=!p;
   for(const o of $('#goal2').querySelectorAll('option'))o.disabled=!!o.value&&o.value===p;
-  $('#goalHint').textContent=p?`Le site place vos points pour « ${goalName(p)} »${s?`, puis ceux qui restent pour « ${goalName(s)} »`:''}. Vous pouvez ensuite ajouter des compétences dans l'arbre ; les nœuds imposés ne se retirent pas.`
+  $('#goalHint').textContent=p?`Le site place vos points pour « ${goalName(p)} »${s?`, puis ceux qui restent pour « ${goalName(s)} »`:''}${t?`, enfin les derniers pour le soutien « ${goalName(t)} »`:''}. Vous pouvez ensuite ajouter des compétences dans l'arbre ; les nœuds imposés ne se retirent pas.`
     :'Arbre libre : vous placez tout vous-même. Choisissez un objectif principal pour que le site impose un combo et explique pourquoi.'}
 function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill').length,pp=gone.length-sk;toast(`Plus reliés à un point de départ, donc retirés : ${sk?sk+' compétence'+(sk>1?'s':''):''}${sk&&pp?' et ':''}${pp?pp+' nœud'+(pp>1?'s':'')+" d'attribut":''}`)}}
-function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i?v||null:(v&&o[1]!==v?o[1]||null:null);
-  const before=Object.keys(addsOf(b).sk).length+Object.keys(addsOf(b).pn).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s));
+/* i : 0 principal, 1 secondaire, 2 soutien */
+function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i===1?v||null:i===2?o[1]||null:(v&&o[1]!==v?o[1]||null:null),t=i===2?v||null:o[2]||null;
+  const before=Object.keys(addsOf(b).sk).length+Object.keys(addsOf(b).pn).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s,t));
   if(p&&newP)toast(`Combo « ${goalName(p)} » posé, avec ses gemmes${before?' ; vos nœuds placés à la main sont retirés':''}`);else if(!p)toast('Arbre libre : tout est modifiable, rien n\'est imposé');
   renderAll()}
 
 /* ---- Pourquoi ce combo ---- */
-const ICO={ok:'✓',part:'◐',no:'○'},STT={ok:'complète',part:'en partie',no:'pas encore'};
+const ROLE={p:'Principal',s:'Secondaire',t:'Soutien'},ICO={ok:'✓',part:'◐',no:'○'},STT={ok:'complète',part:'en partie',no:'pas encore'};
 function itemChip(k,want,c,st){const got=Math.min(want,isAttr(k)?(c.want.pip[k]||0):(c.want.sk[k]||0)),skip=st.skip.includes(k);
   const txt=skip?`${itemName(k)} : sautée (Flamme 1)`:isAttr(k)?`${itemName(k)} ${got}/${want}`:`${itemName(k)}${want>1||got>1?` ${got}/${want}`:''}`;
   return `<span class="chip${skip||got<want?' off':''}">${esc(txt)}</span>`}
@@ -57,7 +59,7 @@ function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spent
   const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`;
   if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placé${sp>1?'s':''} à la main.`:''}</p>${res}`;return}
   el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
-    return `<div class="wgoal"><h3>${zoneTag(g.area,gi?'Secondaire':'Principal')} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
+    return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
       `<p>${esc(st.why)}</p><div class="chips">${Object.entries(st.items).map(([k,w])=>itemChip(k,w,c,st)).join('')}</div></details>`).join('')+'</div>'}).join('')+
     `<p class="meta2">Liaisons ${pts(c.links)} · vos ajouts ${pts(sp-c.spent)} · ${sp>bu?`<span class="over-msg">${pts(sp-bu)} en trop</span>`:`libres ${pts(bu-sp)}`}</p>${res}`+
     `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié.</p>`}
@@ -125,8 +127,8 @@ function renderSaved(){const s=lsGet();$('#saved').innerHTML='<option value="">M
 function renderAll(){renderTabs();renderPoints();renderGoals();renderWhy();renderGems();renderTree();renderCmp()}
 
 /* ---- Événements ---- */
-$('#goal1').innerHTML=goalOpts('Aucun (arbre libre)');$('#goal2').innerHTML=goalOpts('Aucun');
-$('#goal1').onchange=e=>pickGoal(0,e.target.value);$('#goal2').onchange=e=>pickGoal(1,e.target.value);
+$('#goal1').innerHTML=goalOpts('Aucun (arbre libre)');$('#goal2').innerHTML=goalOpts('Aucun');$('#goal3').innerHTML=supOpts();
+$('#goal1').onchange=e=>pickGoal(0,e.target.value);$('#goal2').onchange=e=>pickGoal(1,e.target.value);$('#goal3').onchange=e=>pickGoal(2,e.target.value);
 $('#buildName').oninput=e=>{B().name=e.target.value||'Sans nom';renderTabs();$('#buildName').focus();renderCmp()};
 $('#cmp').onchange=e=>{compare=e.target.checked;renderCmp();if(compare)$('#p-cmp').scrollIntoView({block:'nearest'})};
 $('#copyAB').onclick=()=>{builds[1-cur]=JSON.parse(JSON.stringify(B()));renderAll();toast('Copié vers '+'AB'[1-cur])};
@@ -149,7 +151,7 @@ function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringi
 $('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!notices(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
 $('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
 /* Lien ou build ancien : ce qui a été ajouté pour le relier, objectif retiré ; true si un message a été montré */
-function notices(b){const lost=b&&b._objLost;if(lost)toast((b.obj||[])[0]?'Objectif secondaire retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');return migNotice(b)||!!lost}
+function notices(b){const lost=b&&b._objLost;if(lost)toast((b.obj||[])[0]?'Objectif secondaire ou de soutien retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');return migNotice(b)||!!lost}
 function migNotice(b){const g=b&&b._mig;if(!g||!(g.pts>0||g.gone>0))return false;
   const names=[...g.addSk.map(id=>SKI[id].fr),...Object.entries(g.addPip).map(([a,n])=>PIPS.find(p=>p[0]===a)[1]+' +'+n)];const over=spentPoints(b)-budget(b);
   const m=modal(`<h2>${g.from==='b3'?'Lien fait sur un tracé antérieur':(g.from==='saved'?'Build enregistré':'Lien')+" d'avant le tracé réel"}</h2><p class="sub">${g.from==='b3'?"Ce lien a été créé avant la dernière mise à jour du tracé de l'arbre (patch du jeu).":(g.from==='saved'?'Ce build a été enregistré':'Ce code '+esc(g.from)+'- a été créé')+" avant la version 1.9.0, qui reprend le vrai tracé de l'arbre du jeu."} Vos choix sont conservés${g.gone?`, sauf ${g.gone} nœud${g.gone>1?'s':''} qui n'existe${g.gone>1?'nt':''} plus`:''} (compétences et rangs, attributs, gemmes).${names.length?` Pour les relier à un point de départ, ces nœuds ont été ajoutés (+${pts(g.pts)}) :`:''}</p>

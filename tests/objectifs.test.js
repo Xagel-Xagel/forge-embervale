@@ -111,3 +111,31 @@ test('un combo ne s\'arrête jamais alors que le prochain achat est payable ; le
     assert.equal(cost - c.left, st.miss, `${g.id} niv. ${lv} expl. ${ex} Flamme ${fl} : ${k}`); assert.ok(st.miss > 0); }
   assert.ok(n > 50, 'trop peu de combos arrêtés : ' + n);
 });
+
+// ---- 2.1.0 : 3e objectif « Soutien » (compétences seules, derniers points) ----
+test('soutien : compétences seules, toutes connues, ids en fin de FZ.goals ; jamais en principal ni en secondaire', () => {
+  for (const g of SUPS) { assert.ok(GOALI[g.id].sup, g.id); assert.ok(FZ.goals.indexOf(g.id) >= 12, g.id + ' : à ajouter en fin de FZ.goals'); assert.ok(!GOALS.some(x => x.id === g.id), g.id + ' dans GOALS');
+    for (const [, why, items] of g.steps) { assert.ok(why.length > 10); for (const k in items) { assert.ok(!isAttr(k), g.id + ' : attribut ' + k); assert.ok(SKI[k], g.id + ' : ' + k); assert.ok(items[k] <= SKI[k].max, g.id + ' : rang ' + k); } } }
+  const b = blankBuild(); setGoals(b, 'survie', 'mana', 'resist'); assert.deepEqual(b.obj, []);
+  setGoals(b, 'tank', 'survie', 'archer'); assert.deepEqual(b.obj, ['tank', null], 'soutien en secondaire ou objectif ordinaire en soutien : ignorés');
+  setGoals(b, 'tank', null, 'survie'); assert.deepEqual(b.obj, ['tank', null, 'survie']);
+});
+// pas de test « sans recul » pour le soutien : quand les points montent, le principal en prend davantage et le soutien peut en recevoir moins (il a les derniers)
+test('soutien : passe en dernier, principal et secondaire à l\'identique ; relié, dans le budget', () => {
+  for (const t of SUPS) for (const [p, s] of [['tank', null], ['mageCrit', 'storm'], ['archer', null]]) for (const fl of [1, 11]) {
+    for (let B = 0; B <= 212; B += 8) { const a = combo(p, s, ...lvlExp(B), fl), c = combo(p, s, ...lvlExp(B), fl, t.id), lbl = `${p}+${s}+${t.id} · ${B} pts · Flamme ${fl}`;
+      assert.ok(c.spent <= B, lbl); assert.equal(lostOf(asB(c)).length, 0, lbl + ' : non relié');
+      assert.deepEqual(c.rep.slice(0, -1).map(r => r.steps.map(x => x.st)), a.rep.map(r => r.steps.map(x => x.st)), lbl + ' : principal/secondaire changés');
+      for (const k in a.want.sk) assert.ok((c.sk[k] || 0) >= a.want.sk[k], lbl + ' : ' + k);
+      assert.equal(c.rep.at(-1).role, 't'); assert.ok(c.spent >= a.spent, lbl);
+      } }
+  const c = combo('archer', null, 50, 114, 11, 'resist'); assert.ok(c.rep[1].pts > 0, 'Archer seul à 212 points : le soutien reçoit des points');
+});
+test('soutien : nœuds verrouillés, ajouts gardés au changement de soutien, retiré au retour en arbre libre', () => {
+  const b = goalBuild('archer', null, 'x', 'resist'), imp = imposed(b), k = Object.keys(imp.sk).find(id => (imp.want.sk[id] || 0) > 0 && GOALI.resist.steps.some(s => id in s[2]));
+  assert.ok(k); assert.ok(lockOf(b, TOPO.byId[k]) > 0, 'nœud du soutien verrouillé');
+  const keepT = globalThis.toast; globalThis.toast = () => {}; try { assert.equal(remRank(b, k), false); } finally { globalThis.toast = keepT; }
+  const R = reach(b), n = TOPO.N.find(x => x.kind === 'skill' && !b.sk[x.id] && canBuy(b, x, R) && x.sk.max === 1); addRank(b, n.id);
+  setGoals(b, 'archer', null, 'mana'); assert.equal(b.sk[n.id], 1, 'soutien changé : ajout perdu'); assert.deepEqual(b.obj, ['archer', null, 'mana']);
+  setGoals(b, 'archer', null, null); assert.deepEqual(b.obj, ['archer', null], 'sans soutien : forme d\'avant la 2.1.0');
+});

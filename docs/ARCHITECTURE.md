@@ -18,6 +18,7 @@
 
 ## Objectifs (06-objectifs.js)
 - `GOALS` : `{id, n, grp, area, gem, steps: [[titre, raison, {compétence: rang | attribut: nœuds}]]}` ; `id` = place figée dans `FZ.goals`.
+- `SUPS` (2.1.0) : objectifs de soutien, même forme sans `grp` ni `gem`, compétences seules ; dans `GOALI` avec `sup:1` ; `obj = [p, s]` ou `[p, s, t]`.
 - `combo(p, s, lvl, exp, flame)` (mis en cache) : `runGoal` pour le principal puis le secondaire ; renvoie l'arbre imposé (`sk`, `pn`, `pip`), `rep` (par objectif : points, étapes `{st: 'ok'|'part'|'no', miss, at, skip}`), `spent`, `links`, `left`, `want` (rangs visés atteints), `by` (élément → [objectif, étape]).
 - Build : arbre = imposé ∪ ajouts. `imposed(b)`, `addsOf(b)` (au-dessus de l'imposé), `rebuild(b, A)` (nouvel imposé + ajouts, puis `prune`), `setGoals(b, p, s)` (nouveau principal : combo seul et gemmes de l'objectif ; secondaire changé : ajouts gardés), `lockOf(b, n)` (rang minimum), `fitGoals(b)` (lien ou build enregistré : objectif inconnu ou combo absent de l'arbre → objectifs retirés, arbre gardé, `b._objLost` non énumérable).
 
@@ -29,7 +30,7 @@
 
 ## Partage (03-share.js)
 - `FZ` : tables figées (objets, gemmes, ancien ordre de SK, attributs b1, anciens bits b2, identifiants de jeu des attributs et des compétences pour b3, emplacements d'équipement, objectifs). Ajout en fin seulement ; empreintes vérifiées par share.test.js.
-- `b3-<en-tête 8>-<équipement 18>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes 4>][-o<objectifs 4>]-<contrôle 2>` : masques en base 36 sur `FZ.at` / `FZ.nd`, un chiffre de rang par compétence possédée (`0` si aucune), objectifs = 2 caractères chacun dans `FZ.goals` (`zz` = aucun ; segment absent = arbre libre), contrôle `b3sum` (FNV-1a modulo 36²). `decode` ne lève jamais d'exception (null si illisible, tronqué ou abîmé), accepte les majuscules, puis `fitGoals`. Un bit sans nœud (version plus récente, ou nœud retiré par un patch) ou un nœud devenu isolé : `migrate(b,'b3')` et fenêtre « Lien fait sur un tracé antérieur ».
+- `b3-<en-tête 8>-<équipement 18>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes 4>][-o<objectifs 4 ou 6>]-<contrôle 2>` : masques en base 36 sur `FZ.at` / `FZ.nd`, un chiffre de rang par compétence possédée (`0` si aucune), objectifs = 2 caractères chacun dans `FZ.goals` (principal, secondaire, puis soutien seulement s'il y en a un, 2.1.0 ; `zz` = aucun ; segment absent = arbre libre), contrôle `b3sum` (FNV-1a modulo 36²). `decode` ne lève jamais d'exception (null si illisible, tronqué ou abîmé), accepte les majuscules, puis `fitGoals`. Un bit sans nœud (version plus récente, ou nœud retiré par un patch) ou un nœud devenu isolé : `migrate(b,'b3')` et fenêtre « Lien fait sur un tracé antérieur ».
 - b1/b2 : lus via les tables figées en comptes d'attributs + compétences, puis `migrate`. À l'ouverture d'un tel lien, l'adresse reçoit le code b3 du build migré. Équipement : relu via `FZ.items` / `FZ.slots`, gardé inerte.
 
 ## Rendu (10-ui.js, 30-graph.js)

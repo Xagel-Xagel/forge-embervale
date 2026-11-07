@@ -5,7 +5,7 @@
    b2 : attribut de chacun des 59 nœuds de l'ancien tracé thématique (c CON, s FOR, d DEX, e END, i INT, p ESP) ·
    at, nd : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel (b3) ·
    slots : emplacements d'équipement (2.0.0 : l'équipement n'est plus pris en compte, mais celui d'un ancien lien est relu et réécrit tel quel) ·
-   goals : objectifs (06-objectifs.js), segment -o du b3 (2.0.0). */
+   goals : objectifs (06-objectifs.js), segment -o du b3 (2.0.0) ; objectifs de soutien SUPS ajoutés en fin (2.1.0). */
 const FZ={
  items:`
   emb_h emb_c emb_g emb_l emb_f cre_h cre_c cre_g cre_l cre_f ash_h ash_c ash_g ash_l ash_f sky_h sky_c sky_g sky_l sky_f fla_h fla_c fla_g fla_l fla_f
@@ -32,7 +32,7 @@ const FZ={
   fireResistance iceResistance shockResistance righteousFire divineSurge sharedMisery boneToAsh sleight manaCurrents spellslinger wandMastery wandSpec
   wandEvasion aerialWand totemMastery advNecro blastCast`.trim().split(/\s+/),
  slots:'head chest hands legs feet w1 w2 r1 r2'.split(' '),
- goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin'.split(' '),
+ goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana'.split(' '),
  b1:[['str',11],['con',11],['end',8],['dex',7],['int',11],['spi',11]],
  b2:'ccccccssssssssssscccccdddddddeeeeeeeeiiiiiiiiiiippppppppppp',
  at:`
@@ -55,7 +55,8 @@ const b36=n=>n.toString(36).padStart(2,'0');
 const big36=s=>{let v=0n;for(const ch of s)v=v*36n+BigInt(parseInt(ch,36));return v};
 const bitsOf=v=>{const o=[];for(let i=0;v>0n;i++,v>>=1n)if(v&1n)o.push(i);return o};
 /* b3-<en-tête>-<équipement>-<masque des nœuds d'attribut>-<masque des compétences>-<rangs : 1 chiffre par compétence possédée, ou 0>[-g<gemmes>][-o<objectifs>]-<contrôle>
-   objectifs (2.0.0) : 2 caractères par objectif (principal, secondaire ; zz = aucun), places dans FZ.goals ; absent = arbre libre
+   objectifs (2.0.0) : 2 caractères par objectif (principal, secondaire ; zz = aucun), places dans FZ.goals ; absent = arbre libre ;
+   2.1.0 : 2 caractères de plus pour le soutien, seulement s'il y en a un (sans soutien, le code reste celui de la 2.0.0)
    contrôle = 2 caractères (FNV-1a du reste, modulo 36²) : un lien tronqué ou abîmé est refusé au lieu de donner un autre build */
 function b3sum(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}return b36(h%1296)}
 function encode(b){
@@ -65,21 +66,21 @@ function encode(b){
   FZ.at.forEach((g,i)=>{const n=TOPO.byGid[g];if(n&&b.pn&&b.pn[n.id])at|=1n<<BigInt(i)});
   FZ.nd.forEach((g,i)=>{const n=TOPO.byGid[g];const v=n&&n.kind==='skill'?Math.min(b.sk[n.id]||0,n.sk.max):0;if(v>0){nd|=1n<<BigInt(i);rk.push(v.toString(36))}});
   const gm=['w1','w2'].map(sl=>{const i=FZ.gems.indexOf((b.gem||{})[sl]);return i<0?'zz':b36(i)}).join('');
-  const ob=(b.obj||[])[0]&&FZ.goals.includes(b.obj[0])?[0,1].map(i=>{const k=FZ.goals.indexOf(b.obj[i]);return k<0?'zz':b36(k)}).join(''):'';
+  const ob=(b.obj||[])[0]&&FZ.goals.includes(b.obj[0])?(FZ.goals.includes(b.obj[2])?[0,1,2]:[0,1]).map(i=>{const k=FZ.goals.indexOf(b.obj[i]);return k<0?'zz':b36(k)}).join(''):'';
   const s='b3-'+head+'-'+it+'-'+at.toString(36)+'-'+nd.toString(36)+'-'+(rk.join('')||'0')+(gm!=='zzzz'?'-g'+gm:'')+(ob?'-o'+ob:'');return s+'-'+b3sum(s);
 }
 /* Code illisible, tronqué ou corrompu → null (jamais d'exception : la page doit toujours démarrer) */
 function decode(code){try{const b=decodeCode(code);return b&&fitGoals(b)}catch(e){return null}} // fitGoals : 06-objectifs.js
 function decodeCode(code){
   const s=String(code).trim().replace(/^#/,'').toLowerCase();if(s.length>3000)return null;let m;
-  if((m=s.match(/^b3-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?(?:-o([0-9a-z]{4}))?-([0-9a-z]{2})$/))){
+  if((m=s.match(/^b3-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?(?:-o([0-9a-z]{4}(?:[0-9a-z]{2})?))?-([0-9a-z]{2})$/))){
     if(b3sum(s.slice(0,-3))!==m[8])return null;
     const b=baseOf(m[1],m[2],m[6]);let gone=0;
     for(const i of bitsOf(big36(m[3]))){const n=TOPO.byGid[FZ.at[i]];if(n&&n.kind==='pip')b.pn[n.id]=1;else gone++}
     // un chiffre de rang par bit posé, même hors table (code d'une version plus récente) : un écart signale un lien tronqué
     const bits=bitsOf(big36(m[4])),rk=m[5];if(bits.length?rk.length!==bits.length:rk!=='0')return null;
     for(let k=0;k<bits.length;k++){const v=parseInt(rk[k],36);if(!v)return null;const n=TOPO.byGid[FZ.nd[bits[k]]];if(n&&n.kind==='skill')b.sk[n.id]=Math.min(v,n.sk.max);else gone++}
-    if(m[7]){if(m[7].startsWith('zz'))return null;b.obj=m[7].match(/../g).map(x=>x==='zz'?null:FZ.goals[parseInt(x,36)]||'?'+x)} // ?xx : objectif inconnu (version plus récente), signalé par fitGoals
+    if(m[7]){if(m[7].startsWith('zz')||m[7].endsWith('zz')&&m[7].length===6)return null;b.obj=m[7].match(/../g).map(x=>x==='zz'?null:FZ.goals[parseInt(x,36)]||'?'+x)} // ?xx : objectif inconnu (version plus récente), signalé par fitGoals
     syncPips(b);const R=reach(b);
     // tracé régénéré depuis (nœud disparu ou liaison changée) : migrer et le dire, sinon décodage exact
     if(!gone&&!TOPO.N.some(n=>owned(b,n)&&!R.has(n)))return normalize(b);

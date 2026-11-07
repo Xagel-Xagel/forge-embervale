@@ -2,7 +2,7 @@
 test('rendu complet de chaque objectif (seul, avec secondaire, arbre libre), vue graphe et liste, A contre B, sans exception', () => keepUi(() => {
   const keepT = globalThis.toast; globalThis.toast = () => {};
   try {
-    for (const g of GOALS) for (const s of [null, 'healer', 'storm']) { builds[0] = goalBuild(g.id, s === g.id ? null : s); cur = 0;
+    for (const g of GOALS) for (const s of [null, 'healer', 'storm']) { builds[0] = goalBuild(g.id, s === g.id ? null : s, '', SUPS[GOALS.indexOf(g) % SUPS.length].id); cur = 0;
       for (const v of ['graph', 'list']) for (const c of [false, true]) { view = v; compare = c; renderAll(); } }
     builds[0] = blankBuild(); view = 'list'; area = 'mag'; query = 'feu'; onlyOn = true; renderAll();
   } finally { globalThis.toast = keepT; }
@@ -21,6 +21,12 @@ test('choisir un objectif (menus) : combo posé et gemmes ; secondaire ; retour 
     pickGoal(0, 'necro'); assert.deepEqual(B().obj, ['necro', null], 'nouveau principal = ancien secondaire : secondaire retiré');
     const sk = {...B().sk}; pickGoal(0, ''); assert.deepEqual(B().obj, []); assert.deepEqual(B().sk, sk, 'arbre libre : arbre gardé'); assert.match(msgs.pop(), /Arbre libre/);
     setting('lvl', 20); assert.deepEqual(B().sk, sk, 'arbre libre : réglage sans effet sur l\'arbre');
+    builds[0] = blankBuild(); pickGoal(0, 'archer'); pickGoal(2, 'resist'); assert.deepEqual(B().obj, ['archer', null, 'resist']); assert.deepEqual(B().sk, combo('archer', null, 50, 114, 11, 'resist').sk);
+    pickGoal(1, 'tank'); assert.deepEqual(B().obj, ['archer', 'tank', 'resist'], 'secondaire choisi : soutien gardé');
+    pickGoal(0, 'ice'); assert.deepEqual(B().obj, ['ice', 'tank', 'resist'], 'nouveau principal : soutien gardé');
+    pickGoal(2, ''); assert.deepEqual(B().obj, ['ice', 'tank']);
+    const el = {}, keep = document.querySelector; document.querySelector = q => q === '#why' ? el : keep(q);
+    try { builds[0] = goalBuild('archer', 'tank', 'x', 'mana'); renderWhy(); assert.match(el.innerHTML, /Soutien<\/span> Mana/); assert.match(el.innerHTML, /Secondaire<\/span> Tank/); } finally { document.querySelector = keep; }
   } finally { globalThis.toast = keepT; }
 }));
 test('builds enregistrés : enregistrer puis recharger donne le même build (objectifs, arbre, gemmes)', () => keepUi(() => {

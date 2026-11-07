@@ -1,6 +1,6 @@
 # Forge d'Embervale — instructions pour Claude Code
 
-Planificateur d'**arbre de compétences** pour **Enshrouded 1.0** (2.0.0, « grand ménage », HISTORY n° 27) : objectifs prêts (principal + secondaire) dont le combo est imposé selon les points et la Flamme, et expliqué ; ajouts libres ; gemmes ; builds A/B, enregistrés, partagés. L'équipement n'est pas pris en compte.
+Planificateur d'**arbre de compétences** pour **Enshrouded 1.0** (2.0.0, « grand ménage », HISTORY n° 27) : objectifs prêts (principal + secondaire + soutien) dont le combo est imposé selon les points et la Flamme, et expliqué ; ajouts libres ; gemmes ; builds A/B, enregistrés, partagés. L'équipement n'est pas pris en compte.
 Le livrable est **une seule page HTML autonome**, publiée à deux endroits :
 - **GitHub Pages (principal)** : https://xagel-xagel.github.io/forge-embervale/ — dépôt `Xagel-Xagel/forge-embervale`, déployé par `.github/workflows/pages.yml` à chaque push sur `main` (tests → build → copie du site sur la branche `gh-pages`, servie par GitHub Pages en mode « Deploy from a branch »). Ne jamais modifier `gh-pages` à la main. Un push sur `main` = mise en production : ne pousser sur `main` que du code testé.
 - Artifact claude.ai (copie) : https://claude.ai/artifact/GtbdfLTi6yPAcyNxexhV4f (version 20 au 2026-11-07, 2.0.0).
@@ -32,7 +32,7 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   03-share.js        tables figées FZ, encode/decode des codes de partage (b3-… avec segment -o des objectifs, rétrocompatible b2- et b1-)
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), GEMI, GTYPE
-  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), combo (moteur, en cache), imposed, addsOf, rebuild, setGoals, lockOf, fitGoals, goalBuild
+  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache), imposed, addsOf, rebuild, setGoals, lockOf, fitGoals, goalBuild
   10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, partage, builds enregistrés
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom ; imposé plein, ajouté en pointillé), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
@@ -62,7 +62,7 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de 03-share.js), jamais l'ordre des données vivantes :
 - `FZ.items` (objets), `FZ.gems` (gemmes) : formats b1, b2 et b3 ;
 - `FZ.at`, `FZ.nd` : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel, format b3 ;
-- `FZ.goals` : objectifs (segment `-o`, 2.0.0) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
+- `FZ.goals` : objectifs (segment `-o`, 2.0.0 ; soutiens `SUPS` en fin, 2.1.0 : 6 caractères seulement avec un soutien) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
 - `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
 
 Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>][-o<objectifs>]-<contrôle>` (1 chiffre de rang par compétence possédée ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
