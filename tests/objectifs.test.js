@@ -292,6 +292,8 @@ test('2.4.0 · 5 objectifs optimisés : ids en fin de FZ.goals, groupes, source 
   assert.equal(zoneShare(GOALI.harvest).core, 1, 'Récolte : Cœur seulement'); assert.ok(zoneShare(GOALI.explore).rng > 0.5, 'Exploration : surtout Rôdeur');
   for (const id of ['battlemage', 'elemArcher', 'harvest']) assert.match(GOALI[id].src, /PinDrop/, id + ' : source communautaire');
   for (const id of ['swordBow', 'explore']) assert.equal(GOALI[id].src, undefined, id + ' : composé par le simulateur, sans source');
+  for (const g of OPT()) assert.ok(typeof g.sim === 'string' && g.sim.length > 20, g.id + ' : la part du simulateur doit être dite (étiquette « hypothèse »)');
+  assert.match(GOALI.elemArcher.sim, /n'est pas vérifié/, 'Archer élémentaire : effet des multiplicateurs du Mage sur les arcs non vérifié, à dire');
 });
 test('2.4.0 · aire d\'avancée figée (Σ des points d\'étapes aux budgets 0, 4 … 212, Flamme 11 ; mesurée le 2026-11-08 par scripts/optimiser-objectifs.mjs)', () => {
   const AREA = {battlemage: 2572, elemArcher: 2816, swordBow: 3077, explore: 2887, harvest: 1259};

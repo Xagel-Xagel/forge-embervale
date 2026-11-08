@@ -10,7 +10,7 @@ Purgée en 2.0.0 (HISTORY n° 27) : équipement, armes et perks, armure, ennemis
 ## Priorité moyenne
 3. **Objectifs supplémentaires** : fait en partie en 2.4.0 (3 hybrides, Exploration, Récolte). Restent : les 4 anciens presets non repris (Mage de bataille baguette + bâton, Arcaniste du bâton, Gardien du Shroud, Prêtre du feu : tous Mage pur) et les variantes sans objectif (mains nues, poison, objets lancés, dompteur ; aucun build communautaire au 2026-11-07). Ajout EN FIN de `FZ.goals`.
 4. **Vérifier le tracé** : PinDrop citerait le build 1285601 (mis à jour le 2026-11-06), notre tracé vient du 1267041 ; les notes du Patch #1 parlent de coûts de mana et de vigueur, l'en-tête de `01-tree-data.js` de coûts mis à jour. Débloquer : `npm run tree` (réseau), comparer, puis `npm run optimiser -- --check`.
-5. Vérifier : bonus additifs ou multiplicatifs ; Aura de terre par rang ou totale ; coût identique à chaque rang (déduction des fichiers).
+5. Vérifier : Pyromane, Homme de glace et Tonnerre s'appliquent-ils aux tirs des arcs élémentaires (Archer élémentaire, 2.4.0 : affiché « non vérifié ») ; bonus additifs ou multiplicatifs ; Aura de terre par rang ou totale ; coût identique à chaque rang (déduction des fichiers).
 
 ## Confort
 6. Accessibilité du graphe au clavier (aujourd'hui, la vue Liste sert d'alternative).

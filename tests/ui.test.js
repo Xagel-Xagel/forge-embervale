@@ -63,7 +63,7 @@ test('graphe : nœud imposé sans anneau « ajouté », avec son étape ; nœud 
 test('recherche sans accents ni majuscules', () => { assert.ok(fold('Égorgeur').includes(fold('EGORGEUR'))); assert.equal(fold('Pyromane'), 'pyromane'); });
 // Haut de page explicite (2.2.0) : fil des étapes 1 → 5, chaque étape mène à un panneau existant, aucun bouton perdu
 test('fil des étapes : 5 étapes dans l\'ordre, chacune vers un panneau numéroté ; tous les boutons du haut gardés', () => {
-  const {readFileSync} = process.getBuiltinModule('node:fs'), html = readFileSync(new URL('../src/page.html', 'file://' + process.cwd() + '/tests/'), 'utf8');
+  const {readFileSync} = process.getBuiltinModule('node:fs'), html = readFileSync(process.getBuiltinModule('node:path').join(globalThis.__root, 'src/page.html'), 'utf8'); // racine du lanceur, pas le dossier courant (relecture QA 2.4.0)
   const go = [...html.matchAll(/data-go="([\w-]+)"><b>(\d)<\/b>/g)].map(m => [m[1], m[2]]);
   assert.deepEqual(go.map(g => g[1]), ['1', '2', '3', '4', '5']);
   for (const [id, n] of go) { const sec = html.match(new RegExp(`<section[^>]*id="${id}"[^>]*>\\s*<div class="ph"><h2[^>]*><span class="num">(\\d)</span>`)); assert.ok(sec, 'panneau ' + id); assert.equal(sec[1], n, 'numéro du panneau ' + id); }
@@ -108,8 +108,10 @@ test('2.4.0 · « Pourquoi ce combo » : étiquette communauté et source, phras
     try {
       builds[0] = goalBuild('battlemage'); renderWhy();
       assert.match(el.innerHTML, /<span class="tag est">communauté<\/span> « Battlemage Hybrid », PinDrop/);
-      assert.match(el.innerHTML, /Pour « Mage de bataille \(épée et baguette\) », l'ordre des éléments de chaque étape est calculé hors ligne/);
+      assert.match(el.innerHTML, /<span class="tag hyp">hypothèse<\/span> Voie du barbare retirée/, 'part du simulateur non dite');
+      assert.match(el.innerHTML, /Pour « Mage de bataille \(épée et baguette\) », l'ordre des éléments de chaque étape est calculé hors ligne : combo complet au moindre coût à 212 points, puis l'avancée la plus rapide quand les points montent\./);
       builds[0] = goalBuild('swordBow', 'archer'); renderWhy(); assert.doesNotMatch(el.innerHTML, /tag est/, 'composé par le simulateur : pas d\'étiquette communauté');
+      assert.match(el.innerHTML, /<span class="tag hyp">hypothèse<\/span> Contenu composé d'après les descriptions des compétences/, 'composé par le simulateur : étiquette hypothèse absente');
       assert.match(el.innerHTML, /Pour « Épée et arc », l'ordre/); assert.doesNotMatch(el.innerHTML, /Pour [^.]*« Archer »/, 'objectif d\'origine cité comme optimisé');
       builds[0] = goalBuild('archer', 'tank'); renderWhy(); assert.doesNotMatch(el.innerHTML, /calculé hors ligne/, 'objectifs d\'origine : pas de phrase sur l\'ordre optimisé');
     } finally { document.querySelector = keep; }

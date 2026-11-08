@@ -66,17 +66,22 @@ Soutiens : Survie 18, Endurance 24, Résistances 30 → 27, Mana 13. Les 2 à 3 
 4. Modes Exploration et Récolte (demande ajoutée) → **objectifs principaux** (groupe « Exploration et récolte »).
 5. Contenu → **mélange** : build de la communauté 1.0 quand il existe (marqué « communauté »), sinon composé par le simulateur (« hypothèse »).
 
-Décidé sans QCM, signalé avec le plan (validé) : noms ; aucune gemme (aucune source n'en cite) ; Voie du barbare retirée du build « Battlemage Hybrid » (bonus aux armes à deux mains, ne relie rien : mesuré).
+Décidé sans QCM, signalé avec le plan (validé) : noms ; aucune gemme (aucune source n'en cite) ; Voie du barbare retirée du build « Battlemage Hybrid » (bonus aux armes à deux mains, ne relie rien : mesuré). Provenance affichée dans « Pourquoi ce combo » : étiquette « communauté » pour la part du build (`src`), « hypothèse » pour ce que le simulateur ajoute, retire ou compose (`sim`).
 
 ## 7. Objectifs ajoutés (2.4.0)
 Builds communautaires relus deux fois (PinDrop, Yurii Luzhko, mis à jour le 2026-11-07, « Checked against Enshrouded 1.0 » ; totaux 58, 50 et 13 pts recoupés avec nos coûts).
 
 | Objectif | Source | Zones | Combo complet à 212 pts |
 |---|---|---|---|
-| Mage de bataille (épée et baguette) | « Battlemage Hybrid » sans Voie du barbare (communauté) | G 52 % · M 48 % | 57 pts, 0 liaison |
+| Mage de bataille (épée et baguette) | « Battlemage Hybrid » sans Voie du barbare (communauté) | G 51 % · M 49 % | 57 pts, 0 liaison |
 | Archer élémentaire (arc et éléments) | Rôdeur : « Elemental Archer » (communauté) ; Mage : Pyromane, Homme de glace, Tonnerre (simulateur) | R 74 % · M 26 % | 83 pts, 15 liaisons |
 | Épée et arc | simulateur (paire mêlée + arc des builds « Solo Adventurer » et « Starter ») | G 55 % · R 42 % · C 3 % | 90 pts, 16 liaisons |
 | Exploration | simulateur (aucun build) | R 71 % · G 13 % · C 12 % · M 4 % | 82 pts, 14 liaisons |
 | Récolte | « Crafter Survivor » au rang max (communauté) + spécialisations pioche et hache (simulateur) | C 100 % | 25 pts, 0 liaison |
+
+**Non vérifié** : l'effet de Pyromane, Homme de glace et Tonnerre sur les tirs des arcs élémentaires (leur description ne cite aucune arme ; « Elemental Archer » tire ses éléments des arcs et s'en passe) — dit dans l'objectif et dans ROADMAP.
+
+## 8. Relecture QA (avant la PR)
+Quatre relecteurs (moteur et script, liens, textes, interface et tests) et une revue de sécurité : aucun bloquant. Corrigé : étiquette « hypothèse » pour la part du simulateur ; effet non vérifié des multiplicateurs d'élément sur les arcs, écrit ; lien d'une version plus récente (objectif inconnu, sans `-a`) gardé tel quel au lieu d'être recalculé ; script (ordre incomplet écarté, descente jusqu'au bout, égalités dites) ; tests renforcés. Vérifié : 2 800 liens existants identiques à main, 870 nouveaux liens exacts, 118 935 combos, aucun ordre strictement meilleur sur un voisinage plus large.
 
 L'optimisation n'ordonne que les éléments de chaque étape ; sur ces contenus, elle gagne surtout en avancée (aire +0 à +1 point), le coût complet étant déjà le meilleur trouvé.

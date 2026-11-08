@@ -264,5 +264,15 @@ test('2.4.0 · lien avec un objectif optimisé (principal, secondaire, avec sout
     const b = goalBuild(p, s, 'x', t), code = encode(b), d = decode(code), lbl = [p, s, t].join(' + ');
     assert.ok(code.includes('-o' + at(p) + at(s) + (t ? at(t) : '') + '-'), lbl + ' : ' + code);
     assert.ok(d && !d._objLost && !d._mig && !d._recalc, lbl); assert.deepEqual(d.obj, b.obj, lbl); assert.deepEqual([d.sk, d.pn, d.gem], [b.sk, b.pn, b.gem], lbl); }
-  assert.deepEqual(['battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest'].map(x => FZ.goals.indexOf(x)), [16, 17, 18, 19, 20]);
+  assert.deepEqual(FZ.goals.slice(12, 21), ['survie', 'vigueur', 'resist', 'mana', 'battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest'], 'places figées des soutiens (2.1.0) et des objectifs optimisés (2.4.0)');
+});
+// relecture QA 2.4.0 : un lien d'une version plus récente (objectif inconnu) sans segment -a passait par le recalcul « d'avant la 2.3.0 »
+test('2.4.0 · lien d\'une version plus récente (secondaire inconnu, sans segment -a) : arbre gardé tel quel, jamais recalculé', () => {
+  let n = 0, kept = 0; const far = (FZ.goals.length + 40).toString(36).padStart(2, '0');
+  for (const [p, s] of [['barb', 'battlemage'], ['archer', 'tank'], ['mageCrit', 'storm'], ['tank', 'healer']]) for (const B of [40, 120, 212]) for (const fl of [1, 11]) {
+    const b = goalBuild(p, s); [b.lvl, b.exp] = ptsAt(B); b.flame = fl; rebuild(b);
+    const q = encode(b).split('-').slice(0, -1).map(x => x[0] === 'o' && x.length === 5 ? 'o' + x.slice(1, 3) + far : x).join('-'), d = decode(q + '-' + b3sum(q)), lbl = `${p} + ? · ${B} pts · Flamme ${fl}`; n++;
+    assert.ok(d, lbl); assert.equal(d._objLost, true, lbl); assert.equal(d._recalc, undefined, lbl + ' : recalculé comme un lien d\'avant la 2.3.0');
+    assert.deepEqual([d.sk, d.pn], [b.sk, b.pn], lbl + ' : arbre changé'); if (d.obj.length) { kept++; assert.deepEqual(d.obj, [p, null], lbl); } }
+  assert.ok(n === 24 && kept > 0, `cas : ${n}, principal gardé : ${kept}`);
 });
