@@ -47,7 +47,7 @@ function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill')
 /* i : 0 principal, 1 secondaire, 2 soutien */
 function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i===1?v||null:i===2?o[1]||null:(v&&o[1]!==v?o[1]||null:null),t=i===2?v||null:o[2]||null;
   const A=addsOf(b),before=Object.keys(A.sk).length+Object.keys(A.pn).length+Object.keys(A.up).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s,t));
-  if(p&&newP)toast(`Combo « ${goalName(p)} » posé, avec ses gemmes${before?' ; vos nœuds placés à la main sont retirés':''}`);else if(!p)toast('Arbre libre : tout est modifiable, rien n\'est imposé');
+  if(p&&newP)toast(`Combo « ${goalName(p)} » posé, ${Object.keys(GOALI[p].gem).length?'avec ses gemmes':'gemmes inchangées'}${before?' ; vos nœuds placés à la main sont retirés':''}`);else if(!p)toast('Arbre libre : tout est modifiable, rien n\'est imposé');
   renderAll()}
 
 /* ---- Pourquoi ce combo ---- */
@@ -59,10 +59,10 @@ function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spent
   const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`;
   if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placé${sp>1?'s':''} à la main.`:''}</p>${res}`;return}
   el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
-    return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
+    return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+(g.src?`<p class="meta2 wsrc"><span class="tag est">communauté</span> ${esc(g.src)}</p>`:'')+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
       `<p>${esc(st.why)}</p><div class="chips">${Object.entries(st.items).map(([k,w])=>itemChip(k,w,c,st)).join('')}</div></details>`).join('')+'</div>'}).join('')+
     `<p class="meta2">Liaisons ${pts(c.links)} · vos ajouts ${pts(sp-c.buy)} · ${sp>bu?`<span class="over-msg">${pts(sp-bu)} en trop</span>`:`libres ${pts(bu-sp)}`}</p>${res}`+
-    `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié. Vos ajouts comptent comme déjà acquis : le combo passe par eux sans les payer s'il y gagne (étapes plus avancées ou moins de points) ; il dispose toujours de tout votre budget, vos ajouts viennent en plus. Un de vos nœuds qu'une étape compte devient imposé, sauf si le combo ne l'aurait pas sans lui. Le combo se recalcule à chaque ajout, retrait ou réglage.</p>`}
+    `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié. Vos ajouts comptent comme déjà acquis : le combo passe par eux sans les payer s'il y gagne (étapes plus avancées ou moins de points) ; il dispose toujours de tout votre budget, vos ajouts viennent en plus. Un de vos nœuds qu'une étape compte devient imposé, sauf si le combo ne l'aurait pas sans lui. Le combo se recalcule à chaque ajout, retrait ou réglage.${(op=>op.length?` Pour ${op.join(' et ')}, l'ordre des éléments de chaque étape est calculé hors ligne : combo complet au moindre coût à 212 points, puis l'avancée la plus rapide quand les points montent.`:'')(c.rep.filter(r=>GOALI[r.id].opt).map(r=>`« ${esc(GOALI[r.id].n)} »`))}</p>`}
 
 /* ---- Gemmes (Arme 1, Arme 2) : effets descriptifs, jamais comptés ---- */
 function renderGems(){const b=B(),el=$('#gems');el.innerHTML='';b.gem=b.gem||{};

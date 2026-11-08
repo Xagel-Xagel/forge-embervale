@@ -13,9 +13,10 @@ L'utilisateur (Vincent) parle français : **réponses, interface, commentaires e
 npm run build      # src/ → dist/index.html (site GitHub Pages) + dist/forge-embervale.html (format Artifact)
 npm test           # tests Node sans dépendance (faux DOM) — doit rester à 0 échec
 npm run dev        # serveur http://localhost:8080 avec reconstruction automatique
-npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (page, A contre B, vue Liste au bureau, « Pourquoi ce combo », ajouts avec objectif, lien b2) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
+npm run test:e2e   # Playwright : captures clair/sombre × 1300/400 px (page, A contre B, vue Liste au bureau, « Pourquoi ce combo », ajouts avec objectif, objectifs optimisés, lien b2) dans tests/screenshots/ ; aussi lancé par la CI sur chaque PR
 npm run check      # build + tests
 npm run tree       # régénère src/js/01-tree-data.js (tracé réel) depuis PinDrop — réseau requis, après un patch du jeu
+npm run optimiser  # ordre des éléments des objectifs optimisés (hors ligne, ≈ 20 s, n'écrit rien) ; -- --check : erreur si un meilleur ordre existe (après un patch ou npm run tree)
 ```
 
 Aucune dépendance npm n'est nécessaire hormis Playwright pour `test:e2e` (`npm i -D playwright && npx playwright install chromium`).
@@ -32,12 +33,13 @@ src/js/NN-*.js       scripts, injectés dans l'ordre du préfixe numérique, cha
   03-share.js        tables figées FZ, encode/decode des codes de partage (b3-… avec segments -o des objectifs et -a de vos ajouts, rétrocompatible b2- et b1-)
   04-tree.js         TOPO (depuis TREE), règles de liaison : reach, canBuy, dijkstra, pathTo, buyPath, prune, normalize, migrate
   05-gems.js         RAR, GEMS (29 gemmes), GEMI, GTYPE
-  06-objectifs.js    GOALS (12 objectifs, étapes et raisons), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache ; 2.3.0 : recalculé avec vos ajouts b.ad, gratuits pour lui), imposed, addsOf, regen, rebuild, setGoals, lockOf, fitGoals, goalBuild
+  06-objectifs.js    GOALS (17 objectifs, étapes et raisons : 12 repris des presets ; 5 optimisés en 2.4.0 — 3 hybrides, Exploration, Récolte — champs opt, src « communauté », ordre des éléments figé par le script), SUPS (4 objectifs de soutien, compétences seules, 2.1.0), combo (moteur, en cache ; 2.3.0 : recalculé avec vos ajouts b.ad, gratuits pour lui), imposed, addsOf, regen, rebuild, setGoals, lockOf, fitGoals, goalBuild
   10-ui.js           état (builds, cur, compare, area, view…), rendus (onglets A/B, points, objectifs, « Pourquoi ce combo », gemmes, arbre en liste, A contre B), événements, fil des étapes (goStep), partage, builds enregistrés
   30-graph.js        rendu canvas de l'arbre façon « graph view » d'Obsidian (positions réelles ancrées, survol, zoom ; imposé plein, ajouté en pointillé), expose window.G
   99-init.js         fromHash(); renderSaved(); renderAll();
 scripts/build.mjs    assemblage + garde-fous (pas de </script> dans le JS, pas de doctype, < 16 Mo)
 scripts/tree-from-pindrop.mjs  régénère src/js/01-tree-data.js depuis le planificateur PinDrop (réseau ; après un patch du jeu)
+scripts/optimiser-objectifs.mjs  ordre des éléments de chaque étape des objectifs opt : moindre coût du combo complet à 212 pts, puis aire d'avancée (imprime l'ordre à recopier)
 tests/               run.mjs (lanceur), 00-aides.test.js (aides), *.test.js, dom-stub.cjs, e2e.mjs
 docs/                ARCHITECTURE, FORMULAS, DATA_SOURCES, ROADMAP, HISTORY
 ```
@@ -62,7 +64,7 @@ Tous les scripts partagent la portée globale (comme dans le navigateur) : une `
 Les codes enregistrent des **places dans des tables figées** (`FZ`, en tête de 03-share.js), jamais l'ordre des données vivantes :
 - `FZ.items` (objets), `FZ.gems` (gemmes) : formats b1, b2 et b3 ;
 - `FZ.at`, `FZ.nd` : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel, format b3 ;
-- `FZ.goals` : objectifs (segment `-o`, 2.0.0 ; soutiens `SUPS` en fin, 2.1.0 : 6 caractères seulement avec un soutien) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
+- `FZ.goals` : objectifs (segment `-o`, 2.0.0 ; soutiens `SUPS` en fin, 2.1.0 : 6 caractères seulement avec un soutien ; objectifs optimisés en fin, 2.4.0) ; `FZ.slots` : emplacements d'équipement (relus, inertes) ;
 - `FZ.sk`, `FZ.b1`, `FZ.b2` : formats fermés b1/b2 (ancien ordre de SK, ancien tracé) — **ne changent plus jamais**.
 
 Format actuel : `b3-<en-tête>-<équipement>-<masque attributs>-<masque compétences>-<rangs>[-g<gemmes>][-o<objectifs>[-a<ajouts>-<rangs>]]-<contrôle>` (1 chiffre de rang par compétence possédée ; segment `-a` de vos ajouts, 2.3.0, seulement avec objectifs et s'il y en a : bits sur les nœuds possédés, dans l'ordre du code, pas de table FZ, puis un caractère par compétence (votre nœud : son rang ; vos rangs au-dessus d'un nœud imposé : rang + 9) ; sans lui, `fitGoals` déduit les ajouts de l'arbre et recalcule s'il le faut (message) ; 2 caractères de contrôle : un code tronqué ou abîmé est refusé, avec un message). Les builds enregistrés portent `tv:1` (faits sur le tracé réel) ; sans ce marqueur, ils sont migrés au chargement.
@@ -95,7 +97,7 @@ Le tracé (positions, liaisons) est celui des **fichiers du jeu 1.0**, relevé p
 ## Flux de travail attendu
 1. Lire `docs/ROADMAP.md` (travaux en attente) et `docs/HISTORY.md` (demandes et décisions passées) avant une évolution importante.
 2. Modifier `src/`, ajouter ou adapter un test dans `tests/`.
-3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px, A contre B, vue Liste, « Pourquoi ce combo », ajouts avec objectif).
+3. `npm run check` (0 échec), puis `npm run test:e2e` si Playwright est disponible, et **regarder les captures** (clair/sombre, 1300/400 px, A contre B, vue Liste, « Pourquoi ce combo », ajouts avec objectif, objectifs optimisés). Objectif optimisé modifié : `npm run optimiser -- --check`.
 4. Mettre à jour `CHANGELOG.md` (et `docs/FORMULAS.md` / `docs/DATA_SOURCES.md` si besoin), incrémenter la version dans `package.json`.
 5. Publier : commit puis `git push` sur `main` → GitHub Actions teste, construit et met à jour la branche `gh-pages` ; GitHub Pages republie ensuite le site en 1 à 2 minutes (vérifier le run avec `gh run list` / `gh run watch`). Pour un travail en cours, utiliser une branche et une pull request (le workflow `tests.yml` la vérifie : tests Node, build, test navigateur Playwright ; captures dans l'artefact « captures-e2e » du run). Optionnel : si l'outil Artifact est disponible, republier aussi `dist/forge-embervale.html` sur l'URL Artifact.
 

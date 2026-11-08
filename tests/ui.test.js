@@ -96,3 +96,22 @@ test('lien d\'avant la 2.3.0 avec ajouts : message, adresse remplacée par le co
   try { assert.equal(fromHash(), true); } finally { history.replaceState = rs; globalThis.setTimeout = st; location.hash = ''; }
   assert.match(url, /^#b3-.*-a[0-9a-z]+-[0-9a-z]+-[0-9a-z]{2}$/); assert.ok(msgs.some(m => /^Lien ou build d'avant la 2\.3\.0 : combo recalculé avec vos ajouts/.test(m) && /\(liaisons 30 pts → 27 pts · \+4 pts sur les étapes\)$/.test(m)));
 })));
+
+// 2.4.0 : objectifs optimisés — source communautaire et ordre optimisé dans « Pourquoi ce combo » ; gemmes en place gardées par un objectif sans gemme
+test('2.4.0 · « Pourquoi ce combo » : étiquette communauté et source, phrase sur l\'ordre optimisé ; message « gemmes inchangées »', () => keepUi(() => {
+  const keepT = globalThis.toast, msgs = []; globalThis.toast = t => msgs.push(t);
+  try {
+    builds[0] = goalBuild('tank'); cur = 0; pickGoal(0, 'battlemage');
+    assert.match(msgs.pop(), /^Combo « Mage de bataille \(épée et baguette\) » posé, gemmes inchangées$/); assert.deepEqual(B().gem, GOALI.tank.gem);
+    pickGoal(0, 'ice'); assert.match(msgs.pop(), /^Combo « Mage de glace \(contrôle\) » posé, avec ses gemmes$/);
+    const el = {}, keep = document.querySelector; document.querySelector = q => q === '#why' ? el : keep(q);
+    try {
+      builds[0] = goalBuild('battlemage'); renderWhy();
+      assert.match(el.innerHTML, /<span class="tag est">communauté<\/span> « Battlemage Hybrid », PinDrop/);
+      assert.match(el.innerHTML, /Pour « Mage de bataille \(épée et baguette\) », l'ordre des éléments de chaque étape est calculé hors ligne/);
+      builds[0] = goalBuild('swordBow', 'archer'); renderWhy(); assert.doesNotMatch(el.innerHTML, /tag est/, 'composé par le simulateur : pas d\'étiquette communauté');
+      assert.match(el.innerHTML, /Pour « Épée et arc », l'ordre/); assert.doesNotMatch(el.innerHTML, /Pour [^.]*« Archer »/, 'objectif d\'origine cité comme optimisé');
+      builds[0] = goalBuild('archer', 'tank'); renderWhy(); assert.doesNotMatch(el.innerHTML, /calculé hors ligne/, 'objectifs d\'origine : pas de phrase sur l\'ordre optimisé');
+    } finally { document.querySelector = keep; }
+  } finally { globalThis.toast = keepT; }
+}));

@@ -1,6 +1,6 @@
 // Test navigateur (optionnel) : nécessite Playwright.
 //   npm i -D playwright && npx playwright install chromium
-//   node tests/e2e.mjs            → captures dans tests/screenshots/ (clair / sombre × 1 300 / 400 px, A contre B, vue Liste, lien b2)
+//   node tests/e2e.mjs            → captures dans tests/screenshots/ (clair / sombre × 1 300 / 400 px, A contre B, vue Liste, objectifs optimisés, lien b2)
 //   E2E_LONGTASK_MS=500 node tests/e2e.mjs   → seuil des tâches longues (200 ms par défaut ; 500 ms en CI, machines plus lentes)
 import {build} from '../scripts/build.mjs';
 import {mkdirSync} from 'node:fs';
@@ -112,6 +112,28 @@ for (const w of [1300, 400]) for (const scheme of ['light', 'dark']) {
   await page.goto(url + '#' + code); await page.reload(); await page.waitForTimeout(500);
   if (await page.evaluate(() => encode(B())) !== code) errs.push('lien avec ajouts rouvert différemment');
   report(!errs.length, 'ajouts avec objectif (2.3.0)', errs); await page.close();
+}
+
+// 2.4.0 : objectifs optimisés — groupes du menu, étiquette « communauté », phrase sur l'ordre optimisé, gemmes gardées ; Récolte + Archer
+for (const [w, scheme] of [[1300, 'light'], [1300, 'dark'], [400, 'light'], [400, 'dark']]) {
+  const page = await browser.newPage({viewport: {width: w, height: 900}, colorScheme: scheme});
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(url); await page.waitForTimeout(400);
+  const groups = await page.evaluate(() => [...document.querySelectorAll('#goal1 optgroup')].map(g => g.label));
+  if (!groups.includes('Hybrides') || !groups.includes('Exploration et récolte')) errs.push('groupes du menu absents : ' + groups.join(', '));
+  await page.selectOption('#goal1', 'battlemage'); await page.selectOption('#goal2', 'storm'); await page.waitForTimeout(60);
+  if (!/gemmes inchangées/.test(await page.textContent('#toasts'))) errs.push('message « gemmes inchangées » absent');
+  const why = await page.textContent('#why');
+  if (!/communauté/.test(why) || !/Battlemage Hybrid/.test(why)) errs.push('source communautaire absente');
+  if (!/calculé hors ligne/.test(why)) errs.push('phrase sur l\'ordre optimisé absente');
+  await overflow(page, w, 'objectif hybride', errs);
+  await page.evaluate(() => { const d = document.querySelector('#why details'); if (d) d.open = true; });
+  await page.locator('#why').screenshot({path: shot(`${w}-${scheme}-hybride`)});
+  await page.selectOption('#goal1', 'harvest'); await page.selectOption('#goal2', 'archer'); await page.waitForTimeout(60);
+  const w2 = await page.textContent('#why'); if (!/Récolte/.test(w2) || !/Archer/.test(w2) || !/Crafter Survivor/.test(w2)) errs.push('Récolte + Archer : explication incomplète');
+  await overflow(page, w, 'Récolte', errs);
+  if (w === 1300) await page.locator('#why').screenshot({path: shot(`${w}-${scheme}-recolte`)});
+  report(!errs.length, `objectifs optimisés ${w} px ${scheme}`, errs); await page.close();
 }
 
 // Lien avec objectifs (segment -o) : s'ouvre sur les mêmes objectifs ; un rendu ne change pas l'adresse

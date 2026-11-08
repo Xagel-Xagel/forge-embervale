@@ -256,3 +256,13 @@ test('segment -a : forme canonique seulement (masque sans zéro en tête, rang d
     assert.deepEqual(d.ad, {sk: {}, pn: {}, up: {[k]: SKI[k].max}}, g.id); assert.deepEqual(d.sk, old.sk, g.id); }
   assert.ok(n >= 3, 'trop peu de cas : ' + n);
 }));
+
+// 2.4.0 : objectifs optimisés (hybrides, Exploration, Récolte), ids en fin de FZ.goals ; aucun code existant ne change
+test('2.4.0 · lien avec un objectif optimisé (principal, secondaire, avec soutien) : segment -o en fin de table, aller-retour exact', () => {
+  const at = x => x ? FZ.goals.indexOf(x).toString(36).padStart(2, '0') : 'zz';
+  for (const [p, s, t] of [['harvest', 'archer', null], ['battlemage', null, 'mana'], ['tank', 'explore', null], ['swordBow', 'elemArcher', 'survie']]) {
+    const b = goalBuild(p, s, 'x', t), code = encode(b), d = decode(code), lbl = [p, s, t].join(' + ');
+    assert.ok(code.includes('-o' + at(p) + at(s) + (t ? at(t) : '') + '-'), lbl + ' : ' + code);
+    assert.ok(d && !d._objLost && !d._mig && !d._recalc, lbl); assert.deepEqual(d.obj, b.obj, lbl); assert.deepEqual([d.sk, d.pn, d.gem], [b.sk, b.pn, b.gem], lbl); }
+  assert.deepEqual(['battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest'].map(x => FZ.goals.indexOf(x)), [16, 17, 18, 19, 20]);
+});
