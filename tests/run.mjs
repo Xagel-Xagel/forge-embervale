@@ -11,6 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const only = process.argv[2];
 const results = [];
 globalThis.assert = assert;
+globalThis.__root = root; // racine du dépôt, pour les tests qui lisent un fichier (src/page.html)
 globalThis.test = (name, fn) => results.push({name, fn, file: globalThis.__file});
 
 vm.runInThisContext(readFileSync(join(root, 'tests/dom-stub.cjs'), 'utf8'), {filename: 'dom-stub.cjs'});

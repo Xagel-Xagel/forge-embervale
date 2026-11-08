@@ -2,8 +2,13 @@
 /* Objectifs prêts : chacun reprend TELLES QUELLES les compétences, les rangs et les attributs d'un build prédéfini des versions 1.x (presets, 01-data.js
    jusqu'à la 1.19.0 ; Tank = « Sadi Fourbe »), rangés en étapes. L'ORDRE DES ÉTAPES ET LEURS RAISONS SONT DES CHOIX DU SIMULATEUR (hypothèse),
    pas un guide officiel ; les effets cités viennent des descriptions des compétences (SK, fichiers du jeu 1.0).
-   {id (place figée : FZ.goals), n nom, grp groupe du menu, area couleur, gem gemmes posées, steps : [titre, raison, {compétence: rang | attribut: nœuds}]} */
-const GOAL_GRP=[['war','Guerrier'],['rng','Rôdeur'],['mag','Mage'],['sup','Soins']];
+   2.4.0 — 5 objectifs OPTIMISÉS (opt:1 ; étude docs/etudes/classes-combinaisons-2026-11-08.md) : 3 hybrides, Exploration, Récolte. Contenu : build de la
+   communauté 1.0 quand il existe (src, étiquette « communauté »), et ce que le simulateur a ajouté, retiré ou composé (sim, étiquette « hypothèse »). ORDRE DES ÉLÉMENTS de chaque étape calculé hors ligne par
+   scripts/optimiser-objectifs.mjs (combo complet au moindre coût à 212 points, Flamme 11, puis l'avancée la plus rapide) : ne pas le retoucher à la main,
+   relancer le script (npm run optimiser) ; l'ordre des étapes, lui, reste un choix du simulateur. Des égalités exactes existent (ex. Bûcheron et Maçon, Double saut
+   et Coureur) : l'ordre figé est l'un des meilleurs trouvés. Aucune gemme : aucune source n'en cite.
+   {id (place figée : FZ.goals), n nom, grp groupe du menu, area couleur, gem gemmes posées, [opt, src, sim,] steps : [titre, raison, {compétence: rang | attribut: nœuds}]} */
+const GOAL_GRP=[['war','Guerrier'],['rng','Rôdeur'],['mag','Mage'],['sup','Soins'],['hyb','Hybrides'],['util','Exploration et récolte']];
 const GOALS=[
  {id:'tank',n:"Tank (d'après Sadi Fourbe)",grp:'war',area:'war',gem:{w1:'g_armor',w2:'g_reap'},steps:[
   ['Attirer les coups',"Némésis attire l'attention des ennemis : c'est vous qu'ils frappent, pas le groupe.",{nemesis:3}],
@@ -94,6 +99,47 @@ const GOALS=[
   ['Soin de groupe',"Feu vertueux, Élan divin, Sauveur, Réanimation curative et Martyr (soigne les alliés à votre mort).",{righteousFire:3,divineSurge:1,saviour:3,healingRevive:3,martyr:1}],
   ['Parer',"Parade puissante et Déviation arcanique (+10 de mana par parade réussie, par rang).",{powerParry:3,arcaneDeflect:3}],
   ['Mana et survie',"Esprit, Essences de vie, Constitution, Peau épaisse, Exalté et Double saut.",{spi:6,lifeEssences:3,con:2,thickSkin:1,exalted:1,doubleJump:1}]]},
+ // ---- 2.4.0 : objectifs optimisés (ordre des éléments : scripts/optimiser-objectifs.mjs) ----
+ {id:'battlemage',n:'Mage de bataille (épée et baguette)',grp:'hyb',area:'war',gem:{},opt:1,
+  src:"« Battlemage Hybrid », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026), build de niveau 30.",
+  sim:"Voie du barbare retirée : bonus aux armes à deux mains, elle ne relie rien ici.",steps:[
+  ['Dégâts à une main',"Voie du guerrier (+5 % aux haches, masses et épées à une main par rang), Taillade (+10 % de dégâts tranchants de mêlée par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:6}],
+  ['Sorts à la baguette',"Tonnerre (+10 % de dégâts de foudre par rang), Apprenti mage (+5 % aux baguettes et bâtons par rang) et Intelligence (+5 % de dégâts magiques par point) ; Pyromane (+10 % de dégâts de feu) et Étincelle éternelle (baguette : 15 % de chance de réparer 1 durabilité) servent aussi de liaison.",{mageApprentice:3,eternalSpark:1,arsonist:1,int:7,thunder:3}],
+  ['Critiques',"Sorcier (+2 % de critique aux baguettes et bâtons par rang) ; Soin de bataille : un critique de mêlée soigne 1 % de la santé max par rang.",{wizard:2,battleHeal:2}],
+  ['Encaisser',"Plaques lourdes et brillantes (+4 % d'armure physique ou magique des objets par rang), Constitution (+50 de santé par point) et Absorption (4 % de chance de convertir les dégâts magiques reçus en mana).",{heavyPlates:2,con:6,shinyPlates:1,absorb:1}],
+  ['Soins et mana',"Aura d'eau (soin : 1 PV pour 2 points d'Intelligence), Guérisseur (+15 % de soins par rang) et Esprit (+20 de mana par point).",{healer:1,waterAura:1,spi:3}]]},
+ {id:'elemArcher',n:'Archer élémentaire (arc et éléments)',grp:'hyb',area:'rng',gem:{},opt:1,
+  src:"Partie Rôdeur : « Elemental Archer », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026), telle quelle.",
+  sim:"Partie Mage (Pyromane, Homme de glace, Tonnerre) ajoutée : le build d'origine tire ses éléments des arcs, et l'effet de ces compétences sur les tirs à l'arc n'est pas vérifié.",steps:[
+  ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Tir d'adresse (+20 % de dégâts des tirs dans les points faibles) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,skillShot:3,dex:5}],
+  ['Éléments',"Pyromane, Homme de glace et Tonnerre : +10 % de dégâts de feu, de glace ou de foudre par rang ; leur description ne cite aucune arme, mais leur effet sur les tirs à l'arc n'est pas vérifié (partie ajoutée par le simulateur).",{arsonist:3,iceman:3,thunder:3}],
+  ['Critiques',"Sniper (+2 % de critique à l'arc par rang), Précision fatale (+5 % de critique et +1 % de dégâts critiques par rang) et Sursaut de vitalité (+3 vigueur sur un critique à l'arc, aux dagues ou au lancer).",{sniper:3,fatalPrecision:2,vitalitySurge:2}],
+  ['Arc',"Spécialisation arc (capacité spéciale des arcs), Œil d'aigle (compétence active, effet non décrit dans les données), Dard d'abeille (tir en l'air : ralentit la chute) et Contre-batterie (+8 % de dégâts contre les ennemis à distance).",{bowSpec:1,eagleEye:1,beeSting:1,counterBattery:1}],
+  ['Vigueur',"Endurance (+10 de vigueur par point), Rôdeur (+1 Dextérité, +1 Endurance et régén. de vigueur de base par rang), Subsistance du tir rapide (ennemi tué à l'arc : 12 % de chance d'orbe de vigueur) et Rebond (+10 % de régén. de vigueur de base par rang).",{end:3,ranger:3,swiftshot:1,rebound:3}],
+  ['Survie et déplacement',"Vigueur voilée (+3 × Dextérité de santé max par rang), Coureur (+5 % de vitesse de sprint, sprint moins coûteux) et Aéroporté (planeur : −12 % de vigueur par rang).",{veiledVigor:1,runner:1,airborne:1}]]},
+ {id:'swordBow',n:'Épée et arc',grp:'hyb',area:'war',gem:{},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences (aucun build Guerrier + Rôdeur de la communauté).",steps:[
+  ['Dégâts à une main',"Voie du guerrier (+5 % aux haches, masses et épées à une main par rang), Taillade (+10 % de dégâts tranchants de mêlée par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:6}],
+  ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Perforation (+10 % de dégâts perçants à distance par rang) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,puncture:3,dex:5}],
+  ['Critiques des deux armes',"Précision fatale (+5 % de critique et +1 % de dégâts critiques par rang), Sniper (+2 % de critique à l'arc par rang) et Vétéran (+2 % de critique avec les armes de mêlée et les dagues par rang).",{fatalPrecision:3,sniper:3,veteran:3}],
+  ['Capacités spéciales',"Spécialisations arc et une main : elles débloquent la capacité spéciale de chaque arme.",{bowSpec:1,oneHSpec:1}],
+  ['Survie',"Soin de bataille (un critique de mêlée soigne 1 % de la santé max par rang) et Constitution (+50 de santé par point).",{battleHeal:3,con:6}],
+  ['Flamme et confort',"Barbare et Foulée gracieuse : respectivement +1 Force et +1 Dextérité tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,gracefulStride:1,doubleJump:1}]]},
+ {id:'explore',n:'Exploration',grp:'util',area:'rng',gem:{},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences (aucun build d'exploration de la communauté).",steps:[
+  ['Se déplacer',"Double saut, Coureur (+5 % de vitesse de sprint, sprint moins coûteux), Arachnide (escalade : −20 % de vigueur par rang) et Aéroporté (planeur : −12 % de vigueur par rang).",{doubleJump:1,runner:3,arachnoid:3,airborne:3}],
+  ['Planer et sprinter',"Bougeotte (sprint moins coûteux sur les routes), Courant ascendant (sursaut vers le haut en vol plané), Pas feutré (déplacement plus rapide en furtivité) et Ruée aquatique (esquive en nageant).",{wanderlust:1,updraft:1,silentStride:3,splashDash:1}],
+  ['Tenir dans le Shroud',"Feux intérieurs (+60 s de temps dans le Shroud par rang) et Résistance au Shroud (+5 % par rang).",{innerFires:3,shroudResistance:3}],
+  ['Dangers du terrain',"Chien mouillé et Chien trempé (malus Mouillé et Trempé affaiblis), Mithridatisé (25 % de chance d'éviter l'empoisonnement) et Mangeur de serpents (+4 % de résistance au poison par rang).",{wetDog:1,soakedDog:1,mithridatist:1,snakeEater:3}],
+  ['Passer sans combattre',"Esprit calme (les animaux sauvages ne vous attaquent plus) et Langue vukah (les Vukah ne vous attaquent plus).",{calmSpirit:1,vukahLang:1}],
+  ['Nourriture et repos',"Bien reposé (+2 min de buff Reposé par rang), Estomac à dessert (un emplacement de nourriture en plus), Bon métabolisme (orbes à 30 %, potions +20 %), Dernier repas (les buffs de nourriture survivent à la mort) et Bec sucré (sucreries : +50 % de régén. de vigueur).",{wellRested:3,dessert:1,goodMetab:1,lastMeal:1,sweetTooth:1}]]},
+ {id:'harvest',n:'Récolte',grp:'util',area:'core',gem:{},opt:1,
+  src:"« Crafter Survivor », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026).",
+  sim:"Rangs portés au maximum et spécialisations pioche et hache d'abattage ajoutées (mode « full »).",steps:[
+  ['Abattre et miner',"Bûcheron, Maçon et Prospecteur : +10 % de dégâts des outils contre le bois, la pierre ou le métal par rang.",{lumberjack:3,mason:3,prospector:3}],
+  ['Plus de ressources',"Mineur (10 % de chance d'obtenir une ressource en plus) et Outils de qualité (20 % de chance de regagner 1 de durabilité).",{miner:1,qualityGear:1}],
+  ['Outils spéciaux',"Spécialisations pioche et hache d'abattage : elles débloquent la capacité spéciale de ces outils (ajoutées par le simulateur).",{pickSpec:1,fellSpec:1}],
+  ['Pêche, repos et Shroud',"Ténacité du pêcheur (+5 d'endurance de pêche par rang), Bien reposé (+2 min de buff Reposé par rang) et Feux intérieurs (+60 s de temps dans le Shroud par rang).",{fisherman:3,wellRested:3,innerFires:3}]]},
 ];
 /* Objectifs de soutien (2.1.0) : 3e objectif, passé en dernier sur les points restants. COMPÉTENCES SEULES (ni attribut ni gemme), choisies par le joueur.
    Contenu, ordre des étapes et raisons : CHOIX DU SIMULATEUR (hypothèse) ; les effets cités viennent des descriptions de SK. Place figée : fin de FZ.goals. */
@@ -221,18 +267,19 @@ function regen(b,keep,prev){b.ad=cleanAdds(b.ad);const gone=[];let imp=imposed(b
   for(let g=0;!keep&&g<99;g++){const d=imp.drop.filter(id=>!was.has(id));if(!d.length)break;for(const id of d){gone.push(TOPO.byId[id]);for(const k of ['sk','pn','up'])delete b.ad[k][id]}imp=imposed(b)}
   const t=treeOf(imp,b.ad);b.sk=t.sk;b.pn=t.pn;syncPips(b);return gone.filter(n=>!owned(b,n))}
 function rebuild(b,A,prev){if(A!==undefined)b.ad=cleanAdds(A);return regen(b,false,prev)}
-/* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées), secondaire et soutien (ajouts gardés).
+/* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées ; un objectif sans gemme garde celles en place, 2.4.0), secondaire et soutien (ajouts gardés).
    obj = [p, s] sans soutien (forme d'avant la 2.1.0, lien inchangé), [p, s, t] avec. */
 const objOf=(p,s,t)=>p?(t?[p,s,t]:[p,s]):[];
 function setGoals(b,p,s,t){p=isMain(p)?p:null;s=p&&isMain(s)&&s!==p?s:null;t=p&&isSup(t)?t:null;const was=(b.obj||[])[0]||null,c0=imposed(b);
-  b.obj=objOf(p,s,t);if(!p){b.ad=NOADD();return []}if(was!==p){b.ad=NOADD();b.gem={...GOALI[p].gem};return regen(b,false)}return regen(b,false,c0)}
+  b.obj=objOf(p,s,t);if(!p){b.ad=NOADD();return []}if(was!==p){b.ad=NOADD();if(Object.keys(GOALI[p].gem).length)b.gem={...GOALI[p].gem};return regen(b,false)}return regen(b,false,c0)}
 /* Rang minimum d'un nœud (imposé), 0 sinon. Un de vos nœuds qu'une étape compte n'est verrouillé que si le combo l'aurait aussi sans lui (QCM du 2026-11-07) */
 function lockOf(b,n,imp){imp=imp===undefined?imposed(b):imp;if(!imp)return 0;if(n.kind==='pip')return imp.pn[n.id]?1:0;if(n.kind!=='skill')return 0;
   const r=imp.sk[n.id]||0;if(!r||!imp.claim||!imp.claim[n.id])return r;const A=cleanAdds(imp.ad),o=b.obj;delete A.sk[n.id];
   return Math.min(r,combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null,A).sk[n.id]||0)}
 /* Lien, build enregistré : objectifs inconnus retirés ; arbre qui n'est pas celui que le moteur tire des objectifs et des ajouts (objectif changé depuis)
    → objectifs retirés, arbre gardé tel quel ; noté dans _objLost. Vos ajouts viennent du lien (segment -a) ou du build enregistré (ad) ; sans eux
-   (lien ou build d'avant la 2.3.0) : ajouts = arbre − combo seul (rangs au-dessus d'un nœud du combo : up), puis combo recalculé s'il change (_recalc, message) */
+   (lien ou build d'avant la 2.3.0) : ajouts = arbre − combo seul (rangs au-dessus d'un nœud du combo : up), puis combo recalculé s'il change (_recalc, message) ;
+   jamais quand un objectif inconnu a été retiré (lien d'une version plus récente, 2.4.0) : l'arbre reste tel quel, au besoin en arbre libre */
 function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=isMain(o[0])?o[0]:null,s=p&&isMain(o[1])&&o[1]!==p?o[1]:null,t=p&&isSup(o[2])?o[2]:null;
   let lost=!!(o[0]&&!p)||!!(o[1]&&o[1]!==o[0]&&!s)||!!(o[2]&&p&&!t);
   const given=b.ad&&typeof b.ad==='object'?cleanAdds(b.ad):null;b.obj=objOf(p,s,t);b.ad=NOADD();
@@ -240,7 +287,7 @@ function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=isMain(o[0])?o[0]:n
     if(given){for(const g of ['sk','up'])for(const id in given[g])if(!((b.sk[id]||0)>=given[g][id]))delete given[g][id];for(const id in given.pn)if(!b.pn[id])delete given.pn[id];ok=fits(given)}
     const has=Object.keys(z.sk).every(id=>(b.sk[id]||0)>=z.sk[id])&&Object.keys(z.pn).every(id=>b.pn[id]),A=NOADD();
     if(!ok&&has){for(const id in b.sk)if(b.sk[id]>(z.sk[id]||0))(z.sk[id]?A.up:A.sk)[id]=b.sk[id];for(const id in b.pn)if(b.pn[id]&&!z.pn[id])A.pn[id]=1;ok=fits(A)}
-    if(!ok&&has&&!given){b.ad=A;const imp=imposed(b);Object.defineProperty(b,'_recalc',{value:{links:[z.links,imp.links],wpts:[z.wpts,imp.wpts]},enumerable:false,configurable:true});regen(b,true);ok=true}
+    if(!ok&&has&&!given&&!lost){b.ad=A;const imp=imposed(b);Object.defineProperty(b,'_recalc',{value:{links:[z.links,imp.links],wpts:[z.wpts,imp.wpts]},enumerable:false,configurable:true});regen(b,true);ok=true}
     if(!ok){b.obj=[];b.ad=NOADD();lost=true}}
   if(lost)Object.defineProperty(b,'_objLost',{value:true,enumerable:false,configurable:true});return b}
 /* Build d'un objectif (démarrage, tests) */

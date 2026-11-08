@@ -15,6 +15,7 @@ test('chaque objectif, budgets 0 à 212, Flammes 1, 4 et 11 : relié, dans le bu
 
 test('coût du combo complet à 212 points, Flamme 11 (mesuré le 2026-11-07) ; toutes les étapes complètes', () => {
   const COST = {tank: 142, sword: 110, barb: 105, archer: 104, assassin: 91, mageCrit: 98, fire: 104, ice: 109, storm: 102, necro: 110, healer: 108, paladin: 111};
+  Object.assign(COST, {battlemage: 57, elemArcher: 83, swordBow: 90, explore: 82, harvest: 25}); // 2.4.0 : objectifs optimisés, mesurés le 2026-11-08 (scripts/optimiser-objectifs.mjs)
   for (const g of GOALS) { const c = combo(g.id, null, 50, 114, 11);
     assert.equal(c.spent, COST[g.id], g.id); assert.ok(c.rep[0].steps.every(s => s.st === 'ok'), g.id + ' : étape incomplète');
     for (const [, , items] of g.steps) for (const [k, v] of Object.entries(items)) assert.equal(isAttr(k) ? c.want.pip[k] : c.want.sk[k], v, g.id + ' : ' + k);
@@ -26,14 +27,15 @@ test('coût du combo complet à 212 points, Flamme 11 (mesuré le 2026-11-07) ; 
 test('objectif = ancien preset tel quel : chaque compétence et attribut des étapes est dans le code figé du preset, au même rang', () => {
   const P = {tank: 'Sadi Fourbe', sword: 'Guerrier épée et bouclier', barb: 'Barbare deux mains', archer: 'Rôdeur archer', assassin: 'Assassin aux dagues', mageCrit: 'Mage critique (baguette)',
     fire: 'Sorcier de feu', ice: 'Mage de glace (contrôle)', storm: 'Mage de foudre (baguette)', necro: 'Nécromancien invocateur', healer: 'Soigneur de groupe', paladin: 'Paladin soigneur'};
-  for (const g of GOALS) { const d = decode(PRESET_CODES.find(x => x[0] === P[g.id])[1]), it = {};
+  assert.deepEqual(GOALS.filter(x => !x.opt).map(x => x.id), Object.keys(P), 'les 12 objectifs d\'origine (les objectifs optimisés de la 2.4.0 ne viennent pas d\'un preset)');
+  for (const g of GOALS.filter(x => !x.opt)) { const d = decode(PRESET_CODES.find(x => x[0] === P[g.id])[1]), it = {};
     for (const [, , items] of g.steps) Object.assign(it, items);
     for (const [k, v] of Object.entries(it)) if (isAttr(k)) assert.ok(d.pip[k] >= v, g.id + ' : ' + k); else assert.equal(d.sk[k], v, g.id + ' : ' + k);
     for (const k in d.sk) if (d.sk[k] > 1) assert.ok(k in it, g.id + ' : ' + k + ' (rang ' + d.sk[k] + ') absent des étapes'); }
 });
 
 test('secondaire : le principal passe d\'abord, à l\'identique ; le secondaire prend les points restants, sans dépasser', () => {
-  for (const [p, s] of [['tank', 'healer'], ['mageCrit', 'storm'], ['archer', 'assassin'], ['paladin', 'sword']]) for (const B of [40, 120, 212]) {
+  for (const [p, s] of [['tank', 'healer'], ['mageCrit', 'storm'], ['archer', 'assassin'], ['paladin', 'sword'], ['harvest', 'archer'], ['battlemage', 'storm']]) for (const B of [40, 120, 212]) {
     const a = combo(p, null, ...lvlExp(B), 11), c = combo(p, s, ...lvlExp(B), 11);
     assert.deepEqual(c.rep[0], a.rep[0], `${p} + ${s} à ${B}`); assert.ok(c.spent <= B && c.spent >= a.spent, `${p} + ${s} à ${B}`);
     assert.equal(c.rep[1].id, s); assert.equal(lostOf(asB(c)).length, 0); }
@@ -47,7 +49,8 @@ test('Flamme 1 : les nœuds « +1 tous les 2 niveaux de Flamme » sont sautés e
 });
 
 test('explication : étape en partie ou pas encore, avec les points qui manquent et l\'élément visé', () => {
-  for (const g of GOALS) for (const B of [0, 6, 30]) { const c = combo(g.id, null, ...lvlExp(B), 11), st = c.rep[0].steps;
+  for (const g of GOALS) for (const B of [0, 6, 30]) { if (B >= combo(g.id, null, 50, 114, 11).spent) continue; // Récolte (2.4.0) : complète dès 25 pts
+    const c = combo(g.id, null, ...lvlExp(B), 11), st = c.rep[0].steps;
     const i = st.findIndex(s => s.st !== 'ok'); assert.ok(i >= 0, g.id + ' complet avec ' + B + ' pts');
     assert.ok(st[i].miss > 0 && st[i].miss <= 99 && st[i].at in st[i].items, g.id + ' à ' + B + ' : manque');
     assert.ok(st.slice(i + 1).every(s => s.st === 'no' && !s.miss), g.id + ' : étapes suivantes'); }
@@ -269,3 +272,46 @@ test('2.3.0 · au rang maximum, +1 ne fait rien (ni ajout ni recalcul)', () => q
   const b = goalBuild('tank'), t0 = JSON.stringify([b.sk, b.pn, b.ad]); assert.equal(b.sk.nemesis, 3);
   assert.equal(addRank(b, 'nemesis'), false); assert.equal(JSON.stringify([b.sk, b.pn, b.ad]), t0); assert.equal(msgs.length, 0);
 }));
+
+// ---- 2.4.0 : objectifs optimisés (hybrides, Exploration, Récolte ; étude docs/etudes/classes-combinaisons-2026-11-08.md) ----
+const OPT = () => GOALS.filter(g => g.opt);
+const zoneShare = g => { const z = {}; let t = 0;
+  for (const [, , it] of g.steps) for (const [k, v] of Object.entries(it)) { const a = isAttr(k) ? PIPS.find(p => p[0] === k)[3] : SKI[k].area, c = isAttr(k) ? v : SKI[k].cost * v; z[a] = (z[a] || 0) + c; t += c; }
+  for (const a in z) z[a] /= t; return z; };
+// Moteur réel sur un objectif aux étapes réordonnées, comme scripts/optimiser-objectifs.mjs : coût à 212 points ; aire = Σ wpts aux budgets 0, 4 … 212 (Flamme 11)
+const optRun = (g, steps, B) => { GOALI.__t = {...g, id: '__t', steps}; try { return runCombo([['__t', 'p']], ...ptsAt(B), 11, null); } finally { delete GOALI.__t; } };
+const optArea = (g, steps) => { let a = 0; for (let B = 0; B <= 212; B += 4) a += optRun(g, steps, B).wpts; return a; };
+
+test('2.4.0 · 5 objectifs optimisés : ids en fin de FZ.goals, groupes, source marquée, aucune gemme ; chaque hybride sur ses deux zones', () => {
+  assert.deepEqual(OPT().map(g => g.id), ['battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest']);
+  for (const g of OPT()) { assert.ok(FZ.goals.indexOf(g.id) >= 16, g.id + ' : à ajouter en fin de FZ.goals'); assert.deepEqual(g.gem, {}, g.id + ' : gemme sans source');
+    for (const [, why] of g.steps) assert.ok(why.length > 20, g.id + ' : raison'); }
+  for (const [id, zs] of Object.entries({battlemage: ['war', 'mag'], elemArcher: ['rng', 'mag'], swordBow: ['war', 'rng']})) { const z = zoneShare(GOALI[id]);
+    assert.equal(GOALI[id].grp, 'hyb', id); for (const a of zs) assert.ok(z[a] >= 0.15, `${id} : ${a} à ${Math.round(100 * (z[a] || 0))} %`); }
+  for (const id of ['explore', 'harvest']) assert.equal(GOALI[id].grp, 'util', id);
+  assert.equal(zoneShare(GOALI.harvest).core, 1, 'Récolte : Cœur seulement'); assert.ok(zoneShare(GOALI.explore).rng > 0.5, 'Exploration : surtout Rôdeur');
+  for (const id of ['battlemage', 'elemArcher', 'harvest']) assert.match(GOALI[id].src, /PinDrop/, id + ' : source communautaire');
+  for (const id of ['swordBow', 'explore']) assert.equal(GOALI[id].src, undefined, id + ' : composé par le simulateur, sans source');
+  for (const g of OPT()) assert.ok(typeof g.sim === 'string' && g.sim.length > 20, g.id + ' : la part du simulateur doit être dite (étiquette « hypothèse »)');
+  assert.match(GOALI.elemArcher.sim, /n'est pas vérifié/, 'Archer élémentaire : effet des multiplicateurs du Mage sur les arcs non vérifié, à dire');
+});
+test('2.4.0 · aire d\'avancée figée (Σ des points d\'étapes aux budgets 0, 4 … 212, Flamme 11 ; mesurée le 2026-11-08 par scripts/optimiser-objectifs.mjs)', () => {
+  const AREA = {battlemage: 2572, elemArcher: 2816, swordBow: 3077, explore: 2887, harvest: 1259};
+  for (const g of OPT()) { assert.equal(optArea(g, g.steps), AREA[g.id], g.id); assert.equal(optRun(g, g.steps, 212).spent, combo(g.id, null, 50, 114, 11).spent, g.id + ' : moteur'); }
+});
+test('2.4.0 · ordre optimisé : aucun échange de deux éléments voisins d\'une étape ne fait mieux (coût à 212 points, puis aire)', () => {
+  let n = 0;
+  for (const g of OPT()) { const c0 = optRun(g, g.steps, 212).spent, a0 = optArea(g, g.steps);
+    g.steps.forEach(([t, w, it], i) => { const ks = Object.keys(it);
+      for (let j = 0; j + 1 < ks.length; j++) { const q = [...ks]; [q[j], q[j + 1]] = [q[j + 1], q[j]]; n++;
+        const st = g.steps.map((x, k) => k === i ? [t, w, Object.fromEntries(q.map(y => [y, it[y]]))] : x), c = optRun(g, st, 212).spent;
+        if (c > c0) continue; const a = optArea(g, st);
+        assert.ok(c === c0 && a <= a0, `${g.id} · ${t} : ${q[j]} avant ${q[j + 1]} fait mieux (${c} pts, aire ${a} contre ${c0} pts, aire ${a0})`); } }); }
+  assert.ok(n >= 40, 'trop peu d\'échanges essayés : ' + n);
+});
+test('2.4.0 · un principal sans gemme garde les gemmes en place ; un principal avec gemmes pose les siennes', () => {
+  const b = goalBuild('tank'); assert.deepEqual(b.gem, GOALI.tank.gem);
+  setGoals(b, 'harvest', 'archer'); assert.deepEqual(b.obj, ['harvest', 'archer']); assert.deepEqual(b.gem, GOALI.tank.gem, 'gemmes en place perdues');
+  assert.ok(b.sk.lumberjack === 3 && b.sk.marksman === 3, 'Récolte puis Archer en secondaire');
+  setGoals(b, 'archer', null); assert.deepEqual(b.gem, GOALI.archer.gem); assert.deepEqual(goalBuild('explore').gem, {}, 'build neuf : aucune gemme');
+});

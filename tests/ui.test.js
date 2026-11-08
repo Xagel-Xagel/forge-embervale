@@ -63,7 +63,7 @@ test('graphe : nœud imposé sans anneau « ajouté », avec son étape ; nœud 
 test('recherche sans accents ni majuscules', () => { assert.ok(fold('Égorgeur').includes(fold('EGORGEUR'))); assert.equal(fold('Pyromane'), 'pyromane'); });
 // Haut de page explicite (2.2.0) : fil des étapes 1 → 5, chaque étape mène à un panneau existant, aucun bouton perdu
 test('fil des étapes : 5 étapes dans l\'ordre, chacune vers un panneau numéroté ; tous les boutons du haut gardés', () => {
-  const {readFileSync} = process.getBuiltinModule('node:fs'), html = readFileSync(new URL('../src/page.html', 'file://' + process.cwd() + '/tests/'), 'utf8');
+  const {readFileSync} = process.getBuiltinModule('node:fs'), html = readFileSync(process.getBuiltinModule('node:path').join(globalThis.__root, 'src/page.html'), 'utf8'); // racine du lanceur, pas le dossier courant (relecture QA 2.4.0)
   const go = [...html.matchAll(/data-go="([\w-]+)"><b>(\d)<\/b>/g)].map(m => [m[1], m[2]]);
   assert.deepEqual(go.map(g => g[1]), ['1', '2', '3', '4', '5']);
   for (const [id, n] of go) { const sec = html.match(new RegExp(`<section[^>]*id="${id}"[^>]*>\\s*<div class="ph"><h2[^>]*><span class="num">(\\d)</span>`)); assert.ok(sec, 'panneau ' + id); assert.equal(sec[1], n, 'numéro du panneau ' + id); }
@@ -96,3 +96,24 @@ test('lien d\'avant la 2.3.0 avec ajouts : message, adresse remplacée par le co
   try { assert.equal(fromHash(), true); } finally { history.replaceState = rs; globalThis.setTimeout = st; location.hash = ''; }
   assert.match(url, /^#b3-.*-a[0-9a-z]+-[0-9a-z]+-[0-9a-z]{2}$/); assert.ok(msgs.some(m => /^Lien ou build d'avant la 2\.3\.0 : combo recalculé avec vos ajouts/.test(m) && /\(liaisons 30 pts → 27 pts · \+4 pts sur les étapes\)$/.test(m)));
 })));
+
+// 2.4.0 : objectifs optimisés — source communautaire et ordre optimisé dans « Pourquoi ce combo » ; gemmes en place gardées par un objectif sans gemme
+test('2.4.0 · « Pourquoi ce combo » : étiquette communauté et source, phrase sur l\'ordre optimisé ; message « gemmes inchangées »', () => keepUi(() => {
+  const keepT = globalThis.toast, msgs = []; globalThis.toast = t => msgs.push(t);
+  try {
+    builds[0] = goalBuild('tank'); cur = 0; pickGoal(0, 'battlemage');
+    assert.match(msgs.pop(), /^Combo « Mage de bataille \(épée et baguette\) » posé, gemmes inchangées$/); assert.deepEqual(B().gem, GOALI.tank.gem);
+    pickGoal(0, 'ice'); assert.match(msgs.pop(), /^Combo « Mage de glace \(contrôle\) » posé, avec ses gemmes$/);
+    const el = {}, keep = document.querySelector; document.querySelector = q => q === '#why' ? el : keep(q);
+    try {
+      builds[0] = goalBuild('battlemage'); renderWhy();
+      assert.match(el.innerHTML, /<span class="tag est">communauté<\/span> « Battlemage Hybrid », PinDrop/);
+      assert.match(el.innerHTML, /<span class="tag hyp">hypothèse<\/span> Voie du barbare retirée/, 'part du simulateur non dite');
+      assert.match(el.innerHTML, /Pour « Mage de bataille \(épée et baguette\) », l'ordre des éléments de chaque étape est calculé hors ligne : combo complet au moindre coût à 212 points, puis l'avancée la plus rapide quand les points montent\./);
+      builds[0] = goalBuild('swordBow', 'archer'); renderWhy(); assert.doesNotMatch(el.innerHTML, /tag est/, 'composé par le simulateur : pas d\'étiquette communauté');
+      assert.match(el.innerHTML, /<span class="tag hyp">hypothèse<\/span> Contenu composé d'après les descriptions des compétences/, 'composé par le simulateur : étiquette hypothèse absente');
+      assert.match(el.innerHTML, /Pour « Épée et arc », l'ordre/); assert.doesNotMatch(el.innerHTML, /Pour [^.]*« Archer »/, 'objectif d\'origine cité comme optimisé');
+      builds[0] = goalBuild('archer', 'tank'); renderWhy(); assert.doesNotMatch(el.innerHTML, /calculé hors ligne/, 'objectifs d\'origine : pas de phrase sur l\'ordre optimisé');
+    } finally { document.querySelector = keep; }
+  } finally { globalThis.toast = keepT; }
+}));

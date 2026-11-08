@@ -2,7 +2,7 @@
 
 Planificateur d'**arbre de compétences** pour **Enshrouded 1.0**, en français, dans une seule page web.
 
-- Choisissez un **objectif** (12 objectifs prêts : Tank, Épée et bouclier, Archer, Mage critique, Soigneur…) et, si vous voulez, un **secondaire** : le site place vos points selon votre niveau, votre exploration et votre Flamme, et **explique pourquoi**, étape par étape. Vous ajoutez ensuite ce que vous voulez ; les nœuds imposés ne se retirent pas.
+- Choisissez un **objectif** (17 objectifs prêts : Tank, Épée et bouclier, Archer, Mage critique, Soigneur…, trois hybrides — Mage de bataille, Archer élémentaire, Épée et arc — et deux modes hors combat, Exploration et Récolte) et, si vous voulez, un **secondaire** : le site place vos points selon votre niveau, votre exploration et votre Flamme, et **explique pourquoi**, étape par étape. Vous ajoutez ensuite ce que vous voulez ; les nœuds imposés ne se retirent pas.
 - Arbre au **tracé réel du jeu** (243 nœuds et leurs liaisons, 212 points) en graphe façon Obsidian ou en liste, avec la règle de liaison aux points de départ.
 - **Gemmes** des deux armes (effets décrits) ; l'équipement n'est pas pris en compte.
 - Deux builds A et B, comparaison A contre B, sauvegarde locale et code de partage dans le lien (les anciens liens s'ouvrent toujours).

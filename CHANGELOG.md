@@ -2,6 +2,14 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.4.0 — 2026-11-08 · Hybrides, Exploration et Récolte
+- **5 nouveaux objectifs**, à choisir en principal ou en secondaire comme les 12 autres : groupe « Hybrides » — **Mage de bataille (épée et baguette)**, **Archer élémentaire (arc et éléments)**, **Épée et arc** ; groupe « Exploration et récolte » — **Exploration** (déplacement, Shroud, dangers du terrain, nourriture) et **Récolte** (outils, ressources, pêche).
+- Contenu : un build de la communauté 1.0 quand il en existe un (PinDrop : « Battlemage Hybrid », « Elemental Archer », « Crafter Survivor »), avec l'étiquette « communauté » et sa source dans « Pourquoi ce combo » ; ce que le simulateur ajoute, retire ou compose porte l'étiquette « hypothèse ». L'effet de Pyromane, Homme de glace et Tonnerre sur les tirs à l'arc (Archer élémentaire) n'est pas vérifié, et c'est écrit. Écarts signalés : Voie du barbare retirée (bonus aux armes à deux mains, ne relie rien), Récolte au rang maximum avec les spécialisations pioche et hache, partie Mage de l'Archer élémentaire ajoutée.
+- **Ordre optimisé** : dans chaque étape, l'ordre des éléments est calculé hors ligne — combo complet au moindre coût à 212 points, puis l'avancée la plus rapide quand les points montent (QCM) ; l'ordre des étapes reste un choix du simulateur. Combo complet : 57, 83, 90, 82 et 25 pts. Script : `npm run optimiser`.
+- Ces objectifs n'ont pas de gemme (aucune source n'en cite) : les choisir garde vos gemmes (message « gemmes inchangées »).
+- Liens : identifiants en fin de table figée ; aucun lien existant ne change, les 12 objectifs d'origine non plus. Un lien d'une version plus récente qui porte un objectif inconnu garde désormais son arbre tel quel (il était recalculé comme un lien d'avant la 2.3.0).
+- Étude des types de classes (pures, hybrides, variantes d'arme, d'élément et de rôle) : `docs/etudes/classes-combinaisons-2026-11-08.md`.
+
 ## 2.3.0 — 2026-11-07 · Le combo se recalcule avec vos ajouts
 - **Chaque ajout ou retrait recalcule le combo imposé depuis les départs**, en comptant vos nœuds comme déjà acquis : le combo passe par eux sans les payer, s'il y gagne. Chemins plus courts, liaisons en moins ; les points libérés vont aux étapes suivantes, au secondaire et au soutien. Un court message dit ce qui a changé (ex. « Combo recalculé : liaisons 24 pts → 20 pts · +7 pts sur les étapes » pour Chien mouillé sur le Tank à 140 points).
 - Vos ajouts viennent **en plus** du combo, comme avant (QCM) : il garde tout votre budget, et « N pts en trop » reste possible.
