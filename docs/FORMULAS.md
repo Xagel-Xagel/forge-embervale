@@ -20,7 +20,16 @@ Niveau de confiance : **officiel** (texte du jeu), **fichiers** (valeurs extrait
 | Dextérité | +5 % de dégâts aux arcs et dagues |
 | Intelligence | +5 % de dégâts magiques (baguettes, bâtons) |
 
-Base : 100 PV, 100 mana, 100 vigueur. Les dégâts ne sont plus calculés depuis la 2.0.0 (équipement non pris en compte) : seuls les attributs, la santé, le mana et la vigueur sont affichés (ligne « Résultat », A contre B).
+Base : 100 PV, 100 mana, 100 vigueur. Les dégâts ne sont plus calculés depuis la 2.0.0 (équipement non pris en compte) : seuls les attributs, la santé, le mana, la vigueur et, depuis la 2.5.0, le critique magique sont affichés (ligne « Résultat », A contre B).
+
+## Critique magique (2.5.0 : bonus des compétences seuls)
+| Valeur | Formule | Confiance |
+|---|---|---|
+| Chance, baguettes et bâtons | 2 % × rang de Sorcier + 5 % × rang de Précision fatale | fichiers (Sorcier) ; infobulle en jeu (Précision fatale) |
+| Chance, sorts | 5 % × rang de Précision fatale | **hypothèse** : son texte ne limite pas l'arme, donc compté pour les sorts ; Sorcier ne cite que baguettes et bâtons |
+| Dégâts critiques | 5 % × rang de Précision fatale | infobulle en jeu (les fichiers relevés par PinDrop disent 1 %, voir DATA_SOURCES) |
+
+Sans chance ni dégâts critiques de base du personnage, ni équipement ni gemmes : ce sont des **bonus**, pas un total. `compute(b).crit` = `{wand, spell, dmg}`.
 
 Implémenté dans `compute()` (src/js/02-calc.js). Quelques compétences convertissent un attribut en PV : Athlète (3 × Force par rang), Vigueur voilée (3 × Dex), Essences de vie (3 × Int) ; Rôdeur : +1 Dextérité et +1 Endurance par rang.
 

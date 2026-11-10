@@ -2,6 +2,10 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.5.0 — 2026-11-10 · Critique magique
+- **Critique magique** : nouvelle ligne sous « Résultat » et 3 lignes dans A contre B — chance aux baguettes et bâtons (Sorcier + Précision fatale), chance aux sorts (Précision fatale, hypothèse), dégâts critiques (Précision fatale). Bonus des compétences seulement : ni base du personnage, ni équipement.
+- **Précision fatale** (*Fatal Precision*) : +5 % de dégâts critiques par rang (au lieu de +1 %), d'après l'infobulle en jeu ; les fichiers relevés par PinDrop disent encore +1 % (conflit noté dans `docs/DATA_SOURCES.md`). Aucun lien ne change.
+
 ## 2.4.0 — 2026-11-08 · Hybrides, Exploration et Récolte
 - **5 nouveaux objectifs**, à choisir en principal ou en secondaire comme les 12 autres : groupe « Hybrides » — **Mage de bataille (épée et baguette)**, **Archer élémentaire (arc et éléments)**, **Épée et arc** ; groupe « Exploration et récolte » — **Exploration** (déplacement, Shroud, dangers du terrain, nourriture) et **Récolte** (outils, ressources, pêche).
 - Contenu : un build de la communauté 1.0 quand il en existe un (PinDrop : « Battlemage Hybrid », « Elemental Archer », « Crafter Survivor »), avec l'étiquette « communauté » et sa source dans « Pourquoi ce combo » ; ce que le simulateur ajoute, retire ou compose porte l'étiquette « hypothèse ». L'effet de Pyromane, Homme de glace et Tonnerre sur les tirs à l'arc (Archer élémentaire) n'est pas vérifié, et c'est écrit. Écarts signalés : Voie du barbare retirée (bonus aux armes à deux mains, ne relie rien), Récolte au rang maximum avec les spécialisations pioche et hache, partie Mage de l'Archer élémentaire ajoutée.

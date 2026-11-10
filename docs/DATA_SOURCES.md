@@ -13,7 +13,9 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 
 
 ## Conflits connus entre sources
-Aucun sur les données gardées en 2.0.0 (les conflits sur les ennemis, l'armure et les perks d'arme concernaient des données supprimées ; voir l'historique git).
+- **Précision fatale** (*Fatal Precision*, 2.4.1) : les fichiers relevés par PinDrop (2026-11-10) donnent +5 % de chance et **+1 %** de dégâts critiques par rang ; l'infobulle en jeu, lue par l'utilisateur, donne **+5 %** de dégâts critiques par rang. Retenu : **l'infobulle en jeu** (décision de l'utilisateur). Ni l'une ni l'autre ne limite le bonus à un type d'arme.
+
+Les autres conflits concernaient des données supprimées en 2.0.0 (ennemis, armure, perks d'arme ; voir l'historique git).
 
 À vérifier (relevé du 2026-11-07, ROADMAP) : version du jeu 1.0.1.2 (Hotfix #5, 2026-11-04), aucun patch après le relevé du tracé ; mais PinDrop citerait désormais le build 1285601 (notre tracé : 1267041), et les notes du Patch #1 parlent de coûts de mana et de vigueur pour Aerial Wand Attack, Wand Evasion Attack et Whirlwind Crescendo, là où l'en-tête de `01-tree-data.js` parle de coûts mis à jour.
 
