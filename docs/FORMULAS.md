@@ -25,9 +25,9 @@ Base : 100 PV, 100 mana, 100 vigueur. Les dégâts ne sont plus calculés depuis
 ## Critique magique (2.5.0 : bonus des compétences seuls)
 | Valeur | Formule | Confiance |
 |---|---|---|
-| Chance, baguettes et bâtons | 2 % × rang de Sorcier + 5 % × rang de Précision fatale | fichiers (Sorcier) ; infobulle en jeu (Précision fatale) |
-| Chance, sorts | 5 % × rang de Précision fatale | **hypothèse** : son texte ne limite pas l'arme, donc compté pour les sorts ; Sorcier ne cite que baguettes et bâtons |
-| Dégâts critiques | 5 % × rang de Précision fatale | infobulle en jeu (les fichiers relevés par PinDrop disent 1 %, voir DATA_SOURCES) |
+| Chance, baguettes et bâtons | 2 % × rang de Sorcier + 1 % × rang de Précision fatale | fichiers (Sorcier) ; infobulle en jeu (Précision fatale) |
+| Chance, sorts | 1 % × rang de Précision fatale | **hypothèse** : son texte ne limite pas l'arme, donc compté pour les sorts ; Sorcier ne cite que baguettes et bâtons |
+| Dégâts critiques | 5 % × rang de Précision fatale | infobulle en jeu (les valeurs relevées par PinDrop sont inversées, voir DATA_SOURCES) |
 
 Sans chance ni dégâts critiques de base du personnage, ni équipement ni gemmes : ce sont des **bonus**, pas un total. `compute(b).crit` = `{wand, spell, dmg}`.
 

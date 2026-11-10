@@ -17,5 +17,5 @@ function compute(b){
   A.end+=R('ranger');A.dex+=R('ranger');
   return {attr:A,R,hp:100+50*A.con+3*A.str*R('athlete')+3*A.dex*R('veiledVigor')+3*A.int*R('lifeEssences'),mana:100+20*A.spi,sta:100+10*A.end,
     // 2.5.0 : critique magique, bonus des compétences seuls (ni base ni équipement) ; Précision fatale sans restriction d'arme (hypothèse : comptée aussi pour les sorts)
-    crit:{wand:2*R('wizard')+5*R('fatalPrecision'),spell:5*R('fatalPrecision'),dmg:5*R('fatalPrecision')}};
+    crit:{wand:2*R('wizard')+R('fatalPrecision'),spell:R('fatalPrecision'),dmg:5*R('fatalPrecision')}};
 }

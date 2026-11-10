@@ -33,7 +33,7 @@ const GOALS=[
   ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,thickSkin:1,doubleJump:1}]]},
  {id:'archer',n:'Archer',grp:'rng',area:'rng',gem:{w1:'g_aero',w2:'g_punct'},steps:[
   ["Dégâts à l'arc","Tireur d'élite (+5 % par rang), Perforation (+10 % de dégâts perçants à distance par rang) et Dextérité (+5 % par point).",{marksman:3,puncture:3,dex:7}],
-  ['Critiques',"Précision fatale (+5 % de critique par rang), Sniper (+2 % à l'arc par rang), Tir d'adresse (points faibles) et Flèches bénies (mana sur critique).",{fatalPrecision:3,sniper:3,skillShot:3,blessedArrows:3}],
+  ['Critiques',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Sniper (+2 % à l'arc par rang), Tir d'adresse (points faibles) et Flèches bénies (mana sur critique).",{fatalPrecision:3,sniper:3,skillShot:3,blessedArrows:3}],
   ['Salves',"Tir multiple et sa dispersion (flèches en plus), capacité spéciale des arcs et Obus étourdissant.",{multiShot:1,msSpread:1,bowSpec:1,shellShock:1}],
   ['Vigueur',"Rôdeur (+1 Dextérité, +1 Endurance par rang), Endurance (+10 de vigueur par point) et Rebond (régénération de vigueur).",{ranger:3,end:8,rebound:3}],
   ['Survie',"Vigueur voilée (santé selon la Dextérité), un peu de Constitution et Barrage (répare l'arc).",{veiledVigor:3,con:2,barrage:3}],
@@ -43,12 +43,12 @@ const GOALS=[
   ['Furtivité',"Attaque furtive (+900 % sur un ennemi qui ne vous voit pas), Égorgeur (+100 % par rang) et Pas feutré.",{sneakAttack:1,cutthroat:3,silentStride:3}],
   ['Dégâts aux dagues',"Maîtrise des dagues (+5 % par rang), Estoc (+10 % de dégâts perçants en mêlée par rang) et Dextérité.",{daggerMastery:3,thrust:3,dex:6}],
   ['Dans le dos',"Maîtrise du coup dans le dos (+20 % par rang) et Exposer la faiblesse (+25 % de dégâts physiques subis).",{backstabMastery:3,exposeWeak:1}],
-  ['Critiques',"Précision fatale (+5 % de critique par rang), Vétéran (+2 % aux dagues par rang) et Hacher menu.",{fatalPrecision:3,veteran:3,sliceDice:1}],
+  ['Critiques',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Vétéran (+2 % aux dagues par rang) et Hacher menu.",{fatalPrecision:3,veteran:3,sliceDice:1}],
   ['Mobilité',"Capacité spéciale des dagues, Manœuvre stratégique, Attaque d'esquive, Coup de pied et Blocage réflexe.",{daggerSpec:1,stratManeuver:1,evasionAttack:1,kick:1,quickReflex:1}],
   ['Endurance et survie',"Endurance (+10 de vigueur par point), Vigueur voilée (santé selon la Dextérité) et Instinct de survie.",{end:8,veiledVigor:3,survivalInst:3}],
   ['Flamme et confort',"Foulée gracieuse et Endurance de la Flamme : +1 Dextérité et +1 Endurance tous les 2 niveaux de Flamme ; Double saut.",{gracefulStride:1,enduranceFlame:1,doubleJump:1}]]},
  {id:'mageCrit',n:'Mage critique (baguette)',grp:'mag',area:'mag',gem:{w1:'g_storm',w2:'g_corrupt'},steps:[
-  ['Chance de critique',"Précision fatale (+5 % de critique par rang) et Sorcier (+2 % aux baguettes et bâtons par rang) : la chance d'abord.",{fatalPrecision:3,wizard:3}],
+  ['Chance de critique',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang) et Sorcier (+2 % aux baguettes et bâtons par rang) : la chance d'abord.",{fatalPrecision:3,wizard:3}],
   ['Dégâts de baguette',"Apprenti mage, Maîtrise des baguettes (+5 % chacun par rang) et Intelligence (+5 % de dégâts magiques par point).",{mageApprentice:3,wandMastery:3,int:11}],
   ['Effets des critiques',"Coup en chaîne, Destruction massive, Terreur, Saignée et Frappe et sort : un critique peut déclencher foudre, étourdissement, orbes ou un bonus au bâton.",{chainHit:1,massDestr:1,terror:3,bloodletting:3,blastCast:1}],
   ['Foudre et Shroud',"Tonnerre et Arts sombres : +10 % de dégâts de foudre et de Shroud par rang.",{thunder:3,darkArts:3}],
@@ -113,7 +113,7 @@ const GOALS=[
   sim:"Partie Mage (Pyromane, Homme de glace, Tonnerre) ajoutée : le build d'origine tire ses éléments des arcs, et l'effet de ces compétences sur les tirs à l'arc n'est pas vérifié.",steps:[
   ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Tir d'adresse (+20 % de dégâts des tirs dans les points faibles) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,skillShot:3,dex:5}],
   ['Éléments',"Pyromane, Homme de glace et Tonnerre : +10 % de dégâts de feu, de glace ou de foudre par rang ; leur description ne cite aucune arme, mais leur effet sur les tirs à l'arc n'est pas vérifié (partie ajoutée par le simulateur).",{arsonist:3,iceman:3,thunder:3}],
-  ['Critiques',"Sniper (+2 % de critique à l'arc par rang), Précision fatale (+5 % de critique et +5 % de dégâts critiques par rang) et Sursaut de vitalité (+3 vigueur sur un critique à l'arc, aux dagues ou au lancer).",{sniper:3,fatalPrecision:2,vitalitySurge:2}],
+  ['Critiques',"Sniper (+2 % de critique à l'arc par rang), Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang) et Sursaut de vitalité (+3 vigueur sur un critique à l'arc, aux dagues ou au lancer).",{sniper:3,fatalPrecision:2,vitalitySurge:2}],
   ['Arc',"Spécialisation arc (capacité spéciale des arcs), Œil d'aigle (compétence active, effet non décrit dans les données), Dard d'abeille (tir en l'air : ralentit la chute) et Contre-batterie (+8 % de dégâts contre les ennemis à distance).",{bowSpec:1,eagleEye:1,beeSting:1,counterBattery:1}],
   ['Vigueur',"Endurance (+10 de vigueur par point), Rôdeur (+1 Dextérité, +1 Endurance et régén. de vigueur de base par rang), Subsistance du tir rapide (ennemi tué à l'arc : 12 % de chance d'orbe de vigueur) et Rebond (+10 % de régén. de vigueur de base par rang).",{end:3,ranger:3,swiftshot:1,rebound:3}],
   ['Survie et déplacement',"Vigueur voilée (+3 × Dextérité de santé max par rang), Coureur (+5 % de vitesse de sprint, sprint moins coûteux) et Aéroporté (planeur : −12 % de vigueur par rang).",{veiledVigor:1,runner:1,airborne:1}]]},
@@ -121,7 +121,7 @@ const GOALS=[
   sim:"Contenu composé d'après les descriptions des compétences (aucun build Guerrier + Rôdeur de la communauté).",steps:[
   ['Dégâts à une main',"Voie du guerrier (+5 % aux haches, masses et épées à une main par rang), Taillade (+10 % de dégâts tranchants de mêlée par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:6}],
   ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Perforation (+10 % de dégâts perçants à distance par rang) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,puncture:3,dex:5}],
-  ['Critiques des deux armes',"Précision fatale (+5 % de critique et +5 % de dégâts critiques par rang), Sniper (+2 % de critique à l'arc par rang) et Vétéran (+2 % de critique avec les armes de mêlée et les dagues par rang).",{fatalPrecision:3,sniper:3,veteran:3}],
+  ['Critiques des deux armes',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Sniper (+2 % de critique à l'arc par rang) et Vétéran (+2 % de critique avec les armes de mêlée et les dagues par rang).",{fatalPrecision:3,sniper:3,veteran:3}],
   ['Capacités spéciales',"Spécialisations arc et une main : elles débloquent la capacité spéciale de chaque arme.",{bowSpec:1,oneHSpec:1}],
   ['Survie',"Soin de bataille (un critique de mêlée soigne 1 % de la santé max par rang) et Constitution (+50 de santé par point).",{battleHeal:3,con:6}],
   ['Flamme et confort',"Barbare et Foulée gracieuse : respectivement +1 Force et +1 Dextérité tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,gracefulStride:1,doubleJump:1}]]},

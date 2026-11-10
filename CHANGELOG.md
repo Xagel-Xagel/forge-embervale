@@ -2,6 +2,9 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.5.1 — 2026-11-10 · Précision fatale corrigée
+- **Précision fatale** : **+1 %** de chance de critique et +5 % de dégâts critiques par rang (infobulle en jeu relue ; la 2.5.0 disait +5 % / +5 %). Le critique magique suit : baguettes et bâtons = 2 % × Sorcier + 1 % × Précision fatale, sorts = 1 % × Précision fatale. Raisons des objectifs mises à jour. Aucun lien ne change.
+
 ## 2.5.0 — 2026-11-10 · Critique magique
 - **Critique magique** : nouvelle ligne sous « Résultat » et 3 lignes dans A contre B — chance aux baguettes et bâtons (Sorcier + Précision fatale), chance aux sorts (Précision fatale, hypothèse), dégâts critiques (Précision fatale). Bonus des compétences seulement : ni base du personnage, ni équipement.
 - **Précision fatale** (*Fatal Precision*) : +5 % de dégâts critiques par rang (au lieu de +1 %), d'après l'infobulle en jeu ; les fichiers relevés par PinDrop disent encore +1 % (conflit noté dans `docs/DATA_SOURCES.md`). Aucun lien ne change.
