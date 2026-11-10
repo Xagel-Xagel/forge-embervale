@@ -15,5 +15,7 @@ function compute(b){
   for(const [k] of PIPS)A[k]=b.pip[k]||0;
   for(const [id,k] of FLAME_NODES)if(R(id))A[k]+=half;
   A.end+=R('ranger');A.dex+=R('ranger');
-  return {attr:A,R,hp:100+50*A.con+3*A.str*R('athlete')+3*A.dex*R('veiledVigor')+3*A.int*R('lifeEssences'),mana:100+20*A.spi,sta:100+10*A.end};
+  return {attr:A,R,hp:100+50*A.con+3*A.str*R('athlete')+3*A.dex*R('veiledVigor')+3*A.int*R('lifeEssences'),mana:100+20*A.spi,sta:100+10*A.end,
+    // 2.5.0 : critique magique, bonus des compétences seuls (ni base ni équipement) ; Précision fatale sans restriction d'arme (hypothèse : comptée aussi pour les sorts)
+    crit:{wand:2*R('wizard')+5*R('fatalPrecision'),spell:5*R('fatalPrecision'),dmg:5*R('fatalPrecision')}};
 }

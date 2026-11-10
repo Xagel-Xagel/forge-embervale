@@ -55,8 +55,9 @@ const ROLE={p:'Principal',s:'Secondaire',t:'Soutien'},ICO={ok:'✓',part:'◐',n
 function itemChip(k,want,c,st){const got=Math.min(want,isAttr(k)?(c.want.pip[k]||0):(c.want.sk[k]||0)),skip=st.skip.includes(k);
   const txt=skip?`${itemName(k)} : sautée (Flamme 1)`:isAttr(k)?`${itemName(k)} ${got}/${want}`:`${itemName(k)}${want>1||got>1?` ${got}/${want}`:''}`;
   return `<span class="chip${skip||got<want?' off':''}">${esc(txt)}</span>`}
+const critTxt=o=>`<p class="meta2 crit"><b>Critique magique</b> (bonus des compétences seulement, sans base ni équipement) : chance +${fmt(o.crit.wand)} % aux baguettes et bâtons, +${fmt(o.crit.spell)} % aux sorts ; dégâts critiques +${fmt(o.crit.dmg)} %. <span class="tag hyp">hypothèse</span> Précision fatale compte aussi pour les sorts (son texte ne limite pas l'arme).</p>`;
 function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spentPoints(b),bu=budget(b);
-  const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`;
+  const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`+critTxt(o);
   if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placé${sp>1?'s':''} à la main.`:''}</p>${res}`;return}
   el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
     return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+(g.src?`<p class="meta2 wsrc"><span class="tag est">communauté</span> ${esc(g.src)}</p>`:'')+(g.sim?`<p class="meta2 wsrc"><span class="tag hyp">hypothèse</span> ${esc(g.sim)}</p>`:'')+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
@@ -145,7 +146,7 @@ function renderCmp(){$('#p-cmp').hidden=!compare;if(!compare)return;const [a,b]=
   let t=`<table class="st cmp"><thead><tr><th></th><th style="color:var(--ember)">A · ${esc(a.name)}</th><th style="color:var(--shroud)">B · ${esc(b.name)}</th><th>B − A</th></tr></thead><tbody>`;
   t+=row('Objectifs',goalsTxt(a),goalsTxt(b))+row('Points dépensés',spentPoints(a),spentPoints(b),1)+row('Budget',budget(a),budget(b),1)+row('Flamme',a.flame,b.flame,1);
   for(const [k,n] of PIPS)t+=row(n,oa.attr[k],ob.attr[k],1);
-  t+=row('Santé',oa.hp,ob.hp,1)+row('Mana',oa.mana,ob.mana,1)+row('Vigueur',oa.sta,ob.sta,1)+row('Gemmes',gem(a),gem(b));
+  t+=row('Santé',oa.hp,ob.hp,1)+row('Mana',oa.mana,ob.mana,1)+row('Vigueur',oa.sta,ob.sta,1)+row('Critique baguettes, bâtons (%)',oa.crit.wand,ob.crit.wand,1)+row('Critique sorts (%)',oa.crit.spell,ob.crit.spell,1)+row('Dégâts critiques (%)',oa.crit.dmg,ob.crit.dmg,1)+row('Gemmes',gem(a),gem(b));
   t+=`<tr><th>Compétences propres</th><td class="txt">${esc(own(a,b))}</td><td class="txt">${esc(own(b,a))}</td><td></td></tr></tbody></table>`;
   $('#cmpBody').innerHTML=t}
 
