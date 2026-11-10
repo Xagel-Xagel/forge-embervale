@@ -13,7 +13,7 @@ Relevé effectué fin octobre – début novembre 2026, sur la version 1.0 du je
 
 
 ## Conflits connus entre sources
-- **Précision fatale** (*Fatal Precision*, 2.4.1) : les fichiers relevés par PinDrop (2026-11-10) donnent +5 % de chance et **+1 %** de dégâts critiques par rang ; l'infobulle en jeu, lue par l'utilisateur, donne **+5 %** de dégâts critiques par rang. Retenu : **l'infobulle en jeu** (décision de l'utilisateur). Ni l'une ni l'autre ne limite le bonus à un type d'arme.
+- **Précision fatale** (*Fatal Precision*, 2.5.1) : les valeurs relevées par PinDrop (2026-11-10, champ `desc`) donnent +5 % de chance et +1 % de dégâts critiques par rang ; l'infobulle en jeu, relue par l'utilisateur le 2026-11-10, donne **+1 % de chance et +5 % de dégâts critiques par rang**, comme le texte du wiki repris par PinDrop (« chance … increased by 1 »). Retenu : **l'infobulle en jeu** (valeurs de PinDrop inversées ; la 2.5.0 affichait par erreur +5 % / +5 %). Ni l'une ni l'autre ne limite le bonus à un type d'arme.
 
 Les autres conflits concernaient des données supprimées en 2.0.0 (ennemis, armure, perks d'arme ; voir l'historique git).
 

@@ -120,7 +120,7 @@ S('rng',[
  ['cullHerd','Éclaircir le troupeau','Cull the Herd',1,3,'+5 % contre la faune par rang.'],
  ['primalForce','Force primitive','Primal Force',1,3,'+5 % contre les Vukah par rang.'],
  ['vileConcoction','Concoction infâme','Vile Concoction',1,3,'+12 % de dégâts des objets lancés par rang.'],
- ['fatalPrecision','Précision fatale','Fatal Precision',1,3,'+5 % de critique et +5 % de dégâts critiques par rang.'],
+ ['fatalPrecision','Précision fatale','Fatal Precision',1,3,'+1 % de critique et +5 % de dégâts critiques par rang.'],
  ['bowSpec','Spécialisation arc','Bow Specialization',3,1,'Débloque la capacité spéciale des arcs.'],
  ['daggerSpec','Spécialisation dagues','Dagger Specialization',3,1,'Débloque la capacité spéciale des dagues.'],
  ['veiledVigor','Vigueur voilée','Veiled Vigor',1,3,'+3 × Dextérité de santé max par rang.'],

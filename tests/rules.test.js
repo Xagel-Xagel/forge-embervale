@@ -23,8 +23,8 @@ test('attributs : CON +50 PV, ESP +20 mana, END +10 vigueur', () => {
 });
 test('critique magique : bonus des compétences seuls (Sorcier aux baguettes et bâtons, Précision fatale partout)', () => {
   const b = blankBuild(); assert.deepEqual(compute(b).crit, {wand: 0, spell: 0, dmg: 0});
-  b.sk.wizard = 3; b.sk.fatalPrecision = 2; assert.deepEqual(compute(b).crit, {wand: 16, spell: 10, dmg: 10});
-  b.sk.wizard = 9; assert.equal(compute(b).crit.wand, 16, 'rang plafonné');
+  b.sk.wizard = 3; b.sk.fatalPrecision = 2; assert.deepEqual(compute(b).crit, {wand: 8, spell: 2, dmg: 10});
+  b.sk.wizard = 9; assert.equal(compute(b).crit.wand, 8, 'rang plafonné');
 });
 test('tracé réel : 243 nœuds, 312 liaisons, tout est relié aux 12 départs', () => {
   assert.equal(TREE.nodes.length, 243); assert.equal(TOPO.E.length, 312);
