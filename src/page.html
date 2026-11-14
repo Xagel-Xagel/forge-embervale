@@ -43,10 +43,11 @@
               <div class="ptl" id="ptLbl">Points à attribuer</div>
               <output class="ptn" id="ptLeft" aria-labelledby="ptLbl"></output>
               <div class="pts"><span id="spent"></span> · <span id="needLvl"></span></div>
+              <div class="pts" id="ptMax"></div>
               <div class="bar" id="bar"><i></i></div>
               <div class="ptin">
-                <label>Niveau<input type="number" id="lvl" min="1" max="50" title="Niveau du personnage (1 à 50) : 2 points par niveau"></label>
-                <label>Exploration<input type="number" id="exp" min="0" max="114" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"></label>
+                <div><label for="lvl">Niveau</label><input type="number" id="lvl" min="1" max="50" aria-describedby="lvlMax" title="Niveau du personnage (1 à 50) : 2 points par niveau"><span class="ptmax" id="lvlMax"></span></div>
+                <div><label for="exp">Exploration</label><input type="number" id="exp" min="0" max="114" aria-describedby="expMax" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"><span class="ptmax" id="expMax"></span></div>
               </div>
             </div>
             <div class="ptile">

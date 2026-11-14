@@ -2,6 +2,11 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.7.0 — 2026-11-14 · Vol de vie complet, maxima des points
+- **Nouvel objectif « Vol de vie complet (mêlée) »** (groupe Guerrier) : « Vol de vie (mêlée) » prolongé pour dépenser les **212 points** (Flamme 11) — vitesse à deux mains, kills impitoyables et furtifs (Guerrier de sang : orbe de santé), dégâts de mêlée, encaisser, parer, attaques en saut, groupe, Shroud et durabilité, compléments. Combo complet : 212 pts. Même étiquette « hypothèse » et même gemme de soif de sang. « Vol de vie (mêlée) » (82 pts) ne change pas.
+- **« Réglez vos points »** : le maximum de chaque champ s'affiche (« 98 pts max » sous Niveau, « 114 pts max » sous Exploration) et une ligne « Budget … sur 212 au maximum » sous « Points à attribuer ». Calcul inchangé.
+- Ordre des éléments calculé par `npm run optimiser`. Liens : identifiant en fin de table figée, aucun lien existant ne change.
+
 ## 2.6.0 — 2026-11-14 · Vol de vie
 - **Nouvel objectif « Vol de vie (mêlée) »** (groupe Guerrier) : critiques qui soignent (Soin de bataille, Vétéran), plus de critiques (Implacable, Précision fatale), santé max (Constitution, Athlète : Soin de bataille rend un pourcentage de la santé max), orbes de santé (Attaque impitoyable, Guerrier de sang, Bon métabolisme), dégâts à deux mains, Flamme et confort. Combo complet : 82 pts.
 - Étiquette « hypothèse » : l'arbre n'a pas de vol de vie à proprement parler (seulement des soins sur un critique ou un kill de mêlée), et celui de l'équipement n'est pas pris en compte. Gemme de soif de sang posée avec le combo (choix du simulateur).

@@ -32,7 +32,7 @@ const FZ={
   fireResistance iceResistance shockResistance righteousFire divineSurge sharedMisery boneToAsh sleight manaCurrents spellslinger wandMastery wandSpec
   wandEvasion aerialWand totemMastery advNecro blastCast`.trim().split(/\s+/),
  slots:'head chest hands legs feet w1 w2 r1 r2'.split(' '),
- goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana battlemage elemArcher swordBow explore harvest lifesteal'.split(' '),
+ goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana battlemage elemArcher swordBow explore harvest lifesteal lifestealFull'.split(' '),
  b1:[['str',11],['con',11],['end',8],['dex',7],['int',11],['spi',11]],
  b2:'ccccccssssssssssscccccdddddddeeeeeeeeiiiiiiiiiiippppppppppp',
  at:`
