@@ -17,7 +17,7 @@ test('chaque compétence correspond à un seul nœud du tracé réel', () => {
   for (const [i, j] of TREE.links) assert.ok(TREE.nodes[i] && TREE.nodes[j] && i !== j, 'liaison invalide ' + i + '-' + j);
 });
 test('objectifs : références valides, rangs et attributs dans les bornes, gemmes connues, une étape au moins', () => {
-  assert.equal(GOALS.filter(g => !g.opt).length, 12, 'les 12 objectifs d\'origine'); assert.equal(GOALS.filter(g => g.opt).length, 6, 'objectifs optimisés (5 en 2.4.0, Vol de vie en 2.6.0)');
+  assert.equal(GOALS.filter(g => !g.opt).length, 12, 'les 12 objectifs d\'origine'); assert.equal(GOALS.filter(g => g.opt).length, 7, 'objectifs optimisés (5 en 2.4.0, Vol de vie en 2.6.0, Vol de vie complet en 2.7.0)');
   assert.equal(new Set(GOALS.map(g => g.id)).size, GOALS.length);
   assert.deepEqual(GOAL_GRP, [['war', 'Guerrier'], ['rng', 'Rôdeur'], ['mag', 'Mage'], ['sup', 'Soins'], ['hyb', 'Hybrides'], ['util', 'Exploration et récolte']], 'groupes du menu des objectifs');
   for (const g of GOALS) {

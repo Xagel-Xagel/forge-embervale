@@ -90,7 +90,8 @@ input.ptn{width:100%;min-width:0;padding:0 6px;background:var(--surface);text-al
 .pstep:disabled{opacity:.4;cursor:not-allowed}
 .pts{font-size:.8rem;color:var(--muted)}
 .ptin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:2px}
-.ptin label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted)}
+.ptin>div{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted)}
+.ptmax{font-size:.75rem}
 .ptin input{width:100%}
 @media (max-width:480px){.ptile{padding:8px}}
 .bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}

@@ -117,3 +117,14 @@ test('2.4.0 · « Pourquoi ce combo » : étiquette communauté et source, phras
     } finally { document.querySelector = keep; }
   } finally { globalThis.toast = keepT; }
 }));
+// 2.7.0 : « Réglez vos points » montre le maximum de chaque champ et du total (l'utilisateur croyait les points bloqués à 114)
+test('2.7.0 · points : maximum du niveau (98), de l\'exploration (114) et du total (212) affichés ; calcul inchangé', () => keepUi(() => {
+  const qs = document.querySelector, els = {}; document.querySelector = k => els[k] || (els[k] = qs(k)); // faux DOM : un élément par sélecteur, le temps du test
+  try {
+  builds[0] = blankBuild(); cur = 0; Object.assign(B(), {lvl: 20, exp: 30}); renderPoints();
+  assert.equal($('#lvlMax').textContent, '98 pts max'); assert.equal($('#expMax').textContent, '114 pts max');
+  assert.match($('#ptMax').textContent, /^Budget 68 sur 212 au maximum/); assert.equal(budget(B()), 68);
+  Object.assign(B(), {lvl: 50, exp: 114}); renderPoints(); assert.match($('#ptMax').textContent, /^Budget 212 : le maximum/);
+  assert.deepEqual([budget({lvl: 50, exp: 0}), budget({lvl: 1, exp: 114}), budget({lvl: 50, exp: 114})], [98, 114, 212], 'docs/FORMULAS.md');
+  } finally { document.querySelector = qs; }
+}));

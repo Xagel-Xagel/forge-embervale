@@ -34,6 +34,10 @@ function renderPoints(){const b=B(),sp=spentPoints(b),bu=budget(b),over=sp>bu,o=
   const pl=$('#ptLeft');pl.textContent=String(Math.abs(bu-sp));pl.classList.toggle('over',over);
   $('#spent').textContent=`${sp} / ${bu} dépensés`;$('#needLvl').textContent=over?'retirez-en ou montez de niveau':`niveau requis ${levelNeeded(b)}`;
   $('#bar').className='bar'+(over?' over':'');$('#bar').firstElementChild.style.width=Math.min(100,sp/Math.max(1,bu)*100)+'%';
+  /* maximum de chaque champ et du total (2.7.0) : tirés de budget(), jamais recopiés */
+  const mL=budget({lvl:50,exp:0}),mE=budget({lvl:1,exp:114}),mT=budget({lvl:50,exp:114});
+  $('#lvlMax').textContent=`${fmt(mL)} pts max`;$('#expMax').textContent=`${fmt(mE)} pts max`;
+  $('#ptMax').textContent=(bu>=mT?`Budget ${fmt(bu)} : le maximum`:`Budget ${fmt(bu)} sur ${fmt(mT)} au maximum`)+` (${fmt(mL)} niveau + ${fmt(mE)} exploration)`;
   $('#flameDn').disabled=b.flame<=1;$('#flameUp').disabled=b.flame>=11;$('#flameFx').textContent=flameFx(b,o)}
 
 /* ---- Objectifs ---- */
