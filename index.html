@@ -1,0 +1,1815 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Arbre de compétences Enshrouded 1.0 : choisissez un objectif, le simulateur place vos points selon votre niveau et votre Flamme, et explique pourquoi.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%23171b24%22%2F%3E%3Cpath%20d%3D%22M16%204l9%2012-9%2012-9-12z%22%20fill%3D%22%23f08a48%22%2F%3E%3Cpath%20d%3D%22M16%2011l4%205-4%205-4-5z%22%20fill%3D%22%23fde7d6%22%2F%3E%3C%2Fsvg%3E">
+<title>Forge d'Embervale</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout (2.0.0) : barre des builds ; colonne de gauche (points, objectifs, pourquoi, gemmes) et arbre à droite ; une colonne sous 900 px */
+:root{
+  --bg:#e9ecef; --surface:#f7f8f9; --surface2:#e1e5ea; --ink:#1b2029; --muted:#596272; --line:#cdd3db;
+  --ember:#b8501a; --ember-soft:#f3dccd; --shroud:#5d4594; --on-ember:#fff;
+  --war:#b03a35; --rng:#2f7a49; --mag:#2f5fa8; --core:#7a6a3a;
+  --good:#24774a; --bad:#b3302a;
+  --g-bg:#f3f4f6; --g-node:#9aa0aa; --g-edge:#c9ced6; --g-label:#2c323c; --g-ring:#1b2029;
+  --f-display:"Alegreya SC", Georgia, serif;
+  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10131a; --surface:#171b24; --surface2:#1f2531; --ink:#e7e4dd; --muted:#99a1ae; --line:#2b3240;
+  --ember:#f08a48; --ember-soft:#3a2418; --shroud:#a991e3; --on-ember:#1b130d;
+  --war:#e7716b; --rng:#62c487; --mag:#79a6f0; --core:#cdb97a;
+  --good:#5fc78f; --bad:#f0766b; --g-bg:#0c0e13; --g-node:#5d6472; --g-edge:#262c38; --g-label:#c8ccd4; --g-ring:#f2f0ea; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#10131a; --surface:#171b24; --surface2:#1f2531; --ink:#e7e4dd; --muted:#99a1ae; --line:#2b3240;
+  --ember:#f08a48; --ember-soft:#3a2418; --shroud:#a991e3; --on-ember:#1b130d;
+  --war:#e7716b; --rng:#62c487; --mag:#79a6f0; --core:#cdb97a;
+  --good:#5fc78f; --bad:#f0766b; --g-bg:#0c0e13; --g-node:#5d6472; --g-edge:#262c38; --g-label:#c8ccd4; --g-ring:#f2f0ea; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:20px 48px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:.01em}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+header.top h1{font-size:clamp(1.7rem,3vw,2.4rem);line-height:1}
+header.top h1 span{color:var(--ember)}
+.sub{color:var(--muted);font-size:.95rem;margin-top:4px}
+.ver{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:4px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:6px}
+.tab{border:0;background:transparent;padding:6px 12px;border-radius:4px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line)}
+.tab .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:6px 11px;border-radius:5px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ember);border-color:var(--ember);color:var(--on-ember)} /* encre sombre sur braise en thème sombre (#fff ≈ 2,3 : 1, illisible) */
+.btn.sm{padding:3px 8px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+select,input[type="text"],input[type="number"]{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:6px 8px;max-width:100%}
+label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.namein{width:12rem}
+/* Haut de page explicite (2.2.0) : fil des étapes, build affiché, titres numérotés, groupes de l'étape 5 */
+.steps ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.steps button{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 11px 6px 6px;border-radius:999px;cursor:pointer;min-height:36px;text-align:left}
+.steps button:hover{border-color:var(--ember)}
+.steps b,.panel>.ph h2 .num{display:inline-grid;place-items:center;min-width:1.6em;height:1.6em;border-radius:50%;background:var(--ember);color:var(--on-ember);font-family:var(--f-display);font-weight:700;font-variant-numeric:lining-nums}
+.panel>.ph h2 .num{font-size:.85em;margin-right:4px;vertical-align:.1em}
+.albl{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.namel{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.9rem}
+.thint{flex:1 1 100%;margin:0;color:var(--muted);font-size:.85rem}
+.lead{margin:0;color:var(--muted);font-size:.9rem}
+.lpad{padding:10px 14px 0}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.acts .albl{flex:1 1 100%}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Barre collée des panneaux (hauteur mesurée dans --navh sur :root, 10-ui.js) */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
+.panel>.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel>.ph h2{font-size:1.25rem}
+.pb{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:4px;grid-column:2}
+.chip{font-size:.78rem;padding:2px 7px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
+.chip.off{opacity:.38;text-decoration:line-through}
+.chip.tag{background:transparent}
+.gemcard{border:1px solid var(--line);border-left:3px solid var(--rc);border-radius:6px;padding:6px 8px;font-size:.82rem;display:flex;flex-direction:column;gap:3px;background:var(--surface2)}
+.gemcard .en{color:var(--muted);font-style:italic;font-size:.75rem}
+.en{color:var(--muted);font-style:italic;font-weight:400;font-size:.85em}
+.gdot{display:inline-block;width:9px;height:9px;transform:rotate(45deg);background:var(--rc);margin-right:6px;vertical-align:1px}
+.gwarn{color:var(--bad);font-size:.78rem}
+/* Tuiles Points et Flamme (Arbre, Build optimal, 1.17.0) : le chiffre en grand, deux tuiles côte à côte jusqu'à 400 px ; −/+ de 44 px */
+.ptiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:560px}
+.ptile{display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;background:var(--surface2);border:1px solid var(--line);border-radius:8px}
+.ptl{font-size:.85rem;color:var(--muted)}
+.ptn{font-family:var(--f-display);font-weight:700;font-size:2.25rem;line-height:1.1;color:var(--ember);font-variant-numeric:lining-nums tabular-nums}
+output.ptn{display:block}
+.ptn.over{color:var(--bad)}
+input.ptn{width:100%;min-width:0;padding:0 6px;background:var(--surface);text-align:center;font-size:1.9rem}
+.ptf{display:flex;align-items:center;gap:6px}
+.ptf input.ptn{flex:1;-moz-appearance:textfield;appearance:textfield}
+.ptf input.ptn::-webkit-outer-spin-button,.ptf input.ptn::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pstep{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:1.4rem;line-height:1;cursor:pointer}
+.pstep:hover:not(:disabled){border-color:var(--ember);color:var(--ember)}
+.pstep:disabled{opacity:.4;cursor:not-allowed}
+.pts{font-size:.8rem;color:var(--muted)}
+.ptin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:2px}
+.ptin>div{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted)}
+.ptmax{font-size:.75rem}
+.ptin input{width:100%}
+@media (max-width:480px){.ptile{padding:8px}}
+.bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:var(--ember);transition:width .2s}
+.bar.over>i{background:var(--bad)}
+.over-msg{color:var(--bad)}
+.areas{display:flex;gap:4px;flex-wrap:wrap}
+.area{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:5px 10px;cursor:pointer;font-weight:500;display:flex;gap:6px;align-items:center}
+.area[aria-pressed="true"]{border-color:var(--ac);color:var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--surface))}
+.area small{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters input[type=text]{flex:1;min-width:150px}
+.pips{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.pip{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface2)}
+.pip .pathb{margin-top:3px;font-size:.72rem;padding:1px 6px}
+.nodes{display:flex;flex-direction:column;max-height:620px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.node{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 10px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.node:last-child{border-bottom:0}
+.node.on{border-left-color:var(--ac);background:color-mix(in srgb,var(--ac) 6%,transparent)}
+.node .nn{font-weight:700}
+.node .en{color:var(--muted);font-size:.78rem;font-style:italic;margin-left:4px;font-weight:400}
+.node .nd{grid-column:1;font-size:.83rem;color:var(--muted)}
+.node .new{font-size:.66rem;background:var(--ember);color:var(--on-ember);border-radius:3px;padding:0 4px;margin-left:6px;vertical-align:2px;font-weight:700;letter-spacing:.04em}
+.node .lk{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px;margin-left:6px;font-weight:500}
+.node.lock .nn{color:var(--muted)}
+.node .pathb{margin-left:4px;font-size:.75rem;padding:1px 6px}
+.step{grid-row:1 / span 2;grid-column:2;display:flex;align-items:center;gap:4px;align-self:center}
+.step button{width:28px;height:28px;border-radius:5px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;line-height:1}
+.step button:disabled{opacity:.35;cursor:default}
+.step .rk{font-family:var(--f-mono);min-width:2.6rem;text-align:center;font-size:.85rem}
+.step .ct{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);min-width:3.4rem;text-align:right}
+table.st{width:100%;border-collapse:collapse;font-size:.88rem}
+table.st th{text-align:left;font-weight:500;padding:4px 6px 4px 0;color:var(--ink)}
+table.st td{text-align:right;font-family:var(--f-mono);padding:4px 0 4px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.st tr+tr th,table.st tr+tr td{border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+table.st thead th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:right}
+table.st thead th:first-child{text-align:left}
+.d-up{color:var(--good)} .d-dn{color:var(--bad)} .d-0{color:var(--muted)}
+.modal{position:fixed;inset:0;background:color-mix(in srgb,#000 45%,transparent);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
+.modal .box{background:var(--surface);border:1px solid var(--line);border-radius:10px;max-width:620px;width:100%;padding:18px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto}
+.modal textarea{width:100%;min-height:90px;font-family:var(--f-mono);font-size:.78rem;background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;word-break:break-all}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:6px;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
+.toast{background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:.9rem;text-align:center}
+.foot{color:var(--muted);font-size:.8rem;line-height:1.5;max-width:75ch}
+.foot a{color:var(--ember)}
+.empty{color:var(--muted);font-size:.85rem;padding:10px}
+.viewsw{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:6px}
+.viewsw button{border:0;background:transparent;padding:4px 10px;border-radius:4px;cursor:pointer;color:var(--muted)}
+.viewsw button[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
+.gwrap{position:relative;height:clamp(440px,72vh,760px);border-radius:8px;overflow:hidden;background:var(--g-bg);border:1px solid var(--line);touch-action:none}
+.gwrap canvas{display:block;width:100%;height:100%;cursor:grab}
+.gwrap canvas.grabbing{cursor:grabbing}
+.gwrap canvas.pointer{cursor:pointer}
+.gcard{position:absolute;top:12px;right:12px;width:min(300px,calc(100% - 24px));background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 8px 24px color-mix(in srgb,#000 18%,transparent)}
+.gcard h3{font-size:1.1rem;color:var(--ac)}
+.gcard .en{color:var(--muted);font-size:.8rem;font-style:italic}
+.gcard .d{font-size:.88rem}
+.gcard .m{font-size:.75rem;color:var(--muted);font-family:var(--f-mono)}
+.gcard .step{grid-row:auto;grid-column:auto;justify-content:flex-start}
+.gcard .lockbox{font-size:.82rem;background:var(--surface2);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.gcard .x{position:absolute;top:6px;right:8px;border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:1.1rem;line-height:1}
+@media (max-width:600px){.gcard{top:auto;bottom:10px;right:10px}}
+.ghelp{position:absolute;left:12px;top:10px;font-size:.75rem;color:var(--muted);max-width:min(420px,60%);pointer-events:none}
+.glegend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);align-items:center}
+.glegend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.meta2{font-size:.78rem;color:var(--muted)}
+.oscroll{overflow-x:auto;max-width:100%}
+.tag.ok{color:var(--good)} .tag.est{color:var(--mag)} .tag.hyp{color:var(--ember)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* 2.0.0 : deux colonnes (réglages et explication | arbre), une seule sous 900 px, même ordre */
+.main{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:16px;align-items:start}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:899px){.main{grid-template-columns:minmax(0,1fr)}}
+.ztag{display:inline-block;font-size:.74rem;line-height:1.35;padding:1px 7px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ac) 55%,var(--line));color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--surface));white-space:nowrap;font-weight:500;font-family:var(--f-body);vertical-align:2px}
+.tag{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;border-radius:3px;padding:1px 5px;margin-right:6px;font-weight:700;border:1px solid}
+.gtools{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap}
+.gtools button{border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:5px;padding:4px 9px;cursor:pointer;font-size:.85rem;min-height:32px}
+.glegend{margin-top:8px}
+/* Objectifs */
+.gsel{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.gsel label{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted)}
+.gsel select{width:100%;min-height:44px;color:var(--ink);font-size:1rem}
+/* Pourquoi ce combo : une ligne par étape, détail au clic */
+.wgoal{display:flex;flex-direction:column;gap:2px}
+.wgoal h3{font-size:1.05rem;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;margin-bottom:4px}
+.wgoal h3 small{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);font-weight:400}
+details.wstep{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+details.wstep>summary{cursor:pointer;padding:8px 2px;min-height:40px;font-size:.92rem}
+details.wstep>summary em{font-style:normal;color:var(--bad);font-size:.85rem}
+details.wstep.no>summary{color:var(--muted)}
+details.wstep p{margin:0 0 6px;font-size:.86rem}
+details.wstep .chips{grid-column:auto;margin-bottom:8px}
+.ws{display:inline-block;width:1.2em;text-align:center;font-weight:700}
+.wstep.ok .ws{color:var(--good)} .wstep.part .ws{color:var(--ember)} .wstep.no .ws{color:var(--muted)}
+.chip.off{text-decoration:none;opacity:.55;border-style:dashed}
+.res{margin:0;font-size:.86rem;background:var(--surface2);border-radius:6px;padding:8px 10px;font-variant-numeric:tabular-nums}
+.res b{margin-right:6px}
+/* Gemmes */
+.gemrow{display:flex;flex-direction:column;gap:6px}
+.gemrow label{font-size:.8rem;color:var(--muted)}
+.gemrow select{width:100%;min-height:44px}
+/* Arbre : nœuds imposés et ajoutés (vue Liste, carte du graphe) */
+.node.add{border-left-style:dashed}
+.node .imp{font-size:.7rem;color:var(--ac);border:1px solid var(--ac);border-radius:3px;padding:0 4px;margin-left:6px;font-weight:700}
+.gcard .org{font-size:.8rem;color:var(--ac);font-weight:500}
+/* A contre B */
+table.cmp td.txt{white-space:normal;text-align:left;font-family:var(--f-body);font-size:.8rem;min-width:12rem;vertical-align:top}
+table.cmp thead th{white-space:nowrap}
+.oscroll{overflow-x:auto;max-width:100%}
+@media (max-width:639px){.toolbar .btn,.toolbar select,.toolbar .tab,.acts .btn,.acts select,.steps button,.step button{min-height:44px;min-width:44px}.namel{flex:1 1 12rem}.namein{flex:1 1 8rem;min-width:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Forge d'<span>Embervale</span></h1>
+      <div class="sub">Arbre de compétences d'Enshrouded 1.0 · planifiez vos points en 5 étapes</div>
+    </div>
+    <span class="ver">Données : version 1.0 (oct.–nov. 2026)</span>
+  </header>
+
+  <!-- Fil des étapes : chaque bouton descend au panneau (scrollIntoView, jamais le hash) -->
+  <nav class="steps" aria-label="Étapes">
+    <ol>
+      <li><button type="button" data-go="p-pts"><b>1</b> Réglez vos points</button></li>
+      <li><button type="button" data-go="p-obj"><b>2</b> Choisissez vos objectifs</button></li>
+      <li><button type="button" data-go="p-why"><b>3</b> Lisez pourquoi</button></li>
+      <li><button type="button" data-go="p-tree"><b>4</b> Ajoutez compétences et gemmes</button></li>
+      <li><button type="button" data-go="p-keep"><b>5</b> Enregistrez, partagez, comparez</button></li>
+    </ol>
+  </nav>
+
+  <!-- Build affiché : A ou B, et son nom -->
+  <div class="toolbar" role="group" aria-labelledby="g-cur">
+    <span class="albl" id="g-cur">Build affiché</span>
+    <div class="tabs" role="tablist" id="buildTabs" aria-label="Build affiché"></div>
+    <label class="namel">Nom <input type="text" class="namein" id="buildName" aria-label="Nom du build"></label>
+    <p class="thint">A et B : deux builds ; tout ce qui suit modifie le build affiché.</p>
+  </div>
+
+  <div class="main">
+    <div class="side">
+      <!-- 1. Vos points : niveau, exploration, Flamme -->
+      <section class="panel" id="p-pts" aria-labelledby="h-pts">
+        <div class="ph"><h2 id="h-pts"><span class="num">1</span> Réglez vos points</h2></div>
+        <div class="pb">
+          <p class="lead">Niveau, exploration et Flamme : le site calcule combien de points vous avez. Exploration = racines du Shroud et puits d'élixir trouvés.</p>
+          <div class="ptiles" role="group" aria-label="Points de compétence et Flamme">
+            <div class="ptile">
+              <div class="ptl" id="ptLbl">Points à attribuer</div>
+              <output class="ptn" id="ptLeft" aria-labelledby="ptLbl"></output>
+              <div class="pts"><span id="spent"></span> · <span id="needLvl"></span></div>
+              <div class="pts" id="ptMax"></div>
+              <div class="bar" id="bar"><i></i></div>
+              <div class="ptin">
+                <div><label for="lvl">Niveau</label><input type="number" id="lvl" min="1" max="50" aria-describedby="lvlMax" title="Niveau du personnage (1 à 50) : 2 points par niveau"><span class="ptmax" id="lvlMax"></span></div>
+                <div><label for="exp">Exploration</label><input type="number" id="exp" min="0" max="114" aria-describedby="expMax" title="Racines du Shroud (1 pt) et Puits d'élixir (3 pts), 114 au total"><span class="ptmax" id="expMax"></span></div>
+              </div>
+            </div>
+            <div class="ptile">
+              <label class="ptl" for="flame">Niveau de la Flamme</label>
+              <div class="ptf"><button type="button" class="pstep" id="flameDn" aria-label="Baisser la Flamme d'un niveau">−</button><input type="number" class="ptn" id="flame" min="1" max="11"><button type="button" class="pstep" id="flameUp" aria-label="Monter la Flamme d'un niveau">+</button></div>
+              <div class="pts">sur 11</div>
+              <div class="pts" id="flameFx"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Objectifs : principal (combo imposé), secondaire (points restants), soutien (derniers points, compétences seules) -->
+      <section class="panel" id="p-obj" aria-labelledby="h-obj">
+        <div class="ph"><h2 id="h-obj"><span class="num">2</span> Choisissez vos objectifs</h2></div>
+        <div class="pb">
+          <p class="lead">Le site place vos points pour le principal, puis le reste pour le secondaire et le soutien.</p>
+          <div class="gsel">
+            <label for="goal1">Principal<select id="goal1"></select></label>
+            <label for="goal2">Secondaire<select id="goal2"></select></label>
+            <label for="goal3">Soutien<select id="goal3"></select></label>
+          </div>
+          <p class="meta2" id="goalHint"></p>
+        </div>
+      </section>
+
+      <!-- 3. Pourquoi ce combo : étapes de chaque objectif, état et raison -->
+      <section class="panel" id="p-why" aria-labelledby="h-why">
+        <div class="ph"><h2 id="h-why"><span class="num">3</span> Lisez pourquoi</h2></div>
+        <p class="lead lpad">Chaque étape du combo, dans l'ordre, avec sa raison (choix du simulateur).</p>
+        <div class="pb" id="why"></div>
+      </section>
+
+    </div>
+
+    <div class="col">
+    <!-- 4. Arbre : graphe (tracé du jeu 1.0) ou liste -->
+    <section class="panel tree" id="p-tree" aria-labelledby="h-sk">
+      <div class="ph"><h2 id="h-sk"><span class="num">4</span> Ajoutez des compétences dans l'arbre</h2>
+        <div class="viewsw" role="group" aria-label="Affichage"><button id="vGraph" aria-pressed="true">Graphe</button><button id="vList" aria-pressed="false">Liste</button></div></div>
+      <div class="pb">
+        <p class="lead">Avec les points libres, achetez des nœuds reliés ; les nœuds imposés restent.</p>
+        <div class="areas" id="areas"></div>
+        <div class="filters">
+          <input type="text" id="q" placeholder="Rechercher une compétence (FR ou EN)" aria-label="Rechercher une compétence">
+          <label class="chk"><input type="checkbox" id="onlyOn"> Prises seulement</label>
+        </div>
+        <div id="graphView">
+          <div class="gwrap" id="gwrap">
+            <canvas id="gcv" aria-label="Arbre de compétences en graphe. Utilisez la vue Liste pour une navigation au clavier."></canvas>
+            <div class="ghelp">Glisser pour déplacer · molette ou pincement pour zoomer · clic pour sélectionner · double-clic : +1 rang · clic droit : −1 rang</div>
+            <div class="gtools"><button id="gFit">Tout afficher</button></div>
+            <div class="gcard" id="gcard" hidden></div>
+          </div>
+          <div class="glegend">
+            <span><i style="background:var(--mag);box-shadow:0 0 8px var(--mag)"></i>imposé par l'objectif</span>
+            <span><i style="background:var(--mag);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ember)"></i>ajouté par vous</span>
+            <span><i style="background:var(--g-node);box-shadow:0 0 0 2px var(--mag)"></i>achetable (relié)</span>
+            <span><i style="background:var(--g-node);opacity:.5"></i>verrouillé</span>
+            <span><i style="border:1.5px solid var(--g-label);background:transparent"></i>point de départ</span>
+            <span>petits nœuds : attributs (+1)</span>
+          </div>
+        </div>
+        <div id="listView" hidden>
+          <div class="pips" id="pips"></div>
+          <div class="nodes" id="nodes"></div>
+        </div>
+      </div>
+    </section>
+    <!-- 4 (suite). Gemmes : deux emplacements (Arme 1, Arme 2) ; effets descriptifs, jamais comptés -->
+    <section class="panel" id="p-gem" aria-labelledby="h-gem">
+      <div class="ph"><h2 id="h-gem"><span class="num">4</span> … et des gemmes</h2></div>
+      <p class="lead lpad">Suite de l'étape 4 : une gemme par arme (effet décrit, jamais compté).</p>
+      <div class="pb" id="gems"></div>
+    </section>
+
+    <!-- 5. Garder : enregistrer (navigateur), partager (lien), comparer A et B -->
+    <section class="panel" id="p-keep" aria-labelledby="h-keep">
+      <div class="ph"><h2 id="h-keep"><span class="num">5</span> Enregistrez, partagez, comparez</h2></div>
+      <div class="pb">
+        <div class="acts" role="group" aria-labelledby="g-ls"><span class="albl" id="g-ls">Dans ce navigateur</span>
+          <button class="btn" id="save">Enregistrer</button>
+          <select id="saved" aria-label="Builds enregistrés"><option value="">Mes builds…</option></select>
+          <button class="btn" id="delSaved">Supprimer</button></div>
+        <div class="acts" role="group" aria-labelledby="g-ln"><span class="albl" id="g-ln">Par lien</span>
+          <button class="btn primary" id="share">Partager</button>
+          <button class="btn" id="import">Importer un code</button></div>
+        <div class="acts" role="group" aria-labelledby="g-ab"><span class="albl" id="g-ab">Entre A et B</span>
+          <label class="chk"><input type="checkbox" id="cmp"> Comparer A et B</label>
+          <button class="btn" id="copyAB" title="Copier ce build dans l'autre emplacement">Copier vers l'autre</button>
+          <button class="btn" id="reset">Vider ce build</button></div>
+      </div>
+    </section>
+    </div>
+  </div>
+
+  <!-- A contre B (case « Comparer A et B ») -->
+  <section class="panel" id="p-cmp" aria-labelledby="h-cmp" hidden>
+    <div class="ph"><h2 id="h-cmp">A contre B</h2></div>
+    <div class="pb"><div class="oscroll" id="cmpBody"></div></div>
+  </section>
+
+  <p class="foot">
+    Sources : arbre de compétences (tracé, liaisons, coûts, rangs, descriptions) relevé dans les fichiers du jeu 1.0 par <a href="https://pindrop.gg/enshrouded/skill-tree" target="_blank" rel="noopener">PinDrop</a> ;
+    valeurs d'attributs (<a href="https://metabot.gg/en/enshrouded/mechanics" target="_blank" rel="noopener">MetaBot</a>, <a href="https://enshrouded.wiki.gg/wiki/Attributes" target="_blank" rel="noopener">wiki Enshrouded</a>) ;
+    gemmes 1.0 d'après <a href="https://pindrop.gg/enshrouded/gems" target="_blank" rel="noopener">PinDrop</a> et le wiki.
+    Objectifs : compétences reprises des anciens builds prédéfinis du simulateur, inspirés de <a href="https://www.keengamer.com/articles/guides/enshrouded-1-0-best-builds-weapons-armor-skills/" target="_blank" rel="noopener">KeenGamer</a> et de demandes de joueurs ; hybrides, Exploration et Récolte : builds de la communauté (<a href="https://pindrop.gg/enshrouded/builds" target="_blank" rel="noopener">PinDrop</a>) ou composés par le simulateur, ordre des éléments optimisé hors ligne ; l'ordre des étapes et leurs raisons sont des choix de ce simulateur, pas un guide officiel.
+    Un nœud ne s'achète que s'il touche un point de départ ou un nœud acquis qui y est relié (règle déduite des fichiers, comme PinDrop). Projet de fan, sans lien avec Keen Games.
+  </p>
+</div>
+<!-- Messages (toast) : empilés, lus par les lecteurs d'écran -->
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================== DONNÉES =========================== */
+/* Compétences : [id, nom FR, nom EN, zone, coût par rang, rangs max, description, nouveau en 1.0] */
+const SK = [];
+function S(area,list){list.forEach(r=>SK.push({id:r[0],fr:r[1],en:r[2],area,cost:r[3],max:r[4],d:r[5],nw:!!r[6]}))}
+S('core',[
+ ['wellRested','Bien reposé','Well Rested',1,3,'Buff Reposé : +2 min de durée par rang.'],
+ ['mason','Maçon','Mason',1,3,'Outils : +10 % de dégâts contre la pierre par rang.'],
+ ['lumberjack','Bûcheron','Lumberjack',1,3,'Outils : +10 % de dégâts contre le bois par rang.'],
+ ['miner','Mineur','Miner',2,1,'10 % de chance d\'obtenir une ressource en plus.'],
+ ['qualityGear','Outils de qualité','Quality Gear',1,1,'Outils : 20 % de chance de regagner 1 de durabilité.'],
+ ['merciless','Attaque impitoyable','Merciless Attack',2,1,'Active : 500 % de dégâts contre un ennemi déséquilibré.'],
+ ['doubleJump','Double saut','Double Jump',2,1,'Second saut en l\'air (10 vigueur).'],
+ ['powerParry','Parade puissante','Power Parry',1,3,'+10 % de puissance de parade par rang.'],
+ ['innerFires','Feux intérieurs','Inner Fires',1,3,'+60 s de temps dans le Shroud par rang.'],
+ ['snap','Déclic','Snap',2,1,'Une attaque impitoyable rend 20 % de mana.'],
+ ['saviour','Sauveur','Saviour',1,3,'Réanimation d\'un allié plus rapide de 1 s par rang.'],
+ ['opportunity','Opportunité','Opportunity',1,3,'+40 % au multiplicateur d\'attaque impitoyable par rang.'],
+ ['giantHook','Grappin tueur de géants','Giant Slayer Hook',3,1,'Se tracter vers les grands ennemis.'],
+ ['groundHook','Grappin d\'ancrage','Grounding Hook',4,1,'Ramener les ennemis volants au sol.'],
+ ['fisherman','Ténacité du pêcheur','Fisherman’s Resolve',1,3,'+5 d\'endurance de pêche par rang.'],
+ ['pickSpec','Spécialisation pioche','Pickaxe Specialization',2,1,'Débloque la capacité spéciale des pioches.'],
+ ['fellSpec','Spécialisation hache d\'abattage','Felling Axe Specialization',2,1,'Débloque la capacité spéciale des haches d\'abattage.'],
+ ['prospector','Prospecteur','Prospector',1,3,'Outils : +10 % de dégâts contre le métal par rang.'],
+ ['airborneArch','Architecte aérien','Airborne Architect',3,1,'Construction en vol libre dans la base.',1]
+]);
+S('war',[
+ ['evasionAttack','Attaque d\'esquive','Evasion Attack',4,1,'Ruée en esquivant : +50 % des dégâts de l\'arme.'],
+ ['barbarian','Barbare','Barbarian',5,1,'+1 Force tous les 2 niveaux de Flamme.'],
+ ['warriorsPath','Voie du guerrier','Warrior\'s Path',1,3,'+5 % de dégâts aux haches, masses et épées à une main par rang.'],
+ ['shinyPlates','Plaques brillantes','Shiny Plates',1,3,'+4 % d\'armure magique des objets par rang.'],
+ ['heavyPlates','Plaques lourdes','Heavy Plates',1,3,'+4 % d\'armure physique des objets par rang.'],
+ ['slasher','Taillade','Slasher',2,3,'+10 % de dégâts tranchants de mêlée par rang.'],
+ ['brute','Brute','Brute',2,3,'+10 % de dégâts contondants de mêlée par rang.'],
+ ['heavyHanded','Main lourde','Heavy Handed',1,3,'+10 % de remplissage d\'étourdissement contre un ennemi qui bloque.'],
+ ['breach','Brèche','Breach',3,1,'Ennemis déséquilibrés : +100 % de dégâts physiques de mêlée pendant 3 s.'],
+ ['veteran','Vétéran','Veteran',2,3,'+2 % de critique avec les armes de mêlée et les dagues par rang.'],
+ ['crashForce','Chute : force','Crash Down: Force',3,1,'Attaque plongeante depuis un double saut : +20 %.'],
+ ['tower','Tour','Tower',3,1,'+10 % de résistance physique avec 3 ennemis ou plus à 20 m.'],
+ ['warden','Gardien','Warden',3,1,'+10 % de résistance magique avec 3 ennemis ou plus à 20 m.'],
+ ['absorb','Absorption','Absorb',1,3,'4 % de chance de convertir les dégâts magiques reçus en mana.'],
+ ['bloodRage','Rage sanguinaire','Blood Rage',2,3,'Après un kill en mêlée : +15 % de dégâts de mêlée 10 s.'],
+ ['soulLeech','Vol d\'âme','Soul Leech',2,3,'Kill en mêlée : les joueurs proches récupèrent du mana.'],
+ ['battleHeal','Soin de bataille','Battle Heal',2,3,'Critiques de mêlée : soigne 1 % de la santé max par rang.'],
+ ['relentless','Implacable','Relentless',5,1,'Critique à deux mains : +8 % de critique au coup suivant.'],
+ ['crashDown','Attaque plongeante','Crash Down Attack',3,1,'Attaque en saut : +50 % de dégâts en zone.'],
+ ['bloodWarrior','Guerrier de sang','Blood Warrior',3,1,'Kill furtif ou impitoyable : orbe de santé.'],
+ ['purification','Purification','Purification',1,3,'Kill d\'un ennemi du Shroud en mêlée : rend du temps dans le Shroud.'],
+ ['vigDeflect','Déviation vigoureuse','Vigorous Deflection',1,3,'Parade réussie : +15 vigueur par rang.'],
+ ['martyr','Martyr','Martyr',3,1,'À votre mort, les alliés proches sont soignés de 50 %.'],
+ ['nemesis','Némésis','Nemesis',2,3,'Attire davantage l\'attention des ennemis.'],
+ ['shockwave','Onde de choc','Shockwave',3,1,'Parade ou déséquilibre : onde qui repousse.'],
+ ['swiftBlades','Lames rapides','Swift Blades',4,1,'+15 % de vitesse d\'attaque à une main.'],
+ ['heavyHitter','Frappe lourde','Heavy Hitter',4,1,'+10 % de vitesse d\'attaque à deux mains.'],
+ ['bash','Coup de choc','Bash',2,3,'Parade : 10 dégâts contondants (+ Force) par rang.'],
+ ['earthAura','Aura de terre','Earth Aura',2,3,'+10 % de résistances pour vous et les alliés proches.'],
+ ['splashDash','Ruée aquatique','Splash Dash',3,1,'Esquive en nageant.'],
+ ['thickSkin','Peau épaisse','Thick Skin',5,1,'+1 Constitution tous les 2 niveaux de Flamme.'],
+ ['finesse','Finesse','Finesse',1,3,'Armes légères : 15 % de chance de réparer 1 durabilité.'],
+ ['steadfast','Inébranlable','Steadfast',2,3,'Kill en mêlée : +1 durabilité par rang.'],
+ ['upSlash','Taille ascendante','Upwards Slash Attack',3,1,'Frappe montante pendant le saut.'],
+ ['titanEdge','Tranchant du titan','Titan Edge',1,3,'+5 % de dégâts aux espadons par rang.'],
+ ['whirlwind','Crescendo tourbillon','Whirlwind Crescendo',3,1,'Deux mains : tourbillon en fin d\'enchaînement.'],
+ ['wetDog','Chien mouillé','Wet Dog',3,1,'Affaiblit les malus Mouillé et Trempé (−20 %).'],
+ ['soakedDog','Chien trempé','Soaked Dog',3,1,'Affaiblit encore Mouillé et Trempé (−10 %).'],
+ ['twoHSpec','Spécialisation deux mains','Two-Handed Specialization',3,1,'Débloque la capacité spéciale des armes à deux mains.'],
+ ['oneHSpec','Spécialisation une main','One-Handed Specialization',3,1,'Débloque la capacité spéciale des armes à une main.'],
+ ['athlete','Athlète','Athlete',1,3,'+3 × Force de santé max par rang.'],
+ ['barbariansPath','Voie du barbare','Barbarian\'s Path',1,3,'+5 % de dégâts aux haches, masses et marteaux à deux mains par rang.']
+]);
+S('rng',[
+ ['sneakAttack','Attaque furtive','Sneak Attack',3,1,'+900 % de dégâts sur un ennemi qui ne vous voit pas.'],
+ ['airborne','Aéroporté','Airborne',1,3,'Planeur : −12 % de vigueur par rang.'],
+ ['marksman','Tireur d\'élite','Marksman',1,3,'+5 % de dégâts à l\'arc par rang.'],
+ ['calmSpirit','Esprit calme','Calm Spirit',3,1,'Les animaux sauvages ne vous attaquent plus.'],
+ ['snakeEater','Mangeur de serpents','Snake Eater',2,3,'+4 % de résistance au poison par rang.'],
+ ['runner','Coureur','Runner',1,3,'+5 % de vitesse de sprint, sprint moins coûteux.'],
+ ['counterBattery','Contre-batterie','Counter Battery',1,3,'+8 % de dégâts contre les ennemis à distance par rang.'],
+ ['vukahLang','Langue vukah','Vukah Language',3,1,'Les Vukah ne vous attaquent plus.'],
+ ['updraft','Courant ascendant','Updraft',4,1,'Sursaut vers le haut en vol plané.'],
+ ['beastMaster','Maître des bêtes','Beast Master',4,1,'Les animaux proches attaquent vos agresseurs.'],
+ ['goodMetab','Bon métabolisme','Good Metabolism',3,1,'Orbes à 30 %, potions +20 %.'],
+ ['vukahCult','Culture vukah','Vukah Culture',4,1,'Les Vukah proches attaquent vos agresseurs.'],
+ ['ranger','Rôdeur','Ranger',2,3,'+1 Dextérité, +1 Endurance et régén. de vigueur de base par rang.'],
+ ['mithridatist','Mithridatisé','Mithridatist',2,1,'25 % de chance d\'éviter l\'empoisonnement.'],
+ ['bounty','Prime généreuse','Bounty Bonanza',2,1,'Tir d\'adresse mortel sur un Déchu : +5 XP.'],
+ ['sniper','Sniper','Sniper',2,3,'+2 % de critique à l\'arc par rang.'],
+ ['shrapnel','Éclats','Shrapnel Blast',3,1,'Flèche explosive : +10 % par cible touchée.'],
+ ['echoing','Explosions en écho','Echoing Explosives',4,1,'40 % de chance d\'explosion secondaire.'],
+ ['blessedArrows','Flèches bénies','Blessed Arrows',1,3,'Critique à l\'arc : +8 mana par rang.'],
+ ['thrust','Estoc','Thrust',2,3,'+10 % de dégâts perçants de mêlée par rang.'],
+ ['backstabMastery','Maîtrise du coup dans le dos','Backstab Mastery',1,3,'+20 % de dégâts dans le dos par rang.'],
+ ['sweetTooth','Bec sucré','Sweet Tooth',3,1,'Sucreries : +50 % de régén. de vigueur.'],
+ ['vitalitySurge','Sursaut de vitalité','Vitality Surge',1,3,'Critiques arc, dagues, lancer : +3 vigueur.'],
+ ['eaglesBane','Fléau des aigles','Eagle\'s Bane',1,3,'+10 % de dégâts contre les volants par rang.'],
+ ['silentStride','Pas feutré','Silent Stride',1,3,'Déplacement plus rapide en furtivité.'],
+ ['skillShot','Tir d\'adresse','Skill Shot',1,3,'+20 % de dégâts des tirs dans les points faibles.'],
+ ['swiftshot','Subsistance du tir rapide','Swiftshot Sustenance',1,3,'Kill à l\'arc : 12 % de chance d\'orbe de vigueur.'],
+ ['arachnoid','Arachnide','Arachnoid',1,3,'Escalade : −20 % de vigueur par rang.'],
+ ['wanderlust','Bougeotte','Wanderlust',3,1,'Sprint moins coûteux sur les routes.'],
+ ['beeSting','Dard d\'abeille','Bee Sting',3,1,'Tir en l\'air : ralentit la chute.'],
+ ['multiShot','Tir multiple','Multi Shot',4,1,'20 % de chance de salve de flèches.'],
+ ['shellShock','Obus étourdissant','Shell Shock',3,1,'Explosifs à distance : étourdissent 2 s.'],
+ ['enduranceFlame','Endurance de la Flamme','Endurance of the Flame',5,1,'+1 Endurance tous les 2 niveaux de Flamme.'],
+ ['gracefulStride','Foulée gracieuse','Graceful Stride',5,1,'+1 Dextérité tous les 2 niveaux de Flamme.'],
+ ['eagleEye','Œil d\'aigle','Eagle Eye',3,1,'Active.'],
+ ['dessert','Estomac à dessert','Dessert Stomach',4,1,'Un emplacement de nourriture en plus.'],
+ ['msSpread','Tir multiple : dispersion','Multi Shot Spread',3,1,'25 % de chance de flèche gratuite en plus.'],
+ ['msTrigger','Tir multiple : déclencheur','Multi Shot Trigger',3,1,'Les flèches spéciales déclenchent la salve.'],
+ ['daggerMastery','Maîtrise des dagues','Dagger Mastery',1,3,'+5 % de dégâts aux dagues par rang.'],
+ ['sliceDice','Hacher menu','Slice And Dice',3,1,'Critique à la dague : +50 % au tir à l\'arc suivant (10 s).'],
+ ['venomBlades','Lames venimeuses','Venomous Blades',2,1,'Perk Lames venimeuses : 30 % d\'empoisonnement.'],
+ ['venomMastery','Maîtrise du venin','Venom Mastery',3,1,'Perk Lames venimeuses : +100 % de dégâts.'],
+ ['quickReflex','Blocage réflexe','Quick Reflex Block',3,1,'Blocage renforcé aux dagues.'],
+ ['kick','Coup de pied','Kick',3,1,'Repousse et remplit la jauge d\'étourdissement.'],
+ ['lastMeal','Dernier repas','Last Meal',5,1,'Les buffs de nourriture survivent à la mort.'],
+ ['exposeWeak','Exposer la faiblesse','Expose Weakness',4,1,'Critique à la dague : +25 % de dégâts physiques subis (5 s).'],
+ ['stratManeuver','Manœuvre stratégique','Strategic Maneuver',1,1,'Roulade latérale autour d\'une cible verrouillée.'],
+ ['cutthroat','Égorgeur','Cutthroat',1,3,'+100 % de dégâts d\'attaque furtive par rang.'],
+ ['rebound','Rebond','Rebound',2,3,'+10 % de régén. de vigueur de base par rang.'],
+ ['cullHerd','Éclaircir le troupeau','Cull the Herd',1,3,'+5 % contre la faune par rang.'],
+ ['primalForce','Force primitive','Primal Force',1,3,'+5 % contre les Vukah par rang.'],
+ ['vileConcoction','Concoction infâme','Vile Concoction',1,3,'+12 % de dégâts des objets lancés par rang.'],
+ ['fatalPrecision','Précision fatale','Fatal Precision',1,3,'+1 % de critique et +5 % de dégâts critiques par rang.'],
+ ['bowSpec','Spécialisation arc','Bow Specialization',3,1,'Débloque la capacité spéciale des arcs.'],
+ ['daggerSpec','Spécialisation dagues','Dagger Specialization',3,1,'Débloque la capacité spéciale des dagues.'],
+ ['veiledVigor','Vigueur voilée','Veiled Vigor',1,3,'+3 × Dextérité de santé max par rang.'],
+ ['puncture','Perforation','Puncture',2,3,'+10 % de dégâts perçants à distance par rang.',1],
+ ['barrage','Barrage','Barrage',1,3,'Arc : 15 % de chance de réparer 1 durabilité.',1],
+ ['survivalInst','Instinct de survie','Survival Instinct',1,3,'Kill à l\'arc ou à la dague : rend du temps dans le Shroud.',1]
+]);
+S('mag',[
+ ['healingRevive','Réanimation curative','Healing Revive',1,3,'+8 % de santé aux joueurs réanimés par rang.'],
+ ['watersOfLife','Eaux de vie','Waters Of Life',2,1,'Aura d\'eau : 2 PV pour 2 points d\'Intelligence.'],
+ ['mageApprentice','Apprenti mage','Mage Apprentice',1,3,'+5 % de dégâts aux baguettes et bâtons par rang.'],
+ ['arsonist','Pyromane','Arsonist',2,3,'+10 % de dégâts de feu par rang.'],
+ ['darkArts','Arts sombres','Dark Arts',2,3,'+10 % de dégâts de Shroud par rang.'],
+ ['iceman','Homme de glace','Iceman',2,3,'+10 % de dégâts de glace par rang.'],
+ ['frost','Givre','Frost',2,3,'Un attaquant de mêlée est ralenti 3 s par rang.'],
+ ['quickCharge','Charge rapide','Quick Charge',1,3,'−10 % de temps de charge des sorts par rang.'],
+ ['blinkAttack','Clignement explosif','Blink Attack',2,1,'Clignement dans un ennemi : explosion de feu.'],
+ ['emergencyBlink','Clignement d\'urgence','Emergency Blink',2,1,'Clignement possible en étant étourdi.'],
+ ['counterstrike','Contre-coup','Counterstrike',1,3,'20 % de chance de renvoyer 8 % des dégâts en feu.'],
+ ['arcaneConc','Concentration arcanique','Arcane Concentration',5,1,'+1 Esprit tous les 2 niveaux de Flamme.'],
+ ['wizard','Sorcier','Wizard',2,3,'+2 % de critique aux baguettes et bâtons par rang.'],
+ ['chainHit','Coup en chaîne','Chain Hit',3,1,'Critique magique : rebond de foudre (5 × Int).'],
+ ['massDestr','Destruction massive','Mass Destruction',3,1,'Critique magique : foudre en zone (2 × Int).'],
+ ['bloodMagic','Magie du sang','Blood Magic',4,1,'Sous 20 % de mana : convertit la santé en mana.'],
+ ['necromancer','Nécromancien','Necromancer',1,3,'Kill magique : 5 % de chance d\'invoquer un crâne.'],
+ ['terror','Terreur','Terror',2,3,'Critique de sort : 20 % de chance d\'étourdir 2 s.'],
+ ['bloodletting','Saignée','Bloodletting',2,3,'Critique de sort : 20 % de chance de faire apparaître des orbes.'],
+ ['lifeBurst','Éclat de vie','Life Burst',4,1,'Kill magique : soin de groupe (5 × Int).'],
+ ['blink','Clignement','Blink',4,1,'Remplace la roulade par une téléportation courte.'],
+ ['shroudMitigation','Atténuation du Shroud','Shroud Mitigation',1,3,'Dégâts magiques : chance de rendre du temps dans le Shroud au groupe.'],
+ ['healer','Guérisseur','Healer',1,3,'+15 % de soins (sorts et Aura d\'eau) par rang.'],
+ ['sting','Piqûre','Sting',3,1,'+20 % aux dégâts répétés de baguette.'],
+ ['exalted','Exalté','Exalted',5,1,'+1 Intelligence tous les 2 niveaux de Flamme.'],
+ ['arcaneProlif','Prolifération arcanique','Arcane Proliferation',3,1,'Baguette : 30 % de chance de doubler les projectiles.'],
+ ['arcaneDeflect','Déviation arcanique','Arcane Deflection',1,3,'Parade réussie : +10 mana par rang.'],
+ ['thunder','Tonnerre','Thunder',2,3,'+10 % de dégâts de foudre par rang.'],
+ ['begone','Dégage !','Begone!',3,1,'Coup de poing magique qui repousse (30 mana).'],
+ ['waterAura','Aura d\'eau','Water Aura',1,3,'Aura de soin : 1 PV pour 2 points d\'Intelligence.'],
+ ['radiantAura','Aura radieuse','Radiant Aura',1,3,'Brûle les Déchus proches (feu × Intelligence).'],
+ ['unity','Unité','Unity',1,3,'Baguette : 2 % de chance de rendre 10 % du mana max.'],
+ ['eternalSpark','Étincelle éternelle','Eternal Spark',1,3,'Baguette : 15 % de chance de réparer 1 durabilité.'],
+ ['lifeEssences','Essences de vie','Life Essences',1,3,'+3 × Intelligence de santé max par rang.'],
+ ['shroudResistance','Résistance au Shroud','Shroud Resistance',1,3,'+5 % de résistance au Shroud par rang.'],
+ ['fireResistance','Résistance au feu','Fire Resistance',1,3,'+5 % de résistance au feu par rang.'],
+ ['iceResistance','Résistance à la glace','Ice Resistance',1,3,'+5 % de résistance à la glace par rang.'],
+ ['shockResistance','Résistance à la foudre','Shock Resistance',1,3,'+5 % de résistance à la foudre par rang.'],
+ ['righteousFire','Feu vertueux','Righteous Fire',2,3,'Soin : 20 % du soin en dégâts de feu aux Déchus proches.'],
+ ['divineSurge','Élan divin','Divine Surge',4,1,'Les sorts de soin peuvent faire des critiques.'],
+ ['sharedMisery','Misère partagée','Shared Misery',2,3,'Dégâts de Shroud subis : +15 % de résistance au Shroud au groupe.'],
+ ['boneToAsh','Os en cendres','Bone to Ash',1,3,'+5 % de dégâts contre les Creux par rang.'],
+ ['sleight','Tour de main','Sleight of Hand',1,3,'+30 % de dégâts à mains nues par rang.'],
+ ['manaCurrents','Courants de mana','Mana Currents',1,3,'+5 de régén. de mana de base par rang.'],
+ ['spellslinger','Lanceur de sorts','Spellslinger',1,3,'+5 % de dégâts aux bâtons par rang.'],
+ ['wandMastery','Maîtrise des baguettes','Wand Mastery',1,3,'+5 % de dégâts aux baguettes par rang.'],
+ ['wandSpec','Spécialisation baguette','Wand Specialization',3,1,'Débloque la capacité spéciale des baguettes.'],
+ ['wandEvasion','Esquive à la baguette','Wand Evasion Attack',4,1,'En esquivant : disque perçant, +50 % des dégâts (50 mana).',1],
+ ['aerialWand','Baguette aérienne','Aerial Wand Attack',3,1,'En saut : projectile de zone, +50 % des dégâts.',1],
+ ['totemMastery','Maîtrise des totems','Totem Mastery',2,3,'+1 totem invoqué au maximum par rang.',1],
+ ['advNecro','Nécromancie avancée','Advanced Necromancy',2,3,'+1 allié Creux invoqué au maximum par rang.',1],
+ ['blastCast','Frappe et sort','Blast and Cast',3,1,'Critique à la baguette : +50 % au prochain coup de bâton (10 s).',1]
+]);
+const SKI = {}; SK.forEach(s=>SKI[s.id]=s);
+const PIPS = [['str','Force','FOR','war',11],['con','Constitution','CON','war',11],['end','Endurance','END','rng',8],['dex','Dextérité','DEX','rng',7],['int','Intelligence','INT','mag',11],['spi','Esprit','ESP','mag',11]];
+const AREAS = [['core','Cœur','--core'],['war','Guerrier','--war'],['rng','Rôdeur','--rng'],['mag','Mage','--mag']];
+</script>
+<script>
+/* Tracé réel de l'arbre de compétences 1.0 — fichier GÉNÉRÉ par scripts/tree-from-pindrop.mjs : ne pas éditer à la main.
+   Source : https://pindrop.gg/enshrouded/skill-tree (bundle 2h987apxy9ikb.js), relevé le 2026-11-05.
+   Extrait par PinDrop des fichiers du jeu : Enshrouded Dedicated Server (Keen Games), Steam app 2278520, depot 2278521, manifest 3715394091293008757 (build 1267041 release_1.0).
+   costs of Wand Evasion Attack, Aerial Wand Attack and Whirlwind Crescendo updated for Patch #1 (scripts/enshrouded/apply-1011-skill-costs.py).
+   nodes : [identifiant du nœud dans le jeu (base 36), clé, x, y] ; clé = id de compétence (SK), '@str'… = nœud d'attribut +1,
+   '*' = départ (Étincelle, gratuit). Coordonnées du jeu, y vers le bas (comme PinDrop). links : liaisons non orientées (indices de nodes).
+   Nœuds d'attribut rangés, par attribut, du moins cher au plus cher d'accès depuis les départs, puis par identifiant : cet ordre sert d'index. */
+const TREE={build:"build 1267041 release_1.0",date:'2026-11-05',nodes:[
+["b9jdtu","*",4563,4153],
+["h16cyn","*",3433,4150],
+["mrsg9k","*",4413,4415],
+["s8fspu","*",4565,3849],
+["wmf7ip","*",4414,3587],
+["13o9e9e","*",3847,3434],
+["14t5w23","*",4153,3435],
+["18gioto","*",3435,3849],
+["1antsyv","*",4152,4567],
+["1b2s157","*",3584,3587],
+["1i4lkzh","*",3849,4565],
+["1qwprgz","*",3587,4417],
+["ml34if","@str",3240,3797],
+["utqucn","@str",3239,4204],
+["j06qca","@str",3161,4841],
+["1gd62en","@str",2701,4472],
+["1m76abp","@str",2640,4241],
+["18u6geg","@str",2640,3758],
+["1tu4p7b","@str",2737,5518],
+["1y3twab","@str",3164,5788],
+["1skigoj","@str",2383,5134],
+["evm0y8","@str",1713,4614],
+["35p3tb","@str",2312,5690],
+["27th6o","@con",3442,4557],
+["1rkw3ke","@con",3795,4765],
+["ipgty9","@con",2855,4307],
+["8qaa6k","@con",3102,5162],
+["an50g0","@con",2702,3527],
+["1f1pjpd","@con",3587,5540],
+["9y2o4y","@con",2323,3422],
+["axd60g","@con",3540,5715],
+["1ob651f","@con",2492,5270],
+["1aeg1z2","@con",3827,5969],
+["1qjlln9","@con",2210,4835],
+["hmo27n","@end",3444,3442],
+["rlvqsi","@end",3797,3237],
+["hud4q8","@end",3025,3026],
+["136hjok","@end",4837,3165],
+["169ma3d","@end",3644,2669],
+["3xe09e","@end",3542,2288],
+["1auaxjn","@end",5397,2605],
+["1chqkna","@end",2324,2327],
+["lpzki3","@dex",4556,3442],
+["11qot5x","@dex",4204,3238],
+["18okx3b","@dex",5100,2901],
+["nvsfkg","@dex",2602,2604],
+["180qgme","@dex",3458,2516],
+["10y05bu","@dex",3385,1705],
+["1oe64l7","@dex",4804,1875],
+["101011r","@int",4558,4557],
+["16sd25b","@int",4205,4761],
+["7tyb4s","@int",4203,5166],
+["13cdgsq","@int",5232,4330],
+["u3ewct","@int",5258,5257],
+["a3gm4i","@int",5518,5264],
+["beub9v","@int",5964,3826],
+["110miev","@int",5717,4460],
+["fj7jpn","@int",5670,3394],
+["1rv6bfd","@int",4918,5970],
+["1lm4k0r","@int",6385,4638],
+["itley","@spi",4762,4203],
+["1th8yhf","@spi",4762,3796],
+["b7lnsa","@spi",5361,3763],
+["oal925","@spi",4903,4904],
+["1wwtpca","@spi",5296,3527],
+["9vl5y4","@spi",5750,3692],
+["q9awwi","@spi",5282,5529],
+["14rs954","@spi",5610,4752],
+["s8qir2","@spi",5799,5263],
+["14r1h78","@spi",5788,3166],
+["1xv3exe","@spi",6183,4586],
+["19y36em","wellRested",4384,3897],
+["da0c3h","mason",3616,4103],
+["z089j0","lumberjack",3897,3618],
+["1ewibyn","miner",3833,3902],
+["mdpkqa","qualityGear",3719,3717],
+["1hb1ez5","merciless",3718,4277],
+["1yzh0sg","doubleJump",4276,3725],
+["109wojd","powerParry",3895,4383],
+["4tr9yh","innerFires",4188,3948],
+["1g6zvs4","snap",3949,4193],
+["1ogbtgq","saviour",4279,4278],
+["jsgcxy","opportunity",4104,4385],
+["hipz1","giantHook",4378,4101],
+["1h0ur88","groundHook",4134,4136],
+["1fph9t1","fisherman",4100,3621],
+["1xdxwxg","pickSpec",3809,4049],
+["1a65x9z","fellSpec",3949,3811],
+["4s7hws","prospector",3615,3900],
+["izu0gt","airborneArch",4002,3998],
+["rl16a8","evasionAttack",3995,5178],
+["1ynrmek","barbarian",1960,4747],
+["16ja5lo","warriorsPath",3301,4697],
+["1jzmk3w","shinyPlates",3526,5297],
+["gxeq9v","heavyPlates",3744,4953],
+["1fy9dg8","slasher",2823,4895],
+["19i51ta","brute",2283,4627],
+["1ygy0le","heavyHanded",2974,4593],
+["13qb3xb","breach",2290,4987],
+["1of9yqe","veteran",3405,5028],
+["3cn6s8","crashForce",2199,3517],
+["sw2nvg","tower",3327,5431],
+["1s26jcz","warden",3860,5581],
+["1n53avj","absorb",3841,5774],
+["t254n4","bloodRage",2094,4510],
+["3n3tqn","soulLeech",3250,5609],
+["1sronk4","battleHeal",2735,5265],
+["1qxe01l","relentless",2423,4421],
+["15mtoaz","crashDown",2473,3593],
+["10g7bqz","bloodWarrior",2035,3801],
+["10moz14","purification",3754,5359],
+["ylh8gl","vigDeflect",2259,3661],
+["1ut6fbp","martyr",3659,6167],
+["12srlh1","nemesis",3213,6051],
+["2sbu3i","shockwave",2120,5087],
+["15hbit0","swiftBlades",2477,5521],
+["1juwg75","heavyHitter",1904,4567],
+["1j6uczh","bash",2459,4887],
+["1ktbgnc","earthAura",3388,6278],
+["1injhfp","splashDash",1703,3382],
+["c1p2qd","thickSkin",3483,5930],
+["eyqc2w","finesse",2977,3406],
+["1tmjg6h","steadfast",2813,4000],
+["1gfx53a","upSlash",2201,3184],
+["1565ivj","titanEdge",2208,4317],
+["1ks86mu","whirlwind",1859,4374],
+["glp9jc","wetDog",3047,3744],
+["1uji3fo","soakedDog",2762,3668],
+["1yitmfo","twoHSpec",2569,4383],
+["1c0vzat","oneHSpec",2956,5043],
+["1vbuqpq","athlete",1955,3452],
+["jes7bh","barbariansPath",3047,4256],
+["a12wr7","sneakAttack",4865,2911],
+["86k6y9","airborne",4697,3301],
+["e66ttu","marksman",4256,3047],
+["t9kkhc","calmSpirit",3259,1963],
+["3ugj1b","snakeEater",3793,2834],
+["elppc3","runner",3301,3305],
+["3qkrnh","counterBattery",4209,2632],
+["11n2ojy","vukahLang",3624,1861],
+["1f33rnw","updraft",5024,3404],
+["ta0kh0","beastMaster",2998,1854],
+["tfq3h0","goodMetab",2920,2714],
+["jeglwy","vukahCult",3764,1638],
+["8mcwu2","ranger",4563,1903],
+["n1n5bg","mithridatist",3746,3050],
+["1k2v1x8","bounty",3725,2445],
+["nuyocx","sniper",4497,2709],
+["19lt0bv","shrapnel",5042,1763],
+["8s26gi","echoing",4681,1660],
+["8zlkgm","blessedArrows",4676,2144],
+["15gb7w0","thrust",5609,2391],
+["lowr1t","backstabMastery",4892,2699],
+["vf78se","sweetTooth",2607,2339],
+["2a31ld","vitalitySurge",4610,2330],
+["xzgp8l","eaglesBane",4343,2054],
+["4uxo7j","silentStride",4591,2975],
+["piamng","skillShot",4308,2253],
+["k7nxux","swiftshot",2710,2920],
+["1whhxd2","arachnoid",2940,3117],
+["185nxd5","wanderlust",3114,2941],
+["1kde2mp","beeSting",3988,2078],
+["1gkvg5u","multiShot",4354,1758],
+["glpsf9","shellShock",5621,2869],
+["hs16sa","enduranceFlame",3438,1905],
+["kvxw2u","gracefulStride",5817,2182],
+["hzfh6u","eagleEye",4000,2815],
+["2d1au3","dessert",2463,2459],
+["1em9mqe","msSpread",4215,1535],
+["1e9ybhf","msTrigger",4582,1633],
+["cqjrfc","daggerMastery",5295,2334],
+["1d35nri","sliceDice",5137,2388],
+["wu8i2f","venomBlades",5746,2400],
+["16cxiqp","venomMastery",5656,2692],
+["1ew0ju0","quickReflex",5075,3130],
+["1rch5vz","kick",3300,2789],
+["1dl5h9b","lastMeal",2479,2190],
+["1gkijf6","exposeWeak",5599,2250],
+["1g1nwpv","stratManeuver",2058,2649],
+["q8v9m6","cutthroat",4705,2787],
+["ztvqfo","rebound",2887,2885],
+["16qgqx5","cullHerd",3358,2239],
+["6sqpfi","primalForce",3673,2150],
+["i1hyk4","vileConcoction",5881,2916],
+["1dpfv28","fatalPrecision",4938,2376],
+["q0u520","bowSpec",4487,2184],
+["1eiyl53","daggerSpec",5296,3095],
+["hw8hbp","veiledVigor",5248,2752],
+["1mf44h6","puncture",4410,2473],
+["5par6k","barrage",4357,2664],
+["ml76k0","survivalInst",3408,2973],
+["1bl0b35","healingRevive",5366,5142],
+["zltk3l","watersOfLife",5396,5396],
+["1gdh4r8","mageApprentice",4953,4255],
+["tey402","arsonist",5482,4541],
+["1yfwowq","darkArts",5231,4628],
+["1os1eqn","iceman",5555,4274],
+["bsfaqh","frost",5942,4342],
+["zk6n1x","quickCharge",5566,3790],
+["1vrzb19","blinkAttack",4618,5235],
+["1315vv2","emergencyBlink",4761,5156],
+["1hmcbp1","counterstrike",5184,3998],
+["14p4kzj","arcaneConc",5714,3539],
+["gqmdnu","wizard",5910,4512],
+["mohczi","chainHit",6243,4754],
+["1xlinps","massDestr",6071,4903],
+["1mcpl0f","bloodMagic",6135,3225],
+["15cihy1","necromancer",5166,4739],
+["1byygq7","terror",6238,3605],
+["1ek8p7b","bloodletting",6104,3436],
+["1hgsn84","lifeBurst",4152,5770],
+["1hmu8dw","blink",4587,5022],
+["pyd2q9","shroudMitigation",5020,5457],
+["1bkypfb","healer",4697,4696],
+["1s0azsy","sting",4340,5743],
+["1q8iok1","exalted",4562,6099],
+["c7q10k","arcaneProlif",4753,5616],
+["i9vxre","arcaneDeflect",4406,5109],
+["1qwc5ez","thunder",6321,4469],
+["1kdlcfr","begone",5524,3589],
+["ng4q58","waterAura",5016,5210],
+["tzr2f7","radiantAura",5791,4834],
+["1siolwc","unity",4357,5336],
+["94s27p","eternalSpark",4255,4951],
+["wr8oai","lifeEssences",5212,5016],
+["1hl02q5","shroudResistance",5134,5617],
+["1iuklxw","fireResistance",5671,4608],
+["10ec75t","iceResistance",5772,4159],
+["kwbal8","shockResistance",6484,4331],
+["i7jz5k","righteousFire",5805,5531],
+["wilj5z","divineSurge",5525,5532],
+["1f5bfp0","sharedMisery",5246,5780],
+["na1jpb","boneToAsh",5027,4594],
+["2vxs21","sleight",5334,3642],
+["1aqtdn2","manaCurrents",4953,3744],
+["6qzqmz","spellslinger",5906,3488],
+["eyx7bo","wandMastery",4579,5678],
+["k0p2ws","wandSpec",4546,5504],
+["17jfx5l","wandEvasion",4281,5566],
+["zal1ri","aerialWand",4512,5912],
+["8c6srr","totemMastery",5526,4409],
+["tguby2","advNecro",5359,4787],
+["12zegsf","blastCast",5456,3392]
+],links:[
+[0,60],[0,83],[1,13],[1,72],[2,49],[2,81],[3,61],[3,71],[4,42],[4,77],[5,35],[5,73],
+[6,43],[6,85],[7,12],[8,50],[9,34],[10,24],[10,78],[11,23],[11,76],[12,126],[13,131],[14,26],
+[14,92],[14,95],[15,25],[15,96],[15,128],[16,25],[16,124],[16,128],[17,108],[17,111],[17,122],[17,126],
+[18,19],[18,26],[18,106],[18,115],[19,105],[19,113],[19,120],[20,31],[20,114],[20,117],[21,91],[21,125],
+[22,115],[23,92],[24,94],[25,131],[27,29],[27,108],[27,121],[27,126],[28,30],[28,93],[28,101],[28,102],
+[28,110],[29,123],[29,130],[30,103],[30,105],[31,95],[31,106],[31,115],[32,103],[32,112],[32,120],[33,91],
+[33,96],[33,114],[33,117],[34,137],[35,145],[36,137],[36,142],[36,158],[37,44],[37,132],[37,133],[37,174],
+[38,39],[38,46],[38,136],[38,145],[38,146],[38,175],[39,135],[39,139],[39,181],[39,182],[40,151],[40,163],
+[40,171],[40,172],[40,177],[40,187],[41,167],[41,178],[42,133],[43,134],[44,152],[44,186],[44,187],[45,142],
+[45,158],[45,167],[45,178],[45,180],[47,135],[47,139],[47,164],[48,144],[48,148],[49,213],[50,223],[51,222],
+[51,223],[52,193],[52,194],[52,196],[53,192],[53,220],[54,191],[54,230],[55,65],[55,208],[55,235],[56,194],
+[56,203],[57,69],[57,219],[57,242],[58,215],[58,231],[59,70],[59,204],[60,193],[61,234],[62,198],[62,234],
+[63,213],[63,220],[63,224],[64,234],[64,242],[65,198],[65,219],[66,220],[66,230],[67,194],[67,221],[67,226],
+[68,221],[68,229],[69,163],[69,206],[69,235],[70,203],[70,218],[71,79],[72,86],[72,88],[73,75],[73,87],
+[74,75],[74,88],[74,89],[75,88],[76,78],[76,80],[77,89],[78,82],[79,89],[80,82],[82,84],[83,84],
+[86,89],[87,89],[90,94],[90,223],[91,96],[91,104],[91,116],[92,97],[92,99],[93,94],[94,99],[94,110],
+[96,107],[97,131],[98,114],[98,117],[100,108],[101,105],[102,103],[103,210],[104,107],[104,125],[106,129],[107,124],
+[109,111],[109,119],[111,130],[112,118],[113,118],[116,125],[118,120],[119,123],[119,178],[121,126],[121,137],[122,126],
+[122,131],[124,125],[126,127],[132,152],[132,156],[132,179],[133,140],[133,156],[134,138],[134,147],[134,156],[134,166],
+[134,189],[135,141],[136,145],[137,159],[137,160],[137,175],[137,190],[138,157],[139,143],[140,234],[144,150],[144,155],
+[144,162],[144,185],[145,166],[145,190],[147,154],[148,149],[150,184],[153,167],[154,184],[154,185],[155,161],[157,161],
+[157,185],[162,168],[163,183],[165,172],[165,177],[167,176],[168,169],[170,177],[171,184],[172,173],[174,186],[185,188],
+[191,224],[193,201],[193,232],[194,240],[195,232],[196,197],[196,227],[196,240],[197,203],[197,227],[199,211],[200,211],
+[201,234],[202,235],[203,221],[204,205],[206,209],[206,235],[207,232],[207,241],[208,209],[208,235],[209,235],[210,214],
+[210,238],[210,239],[211,213],[211,223],[212,220],[212,225],[213,232],[214,238],[214,239],[215,239],[216,236],[216,237],
+[216,239],[217,222],[217,223],[218,228],[219,233],[221,226],[222,237],[222,238],[225,231],[229,230],[236,237],[236,239]
+]};
+</script>
+<script>
+/* =========================== CALCUL =========================== */
+/* Build : arbre (sk rangs, pn nœuds d'attribut acquis, pip comptes), réglages (niveau, exploration, Flamme), gemmes, objectifs (obj : [principal, secondaire, soutien]),
+   ad : vos ajouts avec objectif (2.3.0 : sk, pn vos nœuds ; up vos rangs au-dessus d'un nœud imposé ; le combo est recalculé avec eux, 06-objectifs.js).
+   gear et upg : champs INERTES (2.0.0) — l'équipement n'est plus pris en compte, mais un ancien lien qui en porte le garde, pour le réécrire à l'identique (03-share.js). */
+function blankBuild(name){return {name:name||'Nouveau build',gear:{},gem:{},sk:{},pip:{},pn:{},lvl:50,exp:114,flame:11,upg:5,tv:1,obj:[],ad:{sk:{},pn:{},up:{}}}} // tv : build fait sur le tracé réel (1.9.0+)
+function spentPoints(b){let t=0;for(const id in b.sk){const s=SKI[id];if(s)t+=s.cost*Math.min(b.sk[id],s.max)}for(const k in b.pip)t+=b.pip[k]||0;return t}
+function budget(b){return 2*(Math.max(1,Math.min(50,b.lvl))-1)+Math.max(0,Math.min(114,b.exp))}
+function levelNeeded(b){const need=spentPoints(b)-Math.max(0,Math.min(114,b.exp));return need<=0?1:Math.ceil(need/2)+1}
+/* Nœuds « +1 attribut tous les 2 niveaux de Flamme » (fichiers du jeu) */
+const FLAME_NODES=[['barbarian','str'],['thickSkin','con'],['enduranceFlame','end'],['gracefulStride','dex'],['exalted','int'],['arcaneConc','spi']];
+/* Attributs (nœuds + Flamme + Rôdeur), santé, mana et vigueur de base : sans équipement ni gemme (formules : docs/FORMULAS.md) */
+function compute(b){
+  const R=id=>Math.min(b.sk[id]||0,(SKI[id]||{max:0}).max);
+  const half=Math.floor(Math.max(1,Math.min(11,b.flame))/2),A={};
+  for(const [k] of PIPS)A[k]=b.pip[k]||0;
+  for(const [id,k] of FLAME_NODES)if(R(id))A[k]+=half;
+  A.end+=R('ranger');A.dex+=R('ranger');
+  return {attr:A,R,hp:100+50*A.con+3*A.str*R('athlete')+3*A.dex*R('veiledVigor')+3*A.int*R('lifeEssences'),mana:100+20*A.spi,sta:100+10*A.end,
+    // 2.5.0 : critique magique, bonus des compétences seuls (ni base ni équipement) ; Précision fatale sans restriction d'arme (hypothèse : comptée aussi pour les sorts)
+    crit:{wand:2*R('wizard')+R('fatalPrecision'),spell:R('fatalPrecision'),dmg:5*R('fatalPrecision')}};
+}
+</script>
+<script>
+/* Partage : code compact, uniquement lettres, chiffres et tirets.
+   TABLES FIGÉES : la place de chaque objet, gemme, compétence et nœud y est définitive (c'est elle que les codes enregistrent).
+   Ne jamais réordonner ni supprimer ; ajouter EN FIN seulement (tests/share.test.js vérifie inclusion, doublons et empreintes).
+   items, gems : ordre de la 1.8.0 (b1, b2, b3) · sk : ordre de SK en 1.8.0 (b1, b2) · b1 : attributs et maxima du format b1 ·
+   b2 : attribut de chacun des 59 nœuds de l'ancien tracé thématique (c CON, s FOR, d DEX, e END, i INT, p ESP) ·
+   at, nd : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel (b3) ·
+   slots : emplacements d'équipement (2.0.0 : l'équipement n'est plus pris en compte, mais celui d'un ancien lien est relu et réécrit tel quel) ·
+   goals : objectifs (06-objectifs.js), segment -o du b3 (2.0.0) ; objectifs de soutien SUPS ajoutés en fin (2.1.0) ; hybrides, Exploration et Récolte en fin (2.4.0) ; Vol de vie en fin (2.6.0). */
+const FZ={
+ items:`
+  emb_h emb_c emb_g emb_l emb_f cre_h cre_c cre_g cre_l cre_f ash_h ash_c ash_g ash_l ash_f sky_h sky_c sky_g sky_l sky_f fla_h fla_c fla_g fla_l fla_f
+  lif_h lif_c lif_g lif_l lif_f ven_h ven_c ven_g ven_l ven_f rg_am rg_as rg_ah rg_um rg_us rg_uh rg_anc rg_mf rg_eth rg_ths rg_heir rg_frost rg_cmd
+  rg_gem w_aurora w_wailing w_fang w_apex w_dragsw w_graven w_skull w_lfaxe w_jez w_dimh w_meat w_flesh w_adorned w_oath w_horn w_lfdag w_valor w_gotn
+  w_spiked w_darkwood w_boreal w_thunderb w_warhero w_ram w_aero w_goat w_rot w_chief w_star w_sunh w_drak w_tomb w_rattle w_temple w_talion w_winged
+  w_ignited w_bloodflow w_ancdrak w_totem w_mythic w_polymath w_moor w_violet w_storm w_oracle w_reeds w_guidance w_apprentice w_frostw w_twisting
+  w_deceiving w_mirage`.trim().split(/\s+/),
+ gems:`
+  g_bleed g_burn g_punct g_skulls g_retal g_swift g_toxic g_fract g_embers g_lnecro g_overp g_storm g_agil g_mania g_corrupt g_reap g_light g_blust
+  g_necro g_meteor g_cold g_curr g_gnecro g_aero g_lyc g_cleanse g_destiny g_armor g_hyper`.trim().split(/\s+/),
+ sk:`
+  wellRested mason lumberjack miner qualityGear merciless doubleJump powerParry innerFires snap saviour opportunity giantHook groundHook fisherman
+  pickSpec fellSpec prospector airborneArch evasionAttack barbarian warriorsPath shinyPlates heavyPlates slasher brute heavyHanded breach veteran
+  crashForce tower warden absorb bloodRage soulLeech battleHeal relentless crashDown bloodWarrior purification vigDeflect martyr nemesis shockwave
+  swiftBlades heavyHitter bash earthAura splashDash thickSkin finesse steadfast upSlash titanEdge whirlwind wetDog soakedDog twoHSpec oneHSpec athlete
+  barbariansPath sneakAttack airborne marksman calmSpirit snakeEater runner counterBattery vukahLang updraft beastMaster goodMetab vukahCult ranger
+  mithridatist bounty sniper shrapnel echoing blessedArrows thrust backstabMastery sweetTooth vitalitySurge eaglesBane silentStride skillShot swiftshot
+  arachnoid wanderlust beeSting multiShot shellShock enduranceFlame gracefulStride eagleEye dessert msSpread msTrigger daggerMastery sliceDice
+  venomBlades venomMastery quickReflex kick lastMeal exposeWeak stratManeuver cutthroat rebound cullHerd primalForce vileConcoction fatalPrecision
+  bowSpec daggerSpec veiledVigor puncture barrage survivalInst healingRevive watersOfLife mageApprentice arsonist darkArts iceman frost quickCharge
+  blinkAttack emergencyBlink counterstrike arcaneConc wizard chainHit massDestr bloodMagic necromancer terror bloodletting lifeBurst blink
+  shroudMitigation healer sting exalted arcaneProlif arcaneDeflect thunder begone waterAura radiantAura unity eternalSpark lifeEssences shroudResistance
+  fireResistance iceResistance shockResistance righteousFire divineSurge sharedMisery boneToAsh sleight manaCurrents spellslinger wandMastery wandSpec
+  wandEvasion aerialWand totemMastery advNecro blastCast`.trim().split(/\s+/),
+ slots:'head chest hands legs feet w1 w2 r1 r2'.split(' '),
+ goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana battlemage elemArcher swordBow explore harvest lifesteal lifestealFull'.split(' '),
+ b1:[['str',11],['con',11],['end',8],['dex',7],['int',11],['spi',11]],
+ b2:'ccccccssssssssssscccccdddddddeeeeeeeeiiiiiiiiiiippppppppppp',
+ at:`
+  ml34if utqucn j06qca 1gd62en 1m76abp 18u6geg 1tu4p7b 1y3twab 1skigoj evm0y8 35p3tb 27th6o 1rkw3ke ipgty9 8qaa6k an50g0 1f1pjpd 9y2o4y axd60g 1ob651f
+  1aeg1z2 1qjlln9 hmo27n rlvqsi hud4q8 136hjok 169ma3d 3xe09e 1auaxjn 1chqkna lpzki3 11qot5x 18okx3b nvsfkg 180qgme 10y05bu 1oe64l7 101011r 16sd25b
+  7tyb4s 13cdgsq u3ewct a3gm4i beub9v 110miev fj7jpn 1rv6bfd 1lm4k0r itley 1th8yhf b7lnsa oal925 1wwtpca 9vl5y4 q9awwi 14rs954 s8qir2 14r1h78 1xv3exe`.trim().split(/\s+/),
+ nd:`
+  19y36em da0c3h z089j0 1ewibyn mdpkqa 1hb1ez5 1yzh0sg 109wojd 4tr9yh 1g6zvs4 1ogbtgq jsgcxy hipz1 1h0ur88 1fph9t1 1xdxwxg 1a65x9z 4s7hws izu0gt rl16a8
+  1ynrmek 16ja5lo 1jzmk3w gxeq9v 1fy9dg8 19i51ta 1ygy0le 13qb3xb 1of9yqe 3cn6s8 sw2nvg 1s26jcz 1n53avj t254n4 3n3tqn 1sronk4 1qxe01l 15mtoaz 10g7bqz
+  10moz14 ylh8gl 1ut6fbp 12srlh1 2sbu3i 15hbit0 1juwg75 1j6uczh 1ktbgnc 1injhfp c1p2qd eyqc2w 1tmjg6h 1gfx53a 1565ivj 1ks86mu glp9jc 1uji3fo 1yitmfo
+  1c0vzat 1vbuqpq jes7bh a12wr7 86k6y9 e66ttu t9kkhc 3ugj1b elppc3 3qkrnh 11n2ojy 1f33rnw ta0kh0 tfq3h0 jeglwy 8mcwu2 n1n5bg 1k2v1x8 nuyocx 19lt0bv
+  8s26gi 8zlkgm 15gb7w0 lowr1t vf78se 2a31ld xzgp8l 4uxo7j piamng k7nxux 1whhxd2 185nxd5 1kde2mp 1gkvg5u glpsf9 hs16sa kvxw2u hzfh6u 2d1au3 1em9mqe
+  1e9ybhf cqjrfc 1d35nri wu8i2f 16cxiqp 1ew0ju0 1rch5vz 1dl5h9b 1gkijf6 1g1nwpv q8v9m6 ztvqfo 16qgqx5 6sqpfi i1hyk4 1dpfv28 q0u520 1eiyl53 hw8hbp
+  1mf44h6 5par6k ml76k0 1bl0b35 zltk3l 1gdh4r8 tey402 1yfwowq 1os1eqn bsfaqh zk6n1x 1vrzb19 1315vv2 1hmcbp1 14p4kzj gqmdnu mohczi 1xlinps 1mcpl0f
+  15cihy1 1byygq7 1ek8p7b 1hgsn84 1hmu8dw pyd2q9 1bkypfb 1s0azsy 1q8iok1 c7q10k i9vxre 1qwc5ez 1kdlcfr ng4q58 tzr2f7 1siolwc 94s27p wr8oai 1hl02q5
+  1iuklxw 10ec75t kwbal8 i7jz5k wilj5z 1f5bfp0 na1jpb 2vxs21 1aqtdn2 6qzqmz eyx7bo k0p2ws 17jfx5l zal1ri 8c6srr tguby2 12zegsf`.trim().split(/\s+/)
+};
+const B2A={c:'con',s:'str',d:'dex',e:'end',i:'int',p:'spi'};
+const b36=n=>n.toString(36).padStart(2,'0');
+const big36=s=>{let v=0n;for(const ch of s)v=v*36n+BigInt(parseInt(ch,36));return v};
+const bitsOf=v=>{const o=[];for(let i=0;v>0n;i++,v>>=1n)if(v&1n)o.push(i);return o};
+/* b3-<en-tête>-<équipement>-<masque des nœuds d'attribut>-<masque des compétences>-<rangs : 1 chiffre par compétence possédée, ou 0>[-g<gemmes>][-o<objectifs>]-<contrôle>
+   objectifs (2.0.0) : 2 caractères par objectif (principal, secondaire ; zz = aucun), places dans FZ.goals ; absent = arbre libre ;
+   2.1.0 : 2 caractères de plus pour le soutien, seulement s'il y en a un (sans soutien, le code reste celui de la 2.0.0)
+   ajouts (2.3.0) : -a<masque>-<rangs>, seulement avec objectifs et s'il y en a (sans ajout, le code reste celui de la 2.2.0) : un bit par nœud possédé,
+   dans l'ordre du code (nœuds d'attribut, puis compétences), et 1 caractère par compétence marquée : votre nœud au rang r → r ; vos rangs au-dessus
+   d'un nœud imposé, jusqu'au rang r → r + 9 (a, b, c…) ; « 0 » si aucune compétence n'est marquée
+   contrôle = 2 caractères (FNV-1a du reste, modulo 36²) : un lien tronqué ou abîmé est refusé au lieu de donner un autre build */
+function b3sum(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}return b36(h%1296)}
+function encode(b){
+  const head=[b.lvl,b.exp,b.flame,b.upg].map(b36).join('');
+  const it=FZ.slots.map(sl=>{const i=FZ.items.indexOf(b.gear[sl]);return i<0?'zz':b36(i)}).join('');
+  const ob=(b.obj||[])[0]&&FZ.goals.includes(b.obj[0])?(FZ.goals.includes(b.obj[2])?[0,1,2]:[0,1]).map(i=>{const k=FZ.goals.indexOf(b.obj[i]);return k<0?'zz':b36(k)}).join(''):'';
+  const A=ob&&b.ad?b.ad:null;let at=0n,nd=0n,am=0n,q=0;const rk=[],ar=[];
+  FZ.at.forEach((g,i)=>{const n=TOPO.byGid[g];if(n&&b.pn&&b.pn[n.id]){at|=1n<<BigInt(i);if(A&&A.pn&&A.pn[n.id])am|=1n<<BigInt(q);q++}});
+  FZ.nd.forEach((g,i)=>{const n=TOPO.byGid[g];const v=n&&n.kind==='skill'?Math.min(b.sk[n.id]||0,n.sk.max):0;if(v>0){nd|=1n<<BigInt(i);rk.push(v.toString(36));
+    const a=A&&A.sk?Math.min(A.sk[n.id]||0,v):0,u=A&&A.up?Math.min(A.up[n.id]||0,v):0;if(a>0||u>0){am|=1n<<BigInt(q);ar.push((a>0?a:u+9).toString(36))}q++}});
+  const gm=['w1','w2'].map(sl=>{const i=FZ.gems.indexOf((b.gem||{})[sl]);return i<0?'zz':b36(i)}).join('');
+  const s='b3-'+head+'-'+it+'-'+at.toString(36)+'-'+nd.toString(36)+'-'+(rk.join('')||'0')+(gm!=='zzzz'?'-g'+gm:'')+(ob?'-o'+ob+(am?'-a'+am.toString(36)+'-'+(ar.join('')||'0'):''):'');return s+'-'+b3sum(s);
+}
+/* Code illisible, tronqué ou corrompu → null (jamais d'exception : la page doit toujours démarrer) */
+function decode(code){try{const b=decodeCode(code);return b&&fitGoals(b)}catch(e){return null}} // fitGoals : 06-objectifs.js
+function decodeCode(code){
+  const s=String(code).trim().replace(/^#/,'').toLowerCase();if(s.length>3000)return null;let m;
+  if((m=s.match(/^b3-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?(?:-o([0-9a-z]{4}(?:[0-9a-z]{2})?)(?:-a([0-9a-z]+)-([0-9a-z]+))?)?-([0-9a-z]{2})$/))){
+    if(b3sum(s.slice(0,-3))!==m[10])return null;
+    const b=baseOf(m[1],m[2],m[6]);let gone=0;const seq=[]; // seq : nœuds possédés dans l'ordre du code (segment -a), null si disparu du tracé
+    const pb=bitsOf(big36(m[3]));for(const i of pb){const n=TOPO.byGid[FZ.at[i]],ok=n&&n.kind==='pip';seq.push(ok?n:null);if(ok)b.pn[n.id]=1;else gone++}
+    // un chiffre de rang par bit posé, même hors table (code d'une version plus récente) : un écart signale un lien tronqué
+    const bits=bitsOf(big36(m[4])),rk=m[5];if(bits.length?rk.length!==bits.length:rk!=='0')return null;
+    for(let k=0;k<bits.length;k++){const v=parseInt(rk[k],36);if(!v)return null;const n=TOPO.byGid[FZ.nd[bits[k]]],ok=n&&n.kind==='skill';seq.push(ok?n:null);if(ok)b.sk[n.id]=Math.min(v,n.sk.max);else gone++}
+    if(m[7]){if(m[7].startsWith('zz')||m[7].endsWith('zz')&&m[7].length===6)return null;b.obj=m[7].match(/../g).map(x=>x==='zz'?null:FZ.goals[parseInt(x,36)]||'?'+x)} // ?xx : objectif inconnu (version plus récente), signalé par fitGoals
+    // vos ajouts (2.3.0) ; sans segment -a, fitGoals les déduit de l'arbre (lien d'avant la 2.3.0, ou sans ajout)
+    // forme canonique seulement (masque sans zéro en tête, rangs dans l'arbre) : tout autre segment est refusé comme un lien abîmé
+    delete b.ad;if(m[8]){if(m[8][0]==='0')return null;const am=bitsOf(big36(m[8])),ms=am.filter(i=>i>=pb.length),ar=m[9];if(am.some(i=>i>=seq.length)||(ms.length?ar.length!==ms.length:ar!=='0'))return null;
+      b.ad={sk:{},pn:{},up:{}};let r=0;for(const i of am){const n=seq[i];if(i<pb.length){if(n)b.ad.pn[n.id]=1;continue}
+        const v=parseInt(ar[r++],36),w=v>9?v-9:v;if(!w)return null;if(n){if(w>(b.sk[n.id]||0))return null;(v>9?b.ad.up:b.ad.sk)[n.id]=w}}}
+    syncPips(b);const R=reach(b);
+    // tracé régénéré depuis (nœud disparu ou liaison changée) : migrer et le dire, sinon décodage exact
+    if(!gone&&!TOPO.N.some(n=>owned(b,n)&&!R.has(n)))return normalize(b);
+    migrate(b,'b3');b._mig.gone=gone;return b}
+  // b1 et b2 : codes d'avant le tracé réel → comptes par attribut, puis migration (normalize relie au tracé réel)
+  if(!(m=s.match(/^(b[12])-([0-9a-z]{8})-([0-9a-z]{18})-([0-9a-z]+)-([0-9a-z]+)(?:-g([0-9a-z]{4}))?$/)))return null;
+  const b=baseOf(m[2],m[3],m[6]);delete b.pn;
+  if(m[1]==='b2'){for(const i of bitsOf(big36(m[4]))){const a=B2A[FZ.b2[i]];if(a)b.pip[a]=(b.pip[a]||0)+1}}
+  else{if(m[4].length!==6)return null;m[4].split('').forEach((c,i)=>{const v=parseInt(c,36);if(v)b.pip[FZ.b1[i][0]]=Math.min(v,FZ.b1[i][1])})}
+  m[5].split('').forEach((c,i)=>{const v=parseInt(c,36),k=SKI[FZ.sk[i]];if(v&&k)b.sk[k.id]=Math.min(v,k.max)});
+  return migrate(b,m[1]);
+}
+function baseOf(h,it,gm){const b=blankBuild('Build partagé');const v=h.match(/../g).map(x=>parseInt(x,36));
+  b.lvl=Math.max(1,Math.min(50,v[0]));b.exp=Math.max(0,Math.min(114,v[1]));b.flame=Math.max(1,Math.min(11,v[2]));b.upg=Math.max(0,Math.min(5,v[3]));
+  it.match(/../g).forEach((x,i)=>{if(x!=='zz'){const id=FZ.items[parseInt(x,36)];if(id)b.gear[FZ.slots[i]]=id}}); // inerte : relu pour être réécrit à l'identique
+  if(gm)gm.match(/../g).forEach((x,i)=>{if(x!=='zz'){const id=FZ.gems[parseInt(x,36)];if(GEMI[id])b.gem[['w1','w2'][i]]=id}});
+  return b}
+</script>
+<script>
+/* Arbre : tracé réel du jeu 1.0 (TREE, 01-tree-data.js) — 12 départs (Étincelles, gratuits), 59 nœuds d'attribut +1, 172 compétences.
+   La Flamme est un nœud LOGIQUE : source du parcours, reliée aux 12 départs, jamais dessinée (un vrai nœud, Architecte aérien, occupe le centre). */
+const TREE_SCALE=.25;
+const TOPO=(()=>{
+  const N=[],E=[],byId={},byGid={},per={};const AT={'@str':'str','@con':'con','@end':'end','@dex':'dex','@int':'int','@spi':'spi'};
+  const roots=TREE.nodes.filter(n=>n[1]==='*');const cx=roots.reduce((a,n)=>a+n[2],0)/roots.length,cy=roots.reduce((a,n)=>a+n[3],0)/roots.length;
+  function node(n){n.nb=new Set();n.vx=0;n.vy=0;N.push(n);byId[n.id]=n;if(n.gid)byGid[n.gid]=n;return n}
+  const core=node({id:'hub:core',kind:'hub',area:'core',r:0,x:0,y:0,ax:0,ay:0});
+  const list=TREE.nodes.map(([gid,key,gx,gy])=>{const x=(gx-cx)*TREE_SCALE,y=(gy-cy)*TREE_SCALE,p={gid,x,y,ax:x,ay:y};
+    if(key==='*')return node({...p,id:'start:'+gid,kind:'start',area:'core',r:5.5});
+    const attr=AT[key];if(attr)return node({...p,id:'pip:'+gid,kind:'pip',attr,idx:(per[attr]=(per[attr]??-1)+1),area:PIPS.find(q=>q[0]===attr)[3],r:3.4});
+    const s=SKI[key];return node({...p,id:s.id,kind:'skill',sk:s,area:s.area,r:s.max>1?6:5+Math.min(4,s.cost)/1.6})});
+  for(const [i,j] of TREE.links){const a=list[i],b=list[j];E.push([a,b,Math.hypot(a.x-b.x,a.y-b.y)]);a.nb.add(b);b.nb.add(a)}
+  for(const n of N)if(n.kind==='start'){core.nb.add(n);n.nb.add(core)} // liaisons logiques, hors de E (non dessinées)
+  return {N,E,byId,byGid,core,pips:N.filter(n=>n.kind==='pip')};
+})();
+
+/* Règle de liaison : un nœud ne s'achète que s'il touche un départ ou un nœud acquis relié à un départ */
+function syncPips(b){const c={};for(const id in b.pn){const n=TOPO.byId[id];if(b.pn[id]&&n&&n.kind==='pip')c[n.attr]=(c[n.attr]||0)+1;else delete b.pn[id]}b.pip=c;return b}
+function owned(b,n){if(n.kind==='hub')return true;if(n.kind==='skill')return (b.sk[n.id]||0)>0;if(n.kind==='pip')return !!b.pn[n.id];return false}
+function reach(b){const seen=new Set([TOPO.core]);const st=[TOPO.core];while(st.length){const n=st.pop();for(const m of n.nb){if(seen.has(m))continue;if(m.kind==='start'||owned(b,m)){seen.add(m);st.push(m)}}}return seen}
+function canBuy(b,n,R){if(owned(b,n))return true;R=R||reach(b);for(const m of n.nb)if(R.has(m))return true;return false}
+function nodeCost(n){return n.kind==='skill'?n.sk.cost:n.kind==='pip'?1:0}
+/* Dijkstra depuis les nœuds reliés, pondéré par le coût des nœuds non acquis ; stop(u) arrête au premier nœud extrait qui convient */
+function dijkstra(b,R,stop){R=R||reach(b);const dist=new Map(),prev=new Map(),Q=[];for(const n of R){dist.set(n,0);Q.push(n)}
+  while(Q.length){let bi=0;for(let i=1;i<Q.length;i++)if(dist.get(Q[i])<dist.get(Q[bi]))bi=i;const u=Q.splice(bi,1)[0];if(stop&&stop(u))return {R,dist,prev,hit:u};
+    for(const v of u.nb){if(R.has(v))continue;const d=dist.get(u)+(owned(b,v)?0:nodeCost(v));if(!dist.has(v)||d<dist.get(v)){dist.set(v,d);prev.set(v,u);if(!Q.includes(v))Q.push(v)}}}
+  return {R,dist,prev,hit:null}}
+function trace(D,target){const path=[];let n=target;while(n&&!D.R.has(n)){path.unshift(n);n=D.prev.get(n)}return path}
+function pathTo(b,target){const R=reach(b);if(R.has(target))return [];const D=dijkstra(b,R,u=>u===target);return D.hit?trace(D,target):null}
+function pathCost(b,path){return path.reduce((a,n)=>a+(owned(b,n)?0:nodeCost(n)),0)}
+function buyPath(b,path){for(const n of path){if(n.kind==='skill'&&!(b.sk[n.id]>0))b.sk[n.id]=1;else if(n.kind==='pip')b.pn[n.id]=1}syncPips(b)}
+function prune(b){const R=reach(b);const gone=[];
+  for(const id in b.sk){const n=TOPO.byId[id];if(n&&b.sk[id]>0&&!R.has(n)){gone.push(n);delete b.sk[id]}}
+  for(const id in b.pn){const n=TOPO.byId[id];if(n&&!R.has(n)){gone.push(n);delete b.pn[id]}}
+  syncPips(b);return gone}
+/* Presets, codes importés, builds enregistrés : nœuds d'attribut complétés depuis les comptes, puis tout est relié par le chemin le moins cher */
+function normalize(b){
+  const bad=!b.pn||Object.keys(b.pn).some(id=>!TOPO.byId[id]||TOPO.byId[id].kind!=='pip');
+  const want=bad?{...(b.pip||{})}:null;b.pn=b.pn||{};
+  for(const id in b.pn)if(!TOPO.byId[id]||TOPO.byId[id].kind!=='pip'||!b.pn[id])delete b.pn[id];
+  if(want)for(const a in want){let have=TOPO.pips.filter(p=>p.attr===a&&b.pn[p.id]).length;
+    for(const p of TOPO.pips){if(have>=want[a])break;if(p.attr===a&&!b.pn[p.id]){b.pn[p.id]=1;have++}}}
+  syncPips(b);const added=[];
+  for(let g=0;g<300;g++){const R=reach(b);
+    const lost=TOPO.N.filter(n=>(n.kind==='skill'||n.kind==='pip')&&owned(b,n)&&!R.has(n));if(!lost.length)break;
+    const D=dijkstra(b,R);let best=null;for(const n of lost)if(D.dist.has(n)&&(!best||D.dist.get(n)<D.dist.get(best)))best=n;
+    if(!best)break;const path=trace(D,best);for(const n of path)if(!owned(b,n))added.push(n);buyPath(b,path)}
+  // une liaison achetée peut être devenue inutile (un chemin acheté plus tard passe ailleurs) : la retirer si tout reste relié
+  const set=(n,v)=>{if(n.kind==='skill'){if(v)b.sk[n.id]=1;else delete b.sk[n.id]}else if(v)b.pn[n.id]=1;else delete b.pn[n.id]};
+  const orphan=()=>{const R=reach(b);return TOPO.N.some(m=>(m.kind==='skill'||m.kind==='pip')&&owned(b,m)&&!R.has(m))};
+  // idem pour un nœud d'attribut en surplus (au-delà du compte demandé) ; on recommence tant qu'un retrait en permet un autre
+  for(let more=true,k=0;more&&k<20;k++){more=false;const n0=spentPoints(syncPips(b));
+    for(let i=added.length-1;i>=0;i--)if(owned(b,added[i])){set(added[i],0);if(orphan())set(added[i],1)}
+    if(want)for(const a in want)for(const p of [...TOPO.pips].reverse()){if(p.attr!==a||!b.pn[p.id])continue;if(TOPO.pips.filter(q=>q.attr===a&&b.pn[q.id]).length<=want[a])break;set(p,0);if(orphan())set(p,1)}
+    more=spentPoints(syncPips(b))<n0}
+  return syncPips(b)}
+/* Build d'avant le tracé réel (codes b1/b2, builds enregistrés en 1.8) : normalize, en notant ce qui a été ajouté pour relier (jamais enregistré) */
+function migrate(b,from){const sk={...b.sk},pip={...(b.pip||{})},before=spentPoints(b);normalize(b);
+  const addSk=Object.keys(b.sk).filter(id=>b.sk[id]>0&&!(sk[id]>0)),addPip={};for(const a in b.pip){const d=b.pip[a]-(pip[a]||0);if(d>0)addPip[a]=d}
+  Object.defineProperty(b,'_mig',{value:{from,addSk,addPip,pts:spentPoints(b)-before},enumerable:false,configurable:true});return b}
+</script>
+<script>
+/* Gemmes d'arme (1.0) : [id, nom FR, nom EN, rareté, palier, type de dégâts que l'arme doit infliger pour déclencher l'effet, effet, valeurs de base de la carte]
+   2.0.0 : deux emplacements (Arme 1, Arme 2), sans arme choisie ; effets descriptifs, jamais comptés dans les chiffres */
+const RAR={c:['Commune','#8a8f98'],u:['Peu commune','#3f9a5b'],r:['Rare','#3b78c4'],e:['Épique','#8b52c9'],l:['Légendaire','#d08a1e']};
+const GEMS=[
+ ['g_bleed','Gemme de saignement','Gem of Bleeding','c',1,['cut'],'Les critiques tranchants font saigner (dégâts sur la durée).','8 · 6 s'],
+ ['g_burn','Gemme de brûlure','Gem of Burning','c',1,['fire'],'Les dégâts de feu enflamment la cible, avec un temps de recharge.','3 s · 6 · 5 s'],
+ ['g_punct','Gemme de perforation','Gem of Puncturing','c',1,['pierce'],'Les dégâts perçants posent un affaiblissement qui ajoute des dégâts perçants.','3 · 3 s'],
+ ['g_skulls','Gemme des crânes','Gem of Skulls','u',1,[],'Un kill furtif ou impitoyable peut invoquer un crâne compagnon.','1 · 30 %'],
+ ['g_retal','Gemme de représailles','Gem of Retaliation','c',2,[],'Bloquer renforce l\'attaque suivante (dégâts contondants et recul).','33 % · 15'],
+ ['g_swift','Gemme de célérité','Gem of Swiftness','u',2,[],'Après un sprint, les attaques infligent des dégâts tranchants bonus.','4 · 5 s'],
+ ['g_toxic','Gemme de trahison toxique','Gem of Toxic Betrayal','u',2,[],'Les coups dans le dos empoisonnent.','3 · 6 s'],
+ ['g_fract','Gemme de fracture','Gem of Fracturing','r',2,['blunt'],'Un kill contondant peut projeter jusqu\'à 4 éclats d\'os à tête chercheuse.','33 % · 8 · 50 %'],
+ ['g_embers','Gemme des braises d\'espoir','Gem of Hopeful Embers','r',2,[],'Quand le temps dans le Shroud est bas, les ennemis vaincus lâchent des orbes de temps.','20 s · 2 min'],
+ ['g_lnecro','Gemme de nécromancie mineure','Gem of Lesser Necromancy','u',3,[],'Un kill peut invoquer un Misérable Creux allié (4 max).','10 % · 1'],
+ ['g_overp','Gemme de domination','Gem of Overpowering','u',3,[],'Contre un ennemi qui bloque : dégâts de vigueur et recul supplémentaires.','10'],
+ ['g_storm','Gemme de l\'œil du cyclone','Gem of Storm\'s Eye','u',3,[],'Marque les ennemis ; frapper une cible marquée envoie un éclair vers une autre.','4'],
+ ['g_agil','Gemme d\'agilité','Gem of Agility','r',3,[],'Après une esquive, le coup suivant fait des dégâts tranchants bonus et rend de la vigueur.','3 · 15'],
+ ['g_mania','Gemme de frénésie','Gem of Battle Mania','r',4,[],'Sous l\'effet d\'un élixir, les dégâts donnent de la régénération ; à la fin, la régénération est suspendue.','25 · 15 · 10 · 3 s · 10 s'],
+ ['g_corrupt','Gemme de corruption','Gem of Corruption','e',4,[],'Marques cumulables (5 max) qui explosent en dégâts de Shroud.','5'],
+ ['g_reap','Gemme de moisson d\'âmes','Gem of Soul Reaping','e',4,[],'Les ennemis marqués lâchent une fiole d\'âme qui soigne les alliés à 5 m.','62 s · 5'],
+ ['g_light','Gemme de lumière focalisée','Gem of Focused Light','l',4,[],'Viser ou bloquer marque les ennemis (3 cumuls) pour des dégâts de feu bonus.','450 % · 100 % · 10 · 225 %'],
+ ['g_blust','Gemme de soif de sang','Gem of Bloodlust','r',5,[],'Les kills peuvent lâcher des orbes de santé qui donnent des dégâts tranchants bonus.','10 % · 5 % · 10 s · 4'],
+ ['g_necro','Gemme de nécromancie','Gem of Necromancy','r',5,[],'Un kill peut invoquer un Damné Creux allié (2 max).','10 % · 1'],
+ ['g_meteor','Gemme d\'impact météorique','Gem of Meteoric Impact','e',5,[],'Atterrir après un vol plané crée une explosion et une traînée de feu, puis des dégâts de feu bonus.','3 · 3 s · 7 · 3 · 5 s'],
+ ['g_cold','Gemme de sang-froid','Gem of Cold Composure','l',5,[],'Bloquer ou viser donne des résistances mais ralentit ; être touché ou attaquer libère une explosion de glace.','−30 % · 20 · 20 · 10'],
+ ['g_curr','Gemme des courants','Gem of Currents','r',6,[],'Les cibles mouillées deviennent trempées ; frapper une cible trempée peut ajouter de la foudre.','8 · 6 s · 33 %'],
+ ['g_gnecro','Gemme de nécromancie supérieure','Gem of Greater Necromancy','r',6,[],'Un kill peut invoquer un Faucheur Creux allié (1 max).','10 % · 1'],
+ ['g_aero','Gemme d\'acrobaties','Gem of Aerobatics','e',6,[],'Les attaques en l\'air lancent des projectiles perçants à tête chercheuse.','2'],
+ ['g_lyc','Gemme de lycanthropie','Gem of Lycanthropy','l',6,[],'Les kills de nuit peuvent créer un orbe lunaire (ressources et buff de nourriture).','27 · 1 % · 10 · 60 s'],
+ ['g_cleanse','Gemme de purification','Gem of Cleansing','e',7,[],'Les dégâts retirent un moment la résistance au Shroud de la cible.','3 s'],
+ ['g_destiny','Gemme du destin','Gem of Destiny','e',7,[],'Marque un ennemi proche ; le vaincre lâche un orbe qui rend la ressource la plus basse.','20 s · 10 · 10 · 15'],
+ ['g_armor','Gemme de blindage','Gem of Armoring','l',7,[],'Les kills lâchent un orbe qui donne une résistance aux dégâts pendant un court moment.','1 s'],
+ ['g_hyper','Gemme d\'hyperspécialisation','Gem of Hyperspecialization','l',7,[],'Après une capacité spéciale, les kills rendent de la Concentration (Focus).','3 s · 10'],
+];
+const GEMI={};GEMS.forEach(([id,fr,en,r,t,types,d,v])=>GEMI[id]={id,fr,en,r,t,types,d,v});
+/* Type de dégâts qui déclenche une gemme (colonne 6 de GEMS), pour la carte de la gemme */
+const GTYPE={cut:'tranchants',pierce:'perçants',blunt:'contondants',fire:'de feu'};
+</script>
+<script>
+/* =========================== OBJECTIFS (2.0.0) =========================== */
+/* Objectifs prêts : chacun reprend TELLES QUELLES les compétences, les rangs et les attributs d'un build prédéfini des versions 1.x (presets, 01-data.js
+   jusqu'à la 1.19.0 ; Tank = « Sadi Fourbe »), rangés en étapes. L'ORDRE DES ÉTAPES ET LEURS RAISONS SONT DES CHOIX DU SIMULATEUR (hypothèse),
+   pas un guide officiel ; les effets cités viennent des descriptions des compétences (SK, fichiers du jeu 1.0).
+   2.4.0 — 5 objectifs OPTIMISÉS (opt:1 ; étude docs/etudes/classes-combinaisons-2026-11-08.md) : 3 hybrides, Exploration, Récolte. Contenu : build de la
+   communauté 1.0 quand il existe (src, étiquette « communauté »), et ce que le simulateur a ajouté, retiré ou composé (sim, étiquette « hypothèse »). ORDRE DES ÉLÉMENTS de chaque étape calculé hors ligne par
+   scripts/optimiser-objectifs.mjs (combo complet au moindre coût à 212 points, Flamme 11, puis l'avancée la plus rapide) : ne pas le retoucher à la main,
+   relancer le script (npm run optimiser) ; l'ordre des étapes, lui, reste un choix du simulateur. Des égalités exactes existent (ex. Bûcheron et Maçon, Double saut
+   et Coureur) : l'ordre figé est l'un des meilleurs trouvés. Aucune gemme : aucune source n'en cite.
+   {id (place figée : FZ.goals), n nom, grp groupe du menu, area couleur, gem gemmes posées, [opt, src, sim,] steps : [titre, raison, {compétence: rang | attribut: nœuds}]} */
+const GOAL_GRP=[['war','Guerrier'],['rng','Rôdeur'],['mag','Mage'],['sup','Soins'],['hyb','Hybrides'],['util','Exploration et récolte']];
+const GOALS=[
+ {id:'tank',n:"Tank (d'après Sadi Fourbe)",grp:'war',area:'war',gem:{w1:'g_armor',w2:'g_reap'},steps:[
+  ['Attirer les coups',"Némésis attire l'attention des ennemis : c'est vous qu'ils frappent, pas le groupe.",{nemesis:3}],
+  ['Encaisser',"Constitution (+50 de santé par point), plaques (armure des objets), Tour (+10 % de résistance physique) et Gardien (+10 % de résistance magique) face à 3 ennemis ou plus à 20 m.",{con:11,heavyPlates:3,shinyPlates:3,tower:1,warden:1}],
+  ['Blesser sans frapper',"Aura radieuse brûle les Déchus proches, Contre-coup renvoie parfois des dégâts en feu, Givre ralentit les attaquants de mêlée ; Pyromane : +10 % de dégâts de feu par rang.",{radiantAura:3,counterstrike:3,frost:3,arsonist:3}],
+  ['Se soigner',"Aura d'eau et Eaux de vie soignent selon l'Intelligence, Guérisseur : +15 % de soins par rang ; Essences de vie et Exalté ajoutent santé et Intelligence.",{waterAura:3,watersOfLife:1,healer:3,int:11,exalted:1,lifeEssences:3}],
+  ['Parer',"Parade puissante, Déviations (vigueur, mana), Coup de choc et Onde de choc : chaque parade rapporte.",{powerParry:3,vigDeflect:3,arcaneDeflect:3,bash:3,shockwave:1}],
+  ['Tenir',"Aura de terre (+10 % de résistances au groupe), Absorption, mana, résistance au feu, Peau épaisse et Double saut.",{earthAura:3,absorb:3,manaCurrents:3,spi:6,fireResistance:3,thickSkin:1,doubleJump:1}]]},
+ {id:'sword',n:'Épée et bouclier',grp:'war',area:'war',gem:{w1:'g_blust',w2:'g_swift'},steps:[
+  ['Dégâts à une main',"Voie du guerrier (+5 % par rang), Taillade (+10 % de dégâts tranchants par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:11}],
+  ['Critiques qui soignent',"Vétéran (+2 % de critique en mêlée par rang) ; Soin de bataille rend 1 % de santé max par rang à chaque critique.",{veteran:3,battleHeal:3}],
+  ['Parer et punir',"Parade puissante, puis Attaque impitoyable (500 % sur un ennemi déséquilibré), Opportunité et Brèche.",{powerParry:3,merciless:1,opportunity:3,breach:1}],
+  ['Encaisser',"Constitution, plaques, Athlète (santé selon la Force), Tour, Gardien et Aura de terre.",{con:11,heavyPlates:3,shinyPlates:3,athlete:3,tower:1,warden:1,earthAura:3}],
+  ['Rythme',"Capacité spéciale à une main, Lames rapides (+15 % de vitesse), Attaque d'esquive et Rage sanguinaire.",{oneHSpec:1,swiftBlades:1,evasionAttack:1,bloodRage:3}],
+  ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,thickSkin:1,doubleJump:1}]]},
+ {id:'barb',n:'Barbare deux mains',grp:'war',area:'war',gem:{w1:'g_fract',w2:'g_bleed'},steps:[
+  ['Dégâts à deux mains',"Voie du barbare (+5 % par rang), Brute (+10 % de dégâts contondants par rang) et Force (+5 % de dégâts de mêlée par point).",{barbariansPath:3,brute:3,str:10}],
+  ['Gros coups',"Capacité spéciale à deux mains, Frappe lourde (+10 % de vitesse), Crescendo tourbillon et Tranchant du titan (espadons).",{twoHSpec:1,heavyHitter:1,whirlwind:1,titanEdge:3}],
+  ['Critiques et rage',"Vétéran, Implacable (+8 % de critique au coup suivant), Soin de bataille et Rage sanguinaire.",{veteran:3,relentless:1,battleHeal:3,bloodRage:3}],
+  ['Encaisser',"Constitution (+50 de santé par point), Athlète (santé selon la Force) et Plaques lourdes.",{con:11,athlete:3,heavyPlates:3}],
+  ['Coups impitoyables',"Attaque impitoyable, Opportunité, Attaque plongeante (+50 % en zone) et Chute : force.",{merciless:1,opportunity:3,crashDown:1,crashForce:1}],
+  ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,thickSkin:1,doubleJump:1}]]},
+ {id:'archer',n:'Archer',grp:'rng',area:'rng',gem:{w1:'g_aero',w2:'g_punct'},steps:[
+  ["Dégâts à l'arc","Tireur d'élite (+5 % par rang), Perforation (+10 % de dégâts perçants à distance par rang) et Dextérité (+5 % par point).",{marksman:3,puncture:3,dex:7}],
+  ['Critiques',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Sniper (+2 % à l'arc par rang), Tir d'adresse (points faibles) et Flèches bénies (mana sur critique).",{fatalPrecision:3,sniper:3,skillShot:3,blessedArrows:3}],
+  ['Salves',"Tir multiple et sa dispersion (flèches en plus), capacité spéciale des arcs et Obus étourdissant.",{multiShot:1,msSpread:1,bowSpec:1,shellShock:1}],
+  ['Vigueur',"Rôdeur (+1 Dextérité, +1 Endurance par rang), Endurance (+10 de vigueur par point) et Rebond (régénération de vigueur).",{ranger:3,end:8,rebound:3}],
+  ['Survie',"Vigueur voilée (santé selon la Dextérité), un peu de Constitution et Barrage (répare l'arc).",{veiledVigor:3,con:2,barrage:3}],
+  ['Cibles',"Contre-batterie (+8 % contre les tireurs par rang), Fléau des aigles (+10 % contre les volants par rang) et Dard d'abeille.",{counterBattery:3,eaglesBane:3,beeSting:1}],
+  ['Flamme et confort',"Foulée gracieuse et Endurance de la Flamme : +1 Dextérité et +1 Endurance tous les 2 niveaux de Flamme ; Double saut.",{gracefulStride:1,enduranceFlame:1,doubleJump:1}]]},
+ {id:'assassin',n:'Assassin aux dagues',grp:'rng',area:'rng',gem:{w1:'g_toxic',w2:'g_agil'},steps:[
+  ['Furtivité',"Attaque furtive (+900 % sur un ennemi qui ne vous voit pas), Égorgeur (+100 % par rang) et Pas feutré.",{sneakAttack:1,cutthroat:3,silentStride:3}],
+  ['Dégâts aux dagues',"Maîtrise des dagues (+5 % par rang), Estoc (+10 % de dégâts perçants en mêlée par rang) et Dextérité.",{daggerMastery:3,thrust:3,dex:6}],
+  ['Dans le dos',"Maîtrise du coup dans le dos (+20 % par rang) et Exposer la faiblesse (+25 % de dégâts physiques subis).",{backstabMastery:3,exposeWeak:1}],
+  ['Critiques',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Vétéran (+2 % aux dagues par rang) et Hacher menu.",{fatalPrecision:3,veteran:3,sliceDice:1}],
+  ['Mobilité',"Capacité spéciale des dagues, Manœuvre stratégique, Attaque d'esquive, Coup de pied et Blocage réflexe.",{daggerSpec:1,stratManeuver:1,evasionAttack:1,kick:1,quickReflex:1}],
+  ['Endurance et survie',"Endurance (+10 de vigueur par point), Vigueur voilée (santé selon la Dextérité) et Instinct de survie.",{end:8,veiledVigor:3,survivalInst:3}],
+  ['Flamme et confort',"Foulée gracieuse et Endurance de la Flamme : +1 Dextérité et +1 Endurance tous les 2 niveaux de Flamme ; Double saut.",{gracefulStride:1,enduranceFlame:1,doubleJump:1}]]},
+ {id:'mageCrit',n:'Mage critique (baguette)',grp:'mag',area:'mag',gem:{w1:'g_storm',w2:'g_corrupt'},steps:[
+  ['Chance de critique',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang) et Sorcier (+2 % aux baguettes et bâtons par rang) : la chance d'abord.",{fatalPrecision:3,wizard:3}],
+  ['Dégâts de baguette',"Apprenti mage, Maîtrise des baguettes (+5 % chacun par rang) et Intelligence (+5 % de dégâts magiques par point).",{mageApprentice:3,wandMastery:3,int:11}],
+  ['Effets des critiques',"Coup en chaîne, Destruction massive, Terreur, Saignée et Frappe et sort : un critique peut déclencher foudre, étourdissement, orbes ou un bonus au bâton.",{chainHit:1,massDestr:1,terror:3,bloodletting:3,blastCast:1}],
+  ['Foudre et Shroud',"Tonnerre et Arts sombres : +10 % de dégâts de foudre et de Shroud par rang.",{thunder:3,darkArts:3}],
+  ['Bâton',"Lanceur de sorts : +5 % de dégâts aux bâtons par rang, pour la seconde arme.",{spellslinger:3}],
+  ['Flamme et santé',"Exalté (+1 Intelligence tous les 2 niveaux de Flamme) et un peu de Constitution.",{exalted:1,con:2}]]},
+ {id:'fire',n:'Sorcier de feu (bâton)',grp:'mag',area:'mag',gem:{w1:'g_light',w2:'g_burn'},steps:[
+  ['Dégâts de feu',"Pyromane (+10 % de dégâts de feu par rang), Lanceur de sorts, Apprenti mage et Intelligence.",{arsonist:3,spellslinger:3,mageApprentice:3,int:11}],
+  ['Lancer plus vite',"Charge rapide (−10 % de temps de charge par rang), Courants de mana et Esprit (+20 de mana par point).",{quickCharge:3,manaCurrents:3,spi:11}],
+  ['Critiques',"Sorcier, Coup en chaîne, Destruction massive, Terreur et Saignée.",{wizard:3,chainHit:1,massDestr:1,terror:3,bloodletting:3}],
+  ['Feu autour de vous',"Aura radieuse, Contre-coup, Clignement et Clignement explosif.",{radiantAura:3,counterstrike:3,blink:1,blinkAttack:1}],
+  ['Survie',"Résistance au feu, Essences de vie (santé selon l'Intelligence) et un peu de Constitution.",{fireResistance:3,lifeEssences:3,con:2}],
+  ['Flamme et confort',"Exalté et Concentration arcanique : +1 Intelligence et +1 Esprit tous les 2 niveaux de Flamme ; Double saut.",{exalted:1,arcaneConc:1,doubleJump:1}]]},
+ {id:'ice',n:'Mage de glace (contrôle)',grp:'mag',area:'mag',gem:{w1:'g_cold',w2:'g_curr'},steps:[
+  ['Ralentir et étourdir',"Givre ralentit les attaquants de mêlée ; Terreur peut étourdir sur un critique de sort.",{frost:3,terror:3}],
+  ['Dégâts de glace',"Homme de glace (+10 % de dégâts de glace par rang), Apprenti mage et Intelligence.",{iceman:3,mageApprentice:3,int:11}],
+  ['Baguette et bâton',"Maîtrise des baguettes et Lanceur de sorts : +5 % chacun par rang.",{wandMastery:3,spellslinger:3}],
+  ['Lancer plus vite',"Charge rapide, Courants de mana et Esprit (+20 de mana par point).",{quickCharge:3,manaCurrents:3,spi:11}],
+  ['Critiques',"Sorcier (+2 % de critique par rang) et Coup en chaîne.",{wizard:3,chainHit:1}],
+  ['Défense',"Contre-coup, Déviation arcanique, Clignement et Clignement d'urgence (même étourdi), Résistance à la glace, Essences de vie et Constitution.",{counterstrike:3,arcaneDeflect:3,blink:1,emergencyBlink:1,iceResistance:3,lifeEssences:3,con:2}],
+  ['Flamme et confort',"Exalté et Concentration arcanique : +1 Intelligence et +1 Esprit tous les 2 niveaux de Flamme ; Double saut.",{exalted:1,arcaneConc:1,doubleJump:1}]]},
+ {id:'storm',n:'Mage de foudre (baguette)',grp:'mag',area:'mag',gem:{w1:'g_storm',w2:'g_curr'},steps:[
+  ['Dégâts de foudre',"Tonnerre (+10 % de dégâts de foudre par rang), Maîtrise des baguettes, Apprenti mage et Intelligence.",{thunder:3,wandMastery:3,mageApprentice:3,int:11}],
+  ['Critiques en chaîne',"Sorcier (+2 % de critique par rang), Coup en chaîne et Destruction massive.",{wizard:3,chainHit:1,massDestr:1}],
+  ['Baguette',"Capacité spéciale, Piqûre, Prolifération arcanique, Frappe et sort, Esquive à la baguette et Baguette aérienne.",{wandSpec:1,sting:1,arcaneProlif:1,blastCast:1,wandEvasion:1,aerialWand:1}],
+  ['Mana',"Unité (mana rendu), Charge rapide et Esprit (+20 de mana par point).",{unity:3,quickCharge:3,spi:11}],
+  ['Survie',"Résistance à la foudre, Essences de vie, un peu de Constitution et Étincelle éternelle (répare la baguette).",{shockResistance:3,lifeEssences:3,con:2,eternalSpark:3}],
+  ['Flamme et confort',"Exalté et Concentration arcanique : +1 Intelligence et +1 Esprit tous les 2 niveaux de Flamme ; Double saut.",{exalted:1,arcaneConc:1,doubleJump:1}]]},
+ {id:'necro',n:'Nécromancien invocateur',grp:'mag',area:'mag',gem:{w1:'g_gnecro',w2:'g_necro'},steps:[
+  ['Invoquer',"Nécromancien (crânes), Nécromancie avancée (+1 allié Creux par rang) et Maîtrise des totems (+1 totem par rang).",{necromancer:3,advNecro:3,totemMastery:3}],
+  ['Dégâts de Shroud',"Arts sombres (+10 % de dégâts de Shroud), Lanceur de sorts, Apprenti mage et Intelligence.",{darkArts:3,spellslinger:3,mageApprentice:3,int:11}],
+  ['Mana',"Courants de mana, Charge rapide, Esprit et Magie du sang (sous 20 % de mana, convertit la santé en mana).",{manaCurrents:3,quickCharge:3,spi:11,bloodMagic:1}],
+  ['Critiques',"Saignée et Terreur : orbes ou étourdissement sur un critique de sort.",{bloodletting:3,terror:3}],
+  ['Survie',"Os en cendres (+5 % contre les Creux par rang), Résistance au Shroud, Essences de vie, Constitution et Clignement.",{boneToAsh:3,shroudResistance:3,lifeEssences:3,con:2,blink:1}],
+  ['Flamme et confort',"Exalté et Concentration arcanique : +1 Intelligence et +1 Esprit tous les 2 niveaux de Flamme ; Double saut.",{exalted:1,arcaneConc:1,doubleJump:1}]]},
+ {id:'healer',n:'Soigneur de groupe',grp:'sup',area:'mag',gem:{w1:'g_reap',w2:'g_destiny'},steps:[
+  ['Soigner',"Guérisseur (+15 % de soins par rang), Aura d'eau et Eaux de vie, qui soignent selon l'Intelligence.",{healer:3,waterAura:3,watersOfLife:1,int:11}],
+  ['Soin de groupe',"Éclat de vie (soin de groupe), Élan divin (soins critiques) et Feu vertueux.",{lifeBurst:1,divineSurge:1,righteousFire:3}],
+  ['Relever',"Sauveur (réanimation plus rapide) et Réanimation curative (+8 % de santé par rang).",{saviour:3,healingRevive:3}],
+  ['Mana',"Courants de mana, Charge rapide et Esprit (+20 de mana par point).",{manaCurrents:3,quickCharge:3,spi:11}],
+  ['Protéger du Shroud',"Atténuation du Shroud et Misère partagée : temps et résistance au Shroud pour le groupe.",{shroudMitigation:3,sharedMisery:3}],
+  ['Survie',"Essences de vie (santé selon l'Intelligence), un peu de Constitution et Peau épaisse.",{lifeEssences:3,con:2,thickSkin:1}],
+  ['Attaque',"Apprenti mage et Sorcier, pour les sorts offensifs.",{mageApprentice:3,wizard:3}],
+  ['Flamme et confort',"Exalté et Concentration arcanique : +1 Intelligence et +1 Esprit tous les 2 niveaux de Flamme ; Double saut.",{exalted:1,arcaneConc:1,doubleJump:1}]]},
+ {id:'paladin',n:'Paladin soigneur',grp:'sup',area:'war',gem:{w1:'g_retal',w2:'g_reap'},steps:[
+  ['Soigner',"Guérisseur (+15 % de soins par rang), Aura d'eau et Eaux de vie, qui soignent selon l'Intelligence.",{healer:3,waterAura:3,watersOfLife:1,int:11}],
+  ['Armure',"Plaques lourdes et brillantes (armure des objets) et Aura de terre (+10 % de résistances au groupe).",{heavyPlates:3,shinyPlates:3,earthAura:3}],
+  ['Mêlée qui soigne',"Voie du guerrier, Soin de bataille (santé rendue sur un critique de mêlée) et un peu de Force.",{warriorsPath:3,battleHeal:3,str:4}],
+  ['Soin de groupe',"Feu vertueux, Élan divin, Sauveur, Réanimation curative et Martyr (soigne les alliés à votre mort).",{righteousFire:3,divineSurge:1,saviour:3,healingRevive:3,martyr:1}],
+  ['Parer',"Parade puissante et Déviation arcanique (+10 de mana par parade réussie, par rang).",{powerParry:3,arcaneDeflect:3}],
+  ['Mana et survie',"Esprit, Essences de vie, Constitution, Peau épaisse, Exalté et Double saut.",{spi:6,lifeEssences:3,con:2,thickSkin:1,exalted:1,doubleJump:1}]]},
+ // ---- 2.4.0 : objectifs optimisés (ordre des éléments : scripts/optimiser-objectifs.mjs) ----
+ {id:'battlemage',n:'Mage de bataille (épée et baguette)',grp:'hyb',area:'war',gem:{},opt:1,
+  src:"« Battlemage Hybrid », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026), build de niveau 30.",
+  sim:"Voie du barbare retirée : bonus aux armes à deux mains, elle ne relie rien ici.",steps:[
+  ['Dégâts à une main',"Voie du guerrier (+5 % aux haches, masses et épées à une main par rang), Taillade (+10 % de dégâts tranchants de mêlée par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:6}],
+  ['Sorts à la baguette',"Tonnerre (+10 % de dégâts de foudre par rang), Apprenti mage (+5 % aux baguettes et bâtons par rang) et Intelligence (+5 % de dégâts magiques par point) ; Pyromane (+10 % de dégâts de feu) et Étincelle éternelle (baguette : 15 % de chance de réparer 1 durabilité) servent aussi de liaison.",{mageApprentice:3,eternalSpark:1,arsonist:1,int:7,thunder:3}],
+  ['Critiques',"Sorcier (+2 % de critique aux baguettes et bâtons par rang) ; Soin de bataille : un critique de mêlée soigne 1 % de la santé max par rang.",{wizard:2,battleHeal:2}],
+  ['Encaisser',"Plaques lourdes et brillantes (+4 % d'armure physique ou magique des objets par rang), Constitution (+50 de santé par point) et Absorption (4 % de chance de convertir les dégâts magiques reçus en mana).",{heavyPlates:2,con:6,shinyPlates:1,absorb:1}],
+  ['Soins et mana',"Aura d'eau (soin : 1 PV pour 2 points d'Intelligence), Guérisseur (+15 % de soins par rang) et Esprit (+20 de mana par point).",{healer:1,waterAura:1,spi:3}]]},
+ {id:'elemArcher',n:'Archer élémentaire (arc et éléments)',grp:'hyb',area:'rng',gem:{},opt:1,
+  src:"Partie Rôdeur : « Elemental Archer », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026), telle quelle.",
+  sim:"Partie Mage (Pyromane, Homme de glace, Tonnerre) ajoutée : le build d'origine tire ses éléments des arcs, et l'effet de ces compétences sur les tirs à l'arc n'est pas vérifié.",steps:[
+  ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Tir d'adresse (+20 % de dégâts des tirs dans les points faibles) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,skillShot:3,dex:5}],
+  ['Éléments',"Pyromane, Homme de glace et Tonnerre : +10 % de dégâts de feu, de glace ou de foudre par rang ; leur description ne cite aucune arme, mais leur effet sur les tirs à l'arc n'est pas vérifié (partie ajoutée par le simulateur).",{arsonist:3,iceman:3,thunder:3}],
+  ['Critiques',"Sniper (+2 % de critique à l'arc par rang), Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang) et Sursaut de vitalité (+3 vigueur sur un critique à l'arc, aux dagues ou au lancer).",{sniper:3,fatalPrecision:2,vitalitySurge:2}],
+  ['Arc',"Spécialisation arc (capacité spéciale des arcs), Œil d'aigle (compétence active, effet non décrit dans les données), Dard d'abeille (tir en l'air : ralentit la chute) et Contre-batterie (+8 % de dégâts contre les ennemis à distance).",{bowSpec:1,eagleEye:1,beeSting:1,counterBattery:1}],
+  ['Vigueur',"Endurance (+10 de vigueur par point), Rôdeur (+1 Dextérité, +1 Endurance et régén. de vigueur de base par rang), Subsistance du tir rapide (ennemi tué à l'arc : 12 % de chance d'orbe de vigueur) et Rebond (+10 % de régén. de vigueur de base par rang).",{end:3,ranger:3,swiftshot:1,rebound:3}],
+  ['Survie et déplacement',"Vigueur voilée (+3 × Dextérité de santé max par rang), Coureur (+5 % de vitesse de sprint, sprint moins coûteux) et Aéroporté (planeur : −12 % de vigueur par rang).",{veiledVigor:1,runner:1,airborne:1}]]},
+ {id:'swordBow',n:'Épée et arc',grp:'hyb',area:'war',gem:{},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences (aucun build Guerrier + Rôdeur de la communauté).",steps:[
+  ['Dégâts à une main',"Voie du guerrier (+5 % aux haches, masses et épées à une main par rang), Taillade (+10 % de dégâts tranchants de mêlée par rang) et Force (+5 % de dégâts de mêlée par point).",{warriorsPath:3,slasher:3,str:6}],
+  ["Dégâts à l'arc","Tireur d'élite (+5 % de dégâts à l'arc par rang), Perforation (+10 % de dégâts perçants à distance par rang) et Dextérité (+5 % de dégâts aux arcs et dagues par point).",{marksman:3,puncture:3,dex:5}],
+  ['Critiques des deux armes',"Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang), Sniper (+2 % de critique à l'arc par rang) et Vétéran (+2 % de critique avec les armes de mêlée et les dagues par rang).",{fatalPrecision:3,sniper:3,veteran:3}],
+  ['Capacités spéciales',"Spécialisations arc et une main : elles débloquent la capacité spéciale de chaque arme.",{bowSpec:1,oneHSpec:1}],
+  ['Survie',"Soin de bataille (un critique de mêlée soigne 1 % de la santé max par rang) et Constitution (+50 de santé par point).",{battleHeal:3,con:6}],
+  ['Flamme et confort',"Barbare et Foulée gracieuse : respectivement +1 Force et +1 Dextérité tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,gracefulStride:1,doubleJump:1}]]},
+ {id:'explore',n:'Exploration',grp:'util',area:'rng',gem:{},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences (aucun build d'exploration de la communauté).",steps:[
+  ['Se déplacer',"Double saut, Coureur (+5 % de vitesse de sprint, sprint moins coûteux), Arachnide (escalade : −20 % de vigueur par rang) et Aéroporté (planeur : −12 % de vigueur par rang).",{doubleJump:1,runner:3,arachnoid:3,airborne:3}],
+  ['Planer et sprinter',"Bougeotte (sprint moins coûteux sur les routes), Courant ascendant (sursaut vers le haut en vol plané), Pas feutré (déplacement plus rapide en furtivité) et Ruée aquatique (esquive en nageant).",{wanderlust:1,updraft:1,silentStride:3,splashDash:1}],
+  ['Tenir dans le Shroud',"Feux intérieurs (+60 s de temps dans le Shroud par rang) et Résistance au Shroud (+5 % par rang).",{innerFires:3,shroudResistance:3}],
+  ['Dangers du terrain',"Chien mouillé et Chien trempé (malus Mouillé et Trempé affaiblis), Mithridatisé (25 % de chance d'éviter l'empoisonnement) et Mangeur de serpents (+4 % de résistance au poison par rang).",{wetDog:1,soakedDog:1,mithridatist:1,snakeEater:3}],
+  ['Passer sans combattre',"Esprit calme (les animaux sauvages ne vous attaquent plus) et Langue vukah (les Vukah ne vous attaquent plus).",{calmSpirit:1,vukahLang:1}],
+  ['Nourriture et repos',"Bien reposé (+2 min de buff Reposé par rang), Estomac à dessert (un emplacement de nourriture en plus), Bon métabolisme (orbes à 30 %, potions +20 %), Dernier repas (les buffs de nourriture survivent à la mort) et Bec sucré (sucreries : +50 % de régén. de vigueur).",{wellRested:3,dessert:1,goodMetab:1,lastMeal:1,sweetTooth:1}]]},
+ {id:'harvest',n:'Récolte',grp:'util',area:'core',gem:{},opt:1,
+  src:"« Crafter Survivor », PinDrop (Yurii Luzhko, mis à jour le 7 novembre 2026).",
+  sim:"Rangs portés au maximum et spécialisations pioche et hache d'abattage ajoutées (mode « full »).",steps:[
+  ['Abattre et miner',"Bûcheron, Maçon et Prospecteur : +10 % de dégâts des outils contre le bois, la pierre ou le métal par rang.",{lumberjack:3,mason:3,prospector:3}],
+  ['Plus de ressources',"Mineur (10 % de chance d'obtenir une ressource en plus) et Outils de qualité (20 % de chance de regagner 1 de durabilité).",{miner:1,qualityGear:1}],
+  ['Outils spéciaux',"Spécialisations pioche et hache d'abattage : elles débloquent la capacité spéciale de ces outils (ajoutées par le simulateur).",{pickSpec:1,fellSpec:1}],
+  ['Pêche, repos et Shroud',"Ténacité du pêcheur (+5 d'endurance de pêche par rang), Bien reposé (+2 min de buff Reposé par rang) et Feux intérieurs (+60 s de temps dans le Shroud par rang).",{fisherman:3,wellRested:3,innerFires:3}]]},
+ // ---- 2.6.0 : vol de vie en mêlée (demande du 2026-11-14 ; ordre des éléments : scripts/optimiser-objectifs.mjs) ----
+ {id:'lifesteal',n:'Vol de vie (mêlée)',grp:'war',area:'war',gem:{w1:'g_blust'},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences : l'arbre n'a pas de vol de vie à proprement parler, seulement des soins sur un critique ou un kill de mêlée (le vol de vie des bagues et des armes, l'équipement, n'est pas pris en compte). Gemme de soif de sang ajoutée par le simulateur.",steps:[
+  ['Critiques qui soignent',"Soin de bataille : un critique de mêlée soigne 1 % de la santé max par rang ; Vétéran : +2 % de critique avec les armes de mêlée et les dagues par rang.",{veteran:3,battleHeal:3}],
+  ['Plus de critiques',"Implacable (critique à deux mains : +8 % de critique au coup suivant) et Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang).",{relentless:1,fatalPrecision:3}],
+  ['Santé max',"Soin de bataille rend un pourcentage de la santé max : Constitution (+50 de santé par point) et Athlète (+3 × Force de santé max par rang).",{con:11,athlete:3}],
+  ['Orbes de santé',"Attaque impitoyable (500 % de dégâts contre un ennemi déséquilibré) ; Guerrier de sang : un kill furtif ou impitoyable lâche un orbe de santé ; Bon métabolisme : orbes à 30 %, potions +20 %.",{merciless:1,bloodWarrior:1,goodMetab:1}],
+  ['Dégâts à deux mains',"Voie du barbare (+5 % aux haches, masses et marteaux à deux mains par rang) et Force (+5 % de dégâts de mêlée par point).",{barbariansPath:3,str:10}],
+  ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,doubleJump:1,thickSkin:1}]]},
+ /* 2.7.0 : le même, prolongé pour dépenser les 212 points (Flamme 11) ; nouvel objectif EN FIN de FZ.goals (QCM du 2026-11-14 : lifesteal inchangé, aucun lien touché) */
+ {id:'lifestealFull',n:'Vol de vie complet (mêlée)',grp:'war',area:'war',gem:{w1:'g_blust'},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences : « Vol de vie (mêlée) » prolongé jusqu'à 212 points (vitesse, kills qui lâchent des orbes, dégâts, survie, parade, groupe, Shroud). L'arbre n'a pas de vol de vie à proprement parler, seulement des soins sur un critique ou un kill de mêlée (le vol de vie des bagues et des armes, l'équipement, n'est pas pris en compte). Gemme de soif de sang ajoutée par le simulateur.",steps:[
+  ['Critiques qui soignent',"Soin de bataille : un critique de mêlée soigne 1 % de la santé max par rang ; Vétéran : +2 % de critique avec les armes de mêlée et les dagues par rang.",{veteran:3,battleHeal:3}],
+  ['Plus de critiques',"Implacable (critique à deux mains : +8 % de critique au coup suivant) et Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang).",{relentless:1,fatalPrecision:3}],
+  ['Santé max',"Soin de bataille rend un pourcentage de la santé max : Constitution (+50 de santé par point) et Athlète (+3 × Force de santé max par rang).",{con:11,athlete:3}],
+  ['Orbes de santé',"Attaque impitoyable (500 % de dégâts contre un ennemi déséquilibré) ; Guerrier de sang : un kill furtif ou impitoyable lâche un orbe de santé ; Bon métabolisme : orbes à 30 %, potions +20 %.",{merciless:1,bloodWarrior:1,goodMetab:1}],
+  ['Dégâts à deux mains',"Voie du barbare (+5 % aux haches, masses et marteaux à deux mains par rang) et Force (+5 % de dégâts de mêlée par point).",{barbariansPath:3,str:11}],
+  ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{doubleJump:1,barbarian:1,thickSkin:1}],
+  ['Frapper plus vite',"Soin de bataille soigne à chaque critique de mêlée : Frappe lourde (+10 % de vitesse d'attaque à deux mains), Spécialisation deux mains (capacité spéciale des armes à deux mains) et Crescendo tourbillon (tourbillon en fin d'enchaînement).",{heavyHitter:1,twoHSpec:1,whirlwind:1}],
+  ['Kills impitoyables',"Guerrier de sang lâche un orbe sur un kill impitoyable : Opportunité (+40 % au multiplicateur d'attaque impitoyable par rang) et Brèche (ennemis déséquilibrés : +100 % de dégâts physiques de mêlée pendant 3 s).",{opportunity:3,breach:1}],
+  ['Kills furtifs',"Guerrier de sang lâche aussi un orbe sur un kill furtif : Attaque furtive (+900 % sur un ennemi qui ne vous voit pas), Égorgeur (+100 % de dégâts d'attaque furtive par rang) et Maîtrise du coup dans le dos (+20 % par rang).",{sneakAttack:1,cutthroat:3,backstabMastery:3}],
+  ['Dégâts de mêlée',"Brute et Taillade (+10 % de dégâts contondants ou tranchants de mêlée par rang), Tranchant du titan (+5 % aux espadons par rang) et Rage sanguinaire (après un kill en mêlée : +15 % de dégâts de mêlée 10 s).",{titanEdge:3,brute:3,slasher:3,bloodRage:3}],
+  ['Encaisser',"Plaques lourdes et brillantes (+4 % d'armure physique ou magique des objets par rang), Tour et Gardien (+10 % de résistance physique ou magique avec 3 ennemis ou plus à 20 m), Aura de terre (+10 % de résistances par rang) et Parade puissante (+10 % de puissance de parade par rang).",{powerParry:3,heavyPlates:3,shinyPlates:3,tower:1,warden:1,earthAura:3}],
+  ['Parer',"Déviation vigoureuse (parade réussie : +15 vigueur par rang), Main lourde (+10 % de remplissage d'étourdissement contre un ennemi qui bloque), Coup de choc (parade : 10 dégâts contondants + Force par rang) et Onde de choc (parade ou déséquilibre : onde qui repousse).",{bash:3,vigDeflect:3,heavyHanded:3,shockwave:1}],
+  ['Attaques en saut',"Attaque plongeante (attaque en saut : +50 % de dégâts en zone), Chute : force (attaque plongeante depuis un double saut : +20 %) et Taille ascendante (frappe montante pendant le saut).",{crashDown:1,crashForce:1,upSlash:1}],
+  ['Groupe',"Martyr (à votre mort, les alliés proches sont soignés de 50 %), Réanimation curative (+8 % de santé aux joueurs réanimés par rang) et Sauveur (réanimation plus rapide de 1 s par rang).",{martyr:1,saviour:3,healingRevive:3}],
+  ['Shroud et durabilité',"Purification (kill d'un ennemi du Shroud en mêlée : rend du temps dans le Shroud), Feux intérieurs (+60 s dans le Shroud par rang) et Inébranlable (kill en mêlée : +1 durabilité par rang).",{purification:3,steadfast:3,innerFires:3}],
+  ['Compléments',"Vigueur voilée (+3 × Dextérité de santé max par rang), Némésis (attire davantage l'attention des ennemis, utile à Tour et Gardien) et Vol d'âme (kill en mêlée : les joueurs proches récupèrent du mana).",{nemesis:3,soulLeech:2,veiledVigor:3}]]},
+];
+/* Objectifs de soutien (2.1.0) : 3e objectif, passé en dernier sur les points restants. COMPÉTENCES SEULES (ni attribut ni gemme), choisies par le joueur.
+   Contenu, ordre des étapes et raisons : CHOIX DU SIMULATEUR (hypothèse) ; les effets cités viennent des descriptions de SK. Place figée : fin de FZ.goals. */
+const SUPS=[
+ {id:'survie',n:'Survie (santé)',area:'war',steps:[
+  ['Santé selon vos attributs',"Athlète, Vigueur voilée et Essences de vie : +3 × Force, Dextérité ou Intelligence de santé max par rang.",{athlete:3,veiledVigor:3,lifeEssences:3}],
+  ['Constitution de la Flamme',"Peau épaisse : +1 Constitution tous les 2 niveaux de Flamme.",{thickSkin:1}],
+  ['Relever le groupe',"Réanimation curative : +8 % de santé aux joueurs réanimés par rang.",{healingRevive:3}]]},
+ {id:'vigueur',n:'Endurance (vigueur)',area:'rng',steps:[
+  ['Régénérer la vigueur',"Rebond (+10 % de régén. de vigueur de base par rang) et Rôdeur (+1 Dextérité, +1 Endurance et régén. de vigueur par rang).",{rebound:3,ranger:3}],
+  ['Courir',"Coureur : +5 % de vitesse de sprint par rang, sprint moins coûteux.",{runner:3}],
+  ['Parer pour la vigueur',"Déviation vigoureuse : +15 vigueur par rang à chaque parade réussie.",{vigDeflect:3}],
+  ['Endurance de la Flamme',"Endurance de la Flamme : +1 Endurance tous les 2 niveaux de Flamme.",{enduranceFlame:1}]]},
+ {id:'resist',n:'Résistances',area:'mag',steps:[
+  ['Résistances élémentaires',"Résistances au feu, à la glace et à la foudre : +5 % chacune par rang.",{fireResistance:3,iceResistance:3,shockResistance:3}],
+  ['Résister au Shroud',"Résistance au Shroud : +5 % par rang.",{shroudResistance:3}],
+  ['Pour le groupe',"Aura de terre : +10 % de résistances pour vous et les alliés proches.",{earthAura:3}],
+  ['Entouré',"Tour (+10 % de résistance physique) et Gardien (+10 % de résistance magique) avec 3 ennemis ou plus à 20 m.",{tower:1,warden:1}]]},
+ {id:'mana',n:'Mana',area:'mag',steps:[
+  ['Régénérer le mana',"Courants de mana : +5 de régén. de mana de base par rang.",{manaCurrents:3}],
+  ['Mana en défense',"Déviation arcanique (+10 mana par rang à chaque parade réussie) et Absorption (4 % de chance de convertir les dégâts magiques reçus en mana).",{arcaneDeflect:3,absorb:3}],
+  ['Esprit de la Flamme',"Concentration arcanique : +1 Esprit tous les 2 niveaux de Flamme.",{arcaneConc:1}]]}];
+const GOALI={};GOALS.forEach(g=>GOALI[g.id]=g);SUPS.forEach(g=>GOALI[g.id]={...g,sup:1});
+const isMain=id=>!!GOALI[id]&&!GOALI[id].sup,isSup=id=>!!GOALI[id]&&!!GOALI[id].sup;
+const isAttr=k=>PIPS.some(p=>p[0]===k);
+const itemName=k=>isAttr(k)?PIPS.find(p=>p[0]===k)[1]:SKI[k].fr;
+const goalName=id=>GOALI[id]?GOALI[id].n:'';
+
+/* Calcul d'un combo : pour chaque élément des étapes, dans l'ordre, achat du chemin le moins cher depuis l'arbre relié (pathTo, dijkstra : 04-tree.js),
+   puis des rangs ; ARRÊT au premier achat trop cher pour les points restants. Les liaisons devenues inutiles sont retirées en fin d'étape (comme normalize).
+   Nœud de Flamme sauté à la Flamme 1 (il n'y donne rien). Puis l'objectif secondaire, sur les points restants, et enfin le soutien (2.1.0) sur les derniers.
+   2.3.0 — vos ajouts A (QCM du 2026-11-07) : sk, pn = VOS nœuds (graine : le combo part d'un arbre qui les contient, ils ne lui coûtent rien) ;
+   up = vos rangs posés au-dessus d'un nœud imposé (ils ne changent pas le combo). Le combo garde tout le budget, vos ajouts viennent en plus.
+   Une étape ne compte un de vos nœuds que s'il est relié (le combo paie d'abord le chemin) ; ce qu'elle en compte devient imposé (claim) ; vos nœuds
+   d'attribut s'ajoutent au compte des étapes. Un ajout que l'arbre ne relie pas l'est ensuite par le chemin le moins cher (conn, au-delà du budget
+   s'il le faut). Le glouton peut faire moins bien avec les ajouts : l'ancien calcul (combo seul, ajouts posés dessus) est gardé, sauf si le nouveau
+   avance plus les objectifs (principal, puis secondaire, puis soutien) ou coûte moins à avancée égale, et sauf s'il absorbait un de vos nœuds
+   d'attribut. Résultat = PARTIE IMPOSÉE (sk, pn, pip, spent) ; buy = achats des objectifs (dans le budget), links = liaisons du combo. Mis en cache. */
+const pipCount=(b,k)=>TOPO.pips.reduce((a,p)=>a+(p.attr===k&&b.pn[p.id]?1:0),0);
+const nReach=b=>{let c=0;for(const n of reach(b))if(n.kind==='skill'||n.kind==='pip')c++;return c};
+const NOADD=()=>({sk:{},pn:{},up:{}});
+/* Vos ajouts (b.ad), nettoyés : compétence connue (rang 1 à max), nœud d'attribut du tracé ; un nœud est à vous (sk) ou rangs au-dessus (up), pas les deux */
+function cleanAdds(A){const o=NOADD();if(!A||typeof A!=='object')return o;
+  for(const g of ['sk','up'])for(const id in A[g]||{}){const s=SKI[id],v=Math.round(+A[g][id])||0;if(s&&TOPO.byId[id]&&v>0&&!(g==='up'&&o.sk[id]))o[g][id]=Math.min(v,s.max)}
+  for(const id in A.pn||{}){const n=TOPO.byId[id];if(n&&n.kind==='pip'&&A.pn[id])o.pn[id]=1}return o}
+const addKey=A=>['sk','up'].map(g=>Object.keys(A[g]).sort().map(k=>k+':'+A[g][k]).join(',')).join('/')+'/'+Object.keys(A.pn).sort().join(',');
+const skCost=o=>Object.entries(o).reduce((a,[id,r])=>a+SKI[id].cost*Math.min(r,SKI[id].max),0);
+/* Liaison retirée seulement si elle ne coupe aucun nœud relié (vos ajouts compris) ; un nœud d'attribut, seulement au-delà du compte des étapes (sp : les vôtres) */
+function cleanLinks(b,want,links,sp){let r0=nReach(b);for(const id of [...links].reverse()){const n=TOPO.byId[id];if(!owned(b,n)){links.delete(id);continue}
+  if(n.kind==='skill'){if(want.sk[id]||b.sk[id]!==1)continue;delete b.sk[id];if(nReach(b)<r0-1)b.sk[id]=1;else{links.delete(id);r0--}}
+  else{if(pipCount(b,n.attr)-(sp[n.attr]||0)<=(want.pip[n.attr]||0))continue;delete b.pn[id];if(nReach(b)<r0-1)b.pn[id]=1;else{links.delete(id);r0--}}}
+  syncPips(b)}
+function runGoal(b,g,left,want,links,role,sp){
+  const rep={id:g.id,role,steps:[],pts:0},s0=spentPoints(b),PC=k=>pipCount(b,k)-(sp[k]||0);let stop=null;
+  const C=()=>{const a=spentPoints(b);cleanLinks(b,want,links,sp);left+=a-spentPoints(b)};
+  const buy=(pth,target)=>{for(const x of pth)if(x!==target&&!owned(b,x))links.add(x.id);buyPath(b,pth)};
+  const path=(n,k)=>{let pth=pathTo(b,n),c=pathCost(b,pth);if(c>left){C();pth=pathTo(b,n);c=pathCost(b,pth);if(c>left){stop={k,miss:c-left};return}}buy(pth,n);left-=c};
+  g.steps.forEach(([t,why,items],i)=>{const st={t,why,items,st:'ok',skip:[]};rep.steps.push(st);
+    if(stop){st.st='no';return}const sp0=spentPoints(b);
+    for(const [k,want0] of Object.entries(items)){
+      if(isAttr(k)){let have=PC(k);want.pip[k]=Math.max(want.pip[k]||0,Math.min(want0,have));
+        const near=()=>dijkstra(b,reach(b),u=>u.kind==='pip'&&u.attr===k&&!owned(b,u));
+        while(have<want0){let D=near();if(!D.hit)break;let c=D.dist.get(D.hit);
+          if(c>left){C();D=near();if(!D.hit)break;c=D.dist.get(D.hit);if(c>left){stop={k,miss:c-left};break}} // trop cher : liaisons inutiles rendues, puis nouvel essai
+          buy(trace(D,D.hit),D.hit);left-=c;have=PC(k);want.pip[k]=Math.max(want.pip[k],Math.min(want0,have))}}
+      else{const s=SKI[k],n=TOPO.byId[k];if(FLAME_NODES.some(f=>f[0]===k)&&Math.floor(b.flame/2)===0){st.skip.push(k);continue}
+        if(b.sk[k]>0&&!reach(b).has(n)){path(n,k);if(stop)break} // votre nœud, pas encore relié : le chemin d'abord
+        want.sk[k]=Math.max(want.sk[k]||0,Math.min(want0,b.sk[k]||0));
+        while((b.sk[k]||0)<want0){if(!(b.sk[k]>0)){path(n,k);if(stop)break}
+          else{if(s.cost>left){C();if(s.cost>left){stop={k,miss:s.cost-left};break}}b.sk[k]++;left-=s.cost}want.sk[k]=Math.max(want.sk[k],b.sk[k])}}
+      if(stop)break}
+    C();if(stop){st.st=spentPoints(b)>sp0?'part':'no';st.miss=stop.miss;st.at=stop.k}});
+  rep.pts=spentPoints(b)-s0;return {rep,left}}
+/* Vos ajouts que l'arbre ne relie pas : reliés par le chemin le moins cher (comme normalize), au-delà du budget s'il le faut. Renvoie [liaisons achetées, ajouts qu'il a fallu relier] */
+function linkAdds(b,A){const R0=reach(b),miss=[...Object.keys(A.sk),...Object.keys(A.pn),...Object.keys(A.up)].filter(id=>!R0.has(TOPO.byId[id])),conn=[];
+  for(let g=0;miss.length&&g<300;g++){const R=reach(b),lost=TOPO.N.filter(n=>(n.kind==='skill'||n.kind==='pip')&&owned(b,n)&&!R.has(n));if(!lost.length)break;
+    const D=dijkstra(b,R);let best=null;for(const n of lost)if(D.dist.has(n)&&(!best||D.dist.get(n)<D.dist.get(best)))best=n;if(!best)break;
+    const pth=trace(D,best);for(const n of pth)if(!owned(b,n))conn.push(n.id);buyPath(b,pth)}
+  return [conn,miss]}
+/* Partie imposée : comptes d'attribut, points ; avancée des objectifs (wpts, et prog : un total par objectif), dont achetée (wbuy) ; étape de chaque élément (by) */
+function pack(sk,pn,want,rep,goals,x){const pip={};for(const id in pn){const a=TOPO.byId[id].attr;pip[a]=(pip[a]||0)+1}
+  const wpts=skCost(want.sk)+Object.values(want.pip).reduce((a,v)=>a+v,0),wbuy=wpts-skCost(x.claim);
+  const prog=goals.map(([id])=>GOALI[id].steps.reduce((a,[,,it])=>a+Object.entries(it).reduce((y,[k,v])=>y+(isAttr(k)?Math.min(v,want.pip[k]||0):SKI[k].cost*Math.min(v,want.sk[k]||0)),0),0));
+  const by={};rep.forEach((r,gi)=>r.steps.forEach((st,si)=>{for(const k in st.items){const key=isAttr(k)?'@'+k:k;if(!by[key])by[key]=[gi,si]}}));
+  return {sk,pn,pip,rep,want,by,spent:skCost(sk)+Object.keys(pn).length,wpts,wbuy,links:x.buy-wbuy,prog,...x}}
+/* Un passage du moteur ; A : vos ajouts (graine : vos nœuds), ou null (combo seul) */
+function runCombo(goals,lvl,exp,flame,A){const b=blankBuild();Object.assign(b,{lvl,exp,flame});const want={sk:{},pip:{}},links=new Set(),rep=[],sp={};
+  if(A){Object.assign(b.sk,A.sk);Object.assign(b.pn,A.pn);syncPips(b);for(const id in A.pn){const a=TOPO.byId[id].attr;sp[a]=(sp[a]||0)+1}}
+  const s0=spentPoints(b),bu=budget(b);let left=bu;
+  for(const [id,role] of goals){const r=runGoal(b,GOALI[id],left,want,links,role,sp);left=r.left;rep.push(r.rep)}
+  syncPips(b);const buy=spentPoints(b)-s0,sk={},pn={},claim={};
+  for(const id in b.sk){if(A&&A.sk[id]){const w=Math.min(b.sk[id],want.sk[id]||0);if(w>0){sk[id]=w;claim[id]=Math.min(w,A.sk[id])}}else sk[id]=b.sk[id]}
+  for(const id in b.pn)if(b.pn[id]&&!(A&&A.pn[id]))pn[id]=1;
+  let conn=[],orphans=[];
+  if(A){for(const id in A.up)b.sk[id]=Math.max(b.sk[id]||0,A.up[id]);[conn,orphans]=linkAdds(b,A);for(const id of conn)if(TOPO.byId[id].kind==='skill')sk[id]=1;else pn[id]=1}
+  const cc=conn.reduce((a,id)=>a+nodeCost(TOPO.byId[id]),0);
+  return pack(sk,pn,want,rep,goals,{buy,claim,conn,orphans,left:bu-buy-cc,tree:spentPoints(syncPips(b))})}
+/* Ancien calcul, pour comparer : combo seul (z), vos ajouts posés dessus, reliés au besoin */
+function overlay(z,A,goals,lvl,exp,flame){const b=blankBuild();Object.assign(b,{lvl,exp,flame});const t=treeOf(z,A);b.sk=t.sk;b.pn=t.pn;syncPips(b);
+  const [conn,orphans]=linkAdds(b,A),sk={...z.sk},pn={...z.pn};for(const id of conn)if(TOPO.byId[id].kind==='skill')sk[id]=1;else pn[id]=1;
+  return pack(sk,pn,z.want,z.rep,goals,{buy:z.buy,claim:{},conn,orphans,left:z.left-conn.reduce((a,id)=>a+nodeCost(TOPO.byId[id]),0),tree:spentPoints(syncPips(b))})}
+/* Le nouveau calcul seulement s'il fait mieux : objectifs plus avancés (principal, puis secondaire, puis soutien), puis moins de points ; à égalité, l'ancien */
+const better=(a,o)=>{for(let i=0;i<a.prog.length;i++)if(a.prog[i]!==o.prog[i])return a.prog[i]>o.prog[i]?a:o;return a.tree<o.tree?a:o};
+const COMBO=new Map();
+function combo(p,s,lvl,exp,flame,t,A){t=isSup(t)?t:null;A=cleanAdds(A);const ak=addKey(A),key=[p,s,lvl,exp,flame,t,ak].join('|');if(COMBO.has(key))return COMBO.get(key);
+  const goals=[[isMain(p)?p:null,'p'],[isMain(s)&&s!==p?s:null,'s'],[t,'t']].filter(x=>x[0]);let out;
+  if(ak==='//'){out=runCombo(goals,lvl,exp,flame,null);out.drop=[]}
+  else{const z=combo(p,s,lvl,exp,flame,t),a=runCombo(goals,lvl,exp,flame,A),o=overlay(z,A,goals,lvl,exp,flame);
+    out=Object.keys(A.pn).some(id=>z.pn[id])?a:better(a,o); // l'ancien calcul absorberait un de vos nœuds d'attribut (votre +1 perdu) : écarté
+    out.drop=a.orphans.filter(id=>o.orphans.includes(id))} // ajouts qu'aucun des deux calculs ne relie (regen)
+  out.ad=A;if(COMBO.size>300)COMBO.clear();COMBO.set(key,out);return out}
+
+/* Build et objectifs : arbre = partie imposée ∪ vos ajouts (b.ad, 2.3.0). Un nœud imposé ne se retire pas (rang minimum = rang imposé) ;
+   un changement de réglage (niveau, exploration, Flamme) ou de secondaire garde les ajouts encore reliés ; un nouveau principal repart du combo seul. */
+function imposed(b){const o=b.obj||[];return isMain(o[0])?combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null,b.ad):null}
+/* Vos ajouts : b.ad avec objectif ; en arbre libre, tout l'arbre (placé à la main) */
+function addsOf(b){if(imposed(b))return cleanAdds(b.ad);const o=NOADD();for(const id in b.sk)if(b.sk[id]>0)o.sk[id]=b.sk[id];for(const id in b.pn)if(b.pn[id])o.pn[id]=1;return o}
+const treeOf=(imp,A)=>{const sk={...imp.sk},pn={...imp.pn};for(const g of ['sk','up'])for(const id in A[g]||{})sk[id]=Math.max(sk[id]||0,A[g][id]);Object.assign(pn,A.pn);return {sk,pn}};
+const sameTree=(x,b)=>{const ks=Object.keys(x.sk),kp=Object.keys(x.pn);return ks.length===Object.keys(b.sk).filter(id=>b.sk[id]>0).length&&ks.every(id=>b.sk[id]===x.sk[id])&&
+  kp.length===Object.keys(b.pn).filter(id=>b.pn[id]).length&&kp.every(id=>!!b.pn[id])};
+/* Arbre recalculé depuis les départs avec vos ajouts. keep (juste après un ajout) : tous vos ajouts restent, reliés par le moteur s'il le faut ;
+   sinon (réglage, secondaire, soutien, rang retiré) : un ajout qu'aucun calcul ne relie plus, et que l'état d'avant (prev) reliait, est élagué (règle 3).
+   Renvoie les ajouts élagués qui ont quitté l'arbre */
+function regen(b,keep,prev){b.ad=cleanAdds(b.ad);const gone=[];let imp=imposed(b);if(!imp)return gone;const was=new Set(prev&&prev.drop||[]);
+  for(let g=0;!keep&&g<99;g++){const d=imp.drop.filter(id=>!was.has(id));if(!d.length)break;for(const id of d){gone.push(TOPO.byId[id]);for(const k of ['sk','pn','up'])delete b.ad[k][id]}imp=imposed(b)}
+  const t=treeOf(imp,b.ad);b.sk=t.sk;b.pn=t.pn;syncPips(b);return gone.filter(n=>!owned(b,n))}
+function rebuild(b,A,prev){if(A!==undefined)b.ad=cleanAdds(A);return regen(b,false,prev)}
+/* Choisir les objectifs : principal (nouveau → combo seul, gemmes de l'objectif posées ; un objectif sans gemme garde celles en place, 2.4.0), secondaire et soutien (ajouts gardés).
+   obj = [p, s] sans soutien (forme d'avant la 2.1.0, lien inchangé), [p, s, t] avec. */
+const objOf=(p,s,t)=>p?(t?[p,s,t]:[p,s]):[];
+function setGoals(b,p,s,t){p=isMain(p)?p:null;s=p&&isMain(s)&&s!==p?s:null;t=p&&isSup(t)?t:null;const was=(b.obj||[])[0]||null,c0=imposed(b);
+  b.obj=objOf(p,s,t);if(!p){b.ad=NOADD();return []}if(was!==p){b.ad=NOADD();if(Object.keys(GOALI[p].gem).length)b.gem={...GOALI[p].gem};return regen(b,false)}return regen(b,false,c0)}
+/* Rang minimum d'un nœud (imposé), 0 sinon. Un de vos nœuds qu'une étape compte n'est verrouillé que si le combo l'aurait aussi sans lui (QCM du 2026-11-07) */
+function lockOf(b,n,imp){imp=imp===undefined?imposed(b):imp;if(!imp)return 0;if(n.kind==='pip')return imp.pn[n.id]?1:0;if(n.kind!=='skill')return 0;
+  const r=imp.sk[n.id]||0;if(!r||!imp.claim||!imp.claim[n.id])return r;const A=cleanAdds(imp.ad),o=b.obj;delete A.sk[n.id];
+  return Math.min(r,combo(o[0],o[1]||null,b.lvl,b.exp,b.flame,o[2]||null,A).sk[n.id]||0)}
+/* Lien, build enregistré : objectifs inconnus retirés ; arbre qui n'est pas celui que le moteur tire des objectifs et des ajouts (objectif changé depuis)
+   → objectifs retirés, arbre gardé tel quel ; noté dans _objLost. Vos ajouts viennent du lien (segment -a) ou du build enregistré (ad) ; sans eux
+   (lien ou build d'avant la 2.3.0) : ajouts = arbre − combo seul (rangs au-dessus d'un nœud du combo : up), puis combo recalculé s'il change (_recalc, message) ;
+   jamais quand un objectif inconnu a été retiré (lien d'une version plus récente, 2.4.0) : l'arbre reste tel quel, au besoin en arbre libre */
+function fitGoals(b){const o=Array.isArray(b.obj)?b.obj:[],p=isMain(o[0])?o[0]:null,s=p&&isMain(o[1])&&o[1]!==p?o[1]:null,t=p&&isSup(o[2])?o[2]:null;
+  let lost=!!(o[0]&&!p)||!!(o[1]&&o[1]!==o[0]&&!s)||!!(o[2]&&p&&!t);
+  const given=b.ad&&typeof b.ad==='object'?cleanAdds(b.ad):null;b.obj=objOf(p,s,t);b.ad=NOADD();
+  if(p){const z=imposed(b),fits=A=>{b.ad=A;if(sameTree(treeOf(imposed(b),A),b))return true;b.ad=NOADD();return false};let ok=false;
+    if(given){for(const g of ['sk','up'])for(const id in given[g])if(!((b.sk[id]||0)>=given[g][id]))delete given[g][id];for(const id in given.pn)if(!b.pn[id])delete given.pn[id];ok=fits(given)}
+    const has=Object.keys(z.sk).every(id=>(b.sk[id]||0)>=z.sk[id])&&Object.keys(z.pn).every(id=>b.pn[id]),A=NOADD();
+    if(!ok&&has){for(const id in b.sk)if(b.sk[id]>(z.sk[id]||0))(z.sk[id]?A.up:A.sk)[id]=b.sk[id];for(const id in b.pn)if(b.pn[id]&&!z.pn[id])A.pn[id]=1;ok=fits(A)}
+    if(!ok&&has&&!given&&!lost){b.ad=A;const imp=imposed(b);Object.defineProperty(b,'_recalc',{value:{links:[z.links,imp.links],wpts:[z.wpts,imp.wpts]},enumerable:false,configurable:true});regen(b,true);ok=true}
+    if(!ok){b.obj=[];b.ad=NOADD();lost=true}}
+  if(lost)Object.defineProperty(b,'_objLost',{value:true,enumerable:false,configurable:true});return b}
+/* Build d'un objectif (démarrage, tests) */
+function goalBuild(p,s,name,t){const b=blankBuild(name||goalName(p));setGoals(b,p,s,t);return b}
+</script>
+<script>
+/* =========================== INTERFACE (2.0.0) =========================== */
+/* Une page : vos points, objectifs (combo imposé et expliqué), gemmes, arbre (graphe ou liste) ; builds A et B, enregistrés, partagés, comparés */
+const $=s=>document.querySelector(s);
+const fmt=(n,d=0)=>{const v=Math.round(n*10**d)/10**d;return v.toLocaleString('fr-FR',{maximumFractionDigits:d})};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let builds=[goalBuild('tank','healer','Tank + Soigneur'),goalBuild('mageCrit','storm','Mage critique + foudre')];
+let cur=0,compare=false,area='all',onlyOn=false,query='',view='graph';
+const LS='forge-embervale-builds';
+/* localStorage peut lever une exception (navigation privée, Artifact) : toujours passer par ces deux fonctions ; k : clé, d : valeur si absente ou illisible */
+function lsGet(k=LS,d=[]){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(v,k=LS){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;($('#toasts')||document.body).appendChild(d);setTimeout(()=>d.remove(),2600)} // empilés dans #toasts (role="status")
+function modal(html){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="box" role="dialog" aria-modal="true">${html}</div>`;m.onclick=e=>{if(e.target===m)m.remove()};document.body.appendChild(m);return m}
+const B=()=>builds[cur];
+const areaColor=k=>`var(${(AREAS.find(a=>a[0]===k)||['','','--ember'])[2]})`;
+const zoneTag=(k,t)=>{const a=AREAS.find(x=>x[0]===k);return a?`<span class="ztag" style="--ac:var(${a[2]})">${esc(t??a[1])}</span>`:''};
+/* Points dépensés dans une zone : compétences au coût du rang, nœuds d'attribut à 1 point ; la somme des quatre zones = spentPoints */
+const zonePts=(b,k)=>SK.reduce((a,s)=>a+(s.area===k?s.cost*Math.min(b.sk[s.id]||0,s.max):0),0)+PIPS.reduce((a,p)=>a+(p[3]===k?b.pip[p[0]]||0:0),0);
+const goalsTxt=b=>(b.obj||[])[0]?b.obj.filter(Boolean).map(goalName).join(' + '):'Arbre libre';
+const pts=n=>`${n} pt${Math.abs(n)>1?'s':''}`;
+const fold=t=>String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); // recherche sans accents ni majuscules
+
+function renderTabs(){const el=$('#buildTabs');el.innerHTML='';
+  builds.forEach((b,i)=>{const t=document.createElement('button');t.className='tab';t.setAttribute('role','tab');t.setAttribute('aria-selected',i===cur);
+    t.innerHTML=`<span class="dot" style="background:${i?'var(--shroud)':'var(--ember)'}"></span>${'AB'[i]} · ${esc(b.name)}`;t.onclick=()=>{cur=i;renderAll()};el.appendChild(t)});
+  $('#buildName').value=B().name;$('#cmp').checked=compare}
+
+/* ---- Vos points ---- */
+function flameFx(b,o){const h=Math.floor(Math.max(1,Math.min(11,b.flame))/2),own=FLAME_NODES.filter(([id])=>o.R(id));
+  return own.length?own.map(([id,a])=>`${SKI[id].fr} : +${h} ${PIPS.find(p=>p[0]===a)[2]}`).join(' · '):`aucun nœud de Flamme acquis (${SKI.exalted.fr}, ${SKI.barbarian.fr}…)`}
+function renderPoints(){const b=B(),sp=spentPoints(b),bu=budget(b),over=sp>bu,o=compute(b);
+  $('#lvl').value=b.lvl;$('#exp').value=b.exp;$('#flame').value=b.flame;
+  $('#ptLbl').textContent=over?'Points en trop':'Points à attribuer';
+  const pl=$('#ptLeft');pl.textContent=String(Math.abs(bu-sp));pl.classList.toggle('over',over);
+  $('#spent').textContent=`${sp} / ${bu} dépensés`;$('#needLvl').textContent=over?'retirez-en ou montez de niveau':`niveau requis ${levelNeeded(b)}`;
+  $('#bar').className='bar'+(over?' over':'');$('#bar').firstElementChild.style.width=Math.min(100,sp/Math.max(1,bu)*100)+'%';
+  /* maximum de chaque champ et du total (2.7.0) : tirés de budget(), jamais recopiés */
+  const mL=budget({lvl:50,exp:0}),mE=budget({lvl:1,exp:114}),mT=budget({lvl:50,exp:114});
+  $('#lvlMax').textContent=`${fmt(mL)} pts max`;$('#expMax').textContent=`${fmt(mE)} pts max`;
+  $('#ptMax').textContent=(bu>=mT?`Budget ${fmt(bu)} : le maximum`:`Budget ${fmt(bu)} sur ${fmt(mT)} au maximum`)+` (${fmt(mL)} niveau + ${fmt(mE)} exploration)`;
+  $('#flameDn').disabled=b.flame<=1;$('#flameUp').disabled=b.flame>=11;$('#flameFx').textContent=flameFx(b,o)}
+
+/* ---- Objectifs ---- */
+const goalOpts=none=>`<option value="">${none}</option>`+GOAL_GRP.map(([g,l])=>`<optgroup label="${l}">`+GOALS.filter(x=>x.grp===g).map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join('')+'</optgroup>').join('');
+const supOpts=()=>`<option value="">Aucun</option>`+SUPS.map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join('');
+function renderGoals(){const b=B(),[p,s,t]=b.obj||[];$('#goal1').value=p||'';$('#goal2').value=s||'';$('#goal2').disabled=!p;$('#goal3').value=t||'';$('#goal3').disabled=!p;
+  for(const o of $('#goal2').querySelectorAll('option'))o.disabled=!!o.value&&o.value===p;
+  $('#goalHint').textContent=p?`Le site place vos points pour « ${goalName(p)} »${s?`, puis ceux qui restent pour « ${goalName(s)} »`:''}${t?`, enfin les derniers pour le soutien « ${goalName(t)} »`:''}. Vous pouvez ensuite ajouter des compétences dans l'arbre ; les nœuds imposés ne se retirent pas.`
+    :'Arbre libre : vous placez tout vous-même. Choisissez un objectif principal pour que le site impose un combo et explique pourquoi.'}
+function goneMsg(gone){if(gone.length){const sk=gone.filter(n=>n.kind==='skill').length,pp=gone.length-sk;toast(`Plus reliés à un point de départ, donc retirés : ${sk?sk+' compétence'+(sk>1?'s':''):''}${sk&&pp?' et ':''}${pp?pp+' nœud'+(pp>1?'s':'')+" d'attribut":''}`)}}
+/* i : 0 principal, 1 secondaire, 2 soutien */
+function pickGoal(i,v){const b=B(),o=b.obj||[],p=i?o[0]:v||null,s=i===1?v||null:i===2?o[1]||null:(v&&o[1]!==v?o[1]||null:null),t=i===2?v||null:o[2]||null;
+  const A=addsOf(b),before=Object.keys(A.sk).length+Object.keys(A.pn).length+Object.keys(A.up).length,newP=p!==(o[0]||null);goneMsg(setGoals(b,p,s,t));
+  if(p&&newP)toast(`Combo « ${goalName(p)} » posé, ${Object.keys(GOALI[p].gem).length?'avec ses gemmes':'gemmes inchangées'}${before?' ; vos nœuds placés à la main sont retirés':''}`);else if(!p)toast('Arbre libre : tout est modifiable, rien n\'est imposé');
+  renderAll()}
+
+/* ---- Pourquoi ce combo ---- */
+const ROLE={p:'Principal',s:'Secondaire',t:'Soutien'},ICO={ok:'✓',part:'◐',no:'○'},STT={ok:'complète',part:'en partie',no:'pas encore'};
+function itemChip(k,want,c,st){const got=Math.min(want,isAttr(k)?(c.want.pip[k]||0):(c.want.sk[k]||0)),skip=st.skip.includes(k);
+  const txt=skip?`${itemName(k)} : sautée (Flamme 1)`:isAttr(k)?`${itemName(k)} ${got}/${want}`:`${itemName(k)}${want>1||got>1?` ${got}/${want}`:''}`;
+  return `<span class="chip${skip||got<want?' off':''}">${esc(txt)}</span>`}
+const critTxt=o=>`<p class="meta2 crit"><b>Critique magique</b> (bonus des compétences seulement, sans base ni équipement) : chance +${fmt(o.crit.wand)} % aux baguettes et bâtons, +${fmt(o.crit.spell)} % aux sorts ; dégâts critiques +${fmt(o.crit.dmg)} %. <span class="tag hyp">hypothèse</span> Précision fatale compte aussi pour les sorts (son texte ne limite pas l'arme).</p>`;
+function renderWhy(){const b=B(),c=imposed(b),el=$('#why'),o=compute(b),sp=spentPoints(b),bu=budget(b);
+  const res=`<p class="res"><b>Résultat</b> ${PIPS.map(([k,,ab])=>`${ab} ${o.attr[k]}`).join(' · ')} · Santé ${fmt(o.hp)} · Mana ${fmt(o.mana)} · Vigueur ${fmt(o.sta)}</p>`+critTxt(o);
+  if(!c){el.innerHTML=`<p class="meta2">Aucun objectif : rien n'est imposé ni expliqué. ${sp?`${pts(sp)} placé${sp>1?'s':''} à la main.`:''}</p>${res}`;return}
+  el.innerHTML=c.rep.map((r,gi)=>{const g=GOALI[r.id];
+    return `<div class="wgoal"><h3>${zoneTag(g.area,ROLE[r.role])} ${esc(g.n)} <small>${pts(r.pts)}</small></h3>`+(g.src?`<p class="meta2 wsrc"><span class="tag est">communauté</span> ${esc(g.src)}</p>`:'')+(g.sim?`<p class="meta2 wsrc"><span class="tag hyp">hypothèse</span> ${esc(g.sim)}</p>`:'')+r.steps.map((st,i)=>`<details class="wstep ${st.st}"><summary><span class="ws" aria-label="Étape ${STT[st.st]}">${ICO[st.st]}</span> ${i+1}. ${esc(st.t)}${st.miss?` <em>— il manque ${pts(st.miss)} pour ${esc(itemName(st.at))}</em>`:''}</summary>`+
+      `<p>${esc(st.why)}</p><div class="chips">${Object.entries(st.items).map(([k,w])=>itemChip(k,w,c,st)).join('')}</div></details>`).join('')+'</div>'}).join('')+
+    `<p class="meta2">Liaisons ${pts(c.links)} · vos ajouts ${pts(sp-c.buy)} · ${sp>bu?`<span class="over-msg">${pts(sp-bu)} en trop</span>`:`libres ${pts(bu-sp)}`}</p>${res}`+
+    `<p class="meta2"><span class="tag hyp">hypothèse</span> Ordre des étapes et raisons : choix du simulateur. Le combo suit les étapes dans l'ordre et s'arrête au premier achat trop cher ; chaque chemin est le moins cher depuis l'arbre déjà relié. Vos ajouts comptent comme déjà acquis : le combo passe par eux sans les payer s'il y gagne (étapes plus avancées ou moins de points) ; il dispose toujours de tout votre budget, vos ajouts viennent en plus. Un de vos nœuds qu'une étape compte devient imposé, sauf si le combo ne l'aurait pas sans lui. Le combo se recalcule à chaque ajout, retrait ou réglage.${(op=>op.length?` Pour ${op.join(' et ')}, l'ordre des éléments de chaque étape est calculé hors ligne : combo complet au moindre coût à 212 points, puis l'avancée la plus rapide quand les points montent.`:'')(c.rep.filter(r=>GOALI[r.id].opt).map(r=>`« ${esc(GOALI[r.id].n)} »`))}</p>`}
+
+/* ---- Gemmes (Arme 1, Arme 2) : effets descriptifs, jamais comptés ---- */
+function renderGems(){const b=B(),el=$('#gems');el.innerHTML='';b.gem=b.gem||{};
+  for(const [sl,lab] of [['w1','Arme 1'],['w2','Arme 2']]){const row=document.createElement('div');row.className='gemrow';
+    let opts='<option value="">Aucune gemme</option>';for(let t=1;t<=7;t++)opts+=`<optgroup label="Palier ${t}">`+GEMS.filter(g=>g[4]===t).map(g=>`<option value="${g[0]}">${esc(g[1])} · ${RAR[g[3]][0]}</option>`).join('')+'</optgroup>';
+    row.innerHTML=`<label for="gem-${sl}">${lab}</label><select id="gem-${sl}">${opts}</select>`;const sel=row.querySelector('select');sel.value=b.gem[sl]||'';
+    sel.onchange=()=>{if(sel.value)b.gem[sl]=sel.value;else delete b.gem[sl];renderAll()};
+    const g=GEMI[b.gem[sl]];if(g)row.insertAdjacentHTML('beforeend',`<div class="gemcard" style="--rc:${RAR[g.r][1]}"><div><span class="gdot"></span><b>${esc(g.fr)}</b> <span class="en">${esc(g.en)}</span></div><div>${esc(g.d)}</div><div class="meta2">${RAR[g.r][0]} · palier ${g.t}${g.types.length?' · se déclenche avec des dégâts '+g.types.map(x=>GTYPE[x]||x).join(', '):''} · valeurs de base : ${esc(g.v)}</div></div>`);
+    el.appendChild(row)}
+  el.insertAdjacentHTML('beforeend','<p class="meta2">Les gemmes se posent sur l\'arme ; leur effet est décrit, il n\'entre dans aucun chiffre ici (l\'équipement n\'est pas pris en compte).</p>')}
+
+/* ---- Arbre : achats et retraits (invariant : canBuy, prune ; nœuds imposés verrouillés) ----
+   Avec objectif (2.3.0) : un achat ou un retrait passe par vos ajouts (b.ad), puis le combo est recalculé depuis les départs (regen, 06-objectifs.js) */
+function lockedMsg(n){const pth=pathTo(B(),n);toast(pth?`Verrouillé : il faut d'abord un nœud relié (chemin le plus court : ${pts(pathCost(B(),pth))})`:'Verrouillé : aucun chemin vers ce nœud')}
+/* Nœud verrouillé : l'objectif qui le demande (étape), ou liaison vers vos ajouts */
+function imposedMsg(b,n){const c=imposed(b),w=c&&n?c.by[n.kind==='pip'?'@'+n.attr:n.id]:null;
+  if(c&&n&&c.conn.includes(n.id))toast('Liaison vers un de vos ajouts : retirez d\'abord l\'ajout qu\'elle relie');
+  else toast(`Imposé par l'objectif « ${goalName(w?c.rep[w[0]].id:b.obj[0])} » : choisissez « Aucun (arbre libre) » pour le retirer`)}
+const withGoal=b=>isMain((b.obj||[])[0]);
+/* f modifie vos ajouts (b.ad) ; keep : juste après un ajout (aucun ajout élagué). Le message dit ce que le recalcul a changé, et seulement cela */
+function viaAdds(b,f,keep){const c0=imposed(b);f(b.ad);const gone=regen(b,keep,c0),c1=imposed(b);
+  if(c0&&c1){const d=c1.wpts-c0.wpts,m=[];if(c0.links!==c1.links)m.push(`liaisons ${pts(c0.links)} → ${pts(c1.links)}`);if(d)m.push(`${d>0?'+':'−'}${pts(Math.abs(d))} sur les étapes`);if(m.length)toast('Combo recalculé : '+m.join(' · '))}
+  return gone}
+const carriedMsg=()=>toast('Retiré de vos ajouts, mais le combo passe par ce nœud : il reste, imposé');
+/* +1 rang : sur un nœud imposé, votre rang au-dessus (up : le combo ne change pas) ; sinon, votre nœud (sk : le combo passe par lui sans le payer) */
+function addRank(b,id){const s=SKI[id],n=TOPO.byId[id];if(!s)return false;const r=b.sk[id]||0;if(r>=s.max)return false;if(!r&&!canBuy(b,n)){lockedMsg(n);return false}
+  if(!withGoal(b)){b.sk[id]=r+1;return true}const up=!!b.ad.up[id]||!b.ad.sk[id]&&lockOf(b,n)>0;viaAdds(b,A=>{(up?A.up:A.sk)[id]=r+1},true);return true}
+/* −1 rang : jamais sous l'imposé ; votre rang au-dessus disparaît au rang du combo (+1 puis −1 ne change rien) ; votre nœud perd un rang, ou part (règle 3) */
+function remRank(b,id){const v=(b.sk[id]||0)-1,n=TOPO.byId[id];if(v<0)return false;const lk=lockOf(b,n);if(v<lk){imposedMsg(b,n);return false}
+  if(!withGoal(b)){if(v>0)b.sk[id]=v;else{delete b.sk[id];goneMsg(prune(b))}return true}
+  if(b.ad.up[id])viaAdds(b,A=>{if(v>lk)A.up[id]=v;else delete A.up[id]},true);
+  else if(b.ad.sk[id]){if(v>0)goneMsg(viaAdds(b,A=>{A.sk[id]=v},false));else goneMsg(removeAdd(b,n))}
+  else{imposedMsg(b,n);return false}return true}
+/* Retirer un de vos nœuds : vos ajouts qu'il était seul à relier partent avec lui (règle 3 ; les éléments d'étape du combo comptent comme reliés,
+   le combo les recalcule), puis le combo est recalculé sans lui */
+function removeAdd(b,n){const c=imposed(b),t={sk:{...b.sk},pn:{...b.pn}};if(n.kind==='skill')delete t.sk[n.id];else delete t.pn[n.id];
+  const seen=new Set([TOPO.core]);for(const m of TOPO.N)if(m!==n&&owned(t,m)&&(m.kind==='skill'?(c.want.sk[m.id]||0)>0&&c.sk[m.id]:m.kind==='pip'&&c.pn[m.id]&&(c.want.pip[m.attr]||0)>0))seen.add(m);
+  const st=[...seen];while(st.length){const u=st.pop();for(const v of u.nb)if(!seen.has(v)&&(v.kind==='start'||owned(t,v))){seen.add(v);st.push(v)}}
+  const gone=[];viaAdds(b,A=>{for(const k of ['sk','pn','up'])delete A[k][n.id];for(const k of ['sk','pn','up'])for(const id of Object.keys(A[k]))if(!seen.has(TOPO.byId[id])){gone.push(TOPO.byId[id]);for(const g of ['sk','pn','up'])delete A[g][id]}},true);
+  if(owned(b,n))carriedMsg();return gone.filter(m=>!owned(b,m))}
+function addPipNode(b,n){if(b.pn[n.id])return false;if(!canBuy(b,n)){lockedMsg(n);return false}if(withGoal(b))viaAdds(b,A=>{A.pn[n.id]=1},true);else{b.pn[n.id]=1;syncPips(b)}return true}
+function remPipNode(b,n){if(!b.pn[n.id])return false;if(lockOf(b,n)){imposedMsg(b,n);return false}
+  if(!withGoal(b)){delete b.pn[n.id];syncPips(b);goneMsg(prune(b));return true}goneMsg(removeAdd(b,n));return true}
+function addPip(b,k){const R=reach(b);const n=TOPO.pips.filter(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,R)).sort((x,y)=>x.idx-y.idx)[0];
+  if(!n){toast(TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id])?"Aucun nœud de cet attribut n'est relié pour l'instant : utilisez « Acheter le chemin »":'Tous les nœuds de cet attribut sont acquis');return false}return addPipNode(b,n)}
+/* −1 attribut : le nœud non imposé dont le retrait coupe le moins */
+function remPip(b,k){const imp=imposed(b);let best=null,bc=Infinity;for(const p of TOPO.pips){if(p.attr!==k||!b.pn[p.id]||lockOf(b,p,imp))continue;const t=JSON.parse(JSON.stringify(b));delete t.pn[p.id];syncPips(t);const c=prune(t).length;if(c<bc){bc=c;best=p}}
+  if(!best){imposedMsg(b,TOPO.pips.find(p=>p.attr===k&&b.pn[p.id]));return false}return remPipNode(b,best)}
+/* « Acheter le chemin » : avec objectif, le chemin entre dans vos ajouts */
+function buyTo(b,n){const pth=pathTo(b,n);if(!pth)return;if(withGoal(b))viaAdds(b,A=>{for(const x of pth)if(!owned(b,x)){if(x.kind==='skill')A.sk[x.id]=1;else if(x.kind==='pip')A.pn[x.id]=1}},true);else buyPath(b,pth);renderAll()}
+function renderTree(){const b=B(),sp=spentPoints(b),ae=$('#areas');ae.innerHTML='';
+  [['all','Tout','--ember'],...AREAS].forEach(([k,n,c])=>{const bt=document.createElement('button');bt.className='area';bt.style.setProperty('--ac',`var(${c})`);bt.setAttribute('aria-pressed',area===k);
+    bt.innerHTML=`${n} <small>${pts(k==='all'?sp:zonePts(b,k))}</small>`;bt.onclick=()=>{area=k;renderTree();if(view==='graph'&&window.G)G.focus(k)};ae.appendChild(bt)});
+  $('#vGraph').setAttribute('aria-pressed',view==='graph');$('#vList').setAttribute('aria-pressed',view==='list');$('#graphView').hidden=view!=='graph';$('#listView').hidden=view!=='list';
+  if(view==='graph'){if(window.G)G.refresh();return}
+  const imp=imposed(b),RR=reach(b),DJ=dijkstra(b,RR),pe=$('#pips');pe.innerHTML='';
+  PIPS.filter(p=>area==='all'||p[3]===area).forEach(([k,n,,,max])=>{const v=b.pip[k]||0,lk=TOPO.pips.filter(p=>p.attr===k&&lockOf(b,p,imp)).length,d=document.createElement('div');d.className='pip';
+    // aucun nœud de cet attribut voisin d'un nœud relié : chemin le moins cher (la vue Liste sert d'alternative au clavier)
+    let far=null;if(v<max&&!TOPO.pips.some(p=>p.attr===k&&!b.pn[p.id]&&canBuy(b,p,RR)))for(const p of TOPO.pips)if(p.attr===k&&!b.pn[p.id]&&DJ.dist.has(p)&&(!far||DJ.dist.get(p)<DJ.dist.get(far)))far=p;
+    d.innerHTML=`<div><b>${n}</b><div class="lbl">nœuds d'attribut · 1 pt${lk?` · ${lk} imposé${lk>1?'s':''}`:''}</div>${far?`<button class="btn sm pathb" aria-label="Acheter le chemin vers ${n} +1 (${pts(DJ.dist.get(far))})">Acheter le chemin (${pts(DJ.dist.get(far))})</button>`:''}</div><div class="step" style="grid-row:auto"><button aria-label="Retirer ${n}" ${v>lk?'':'disabled'}>−</button><span class="rk">${v}/${max}</span><button aria-label="Ajouter ${n}" ${v<max?'':'disabled'}>+</button></div>`;
+    const [m,p]=d.querySelectorAll('.step button');m.onclick=()=>{if(remPip(b,k))renderAll()};p.onclick=()=>{if(addPip(b,k))renderAll()};
+    const pb=d.querySelector('.pathb');if(pb)pb.onclick=()=>buyTo(b,far);pe.appendChild(d)});
+  pe.hidden=area==='core';
+  const ne=$('#nodes');ne.innerHTML='';const q=fold(query);
+  const list=SK.filter(s=>(q?fold(s.fr+' '+s.en).includes(q):(area==='all'||s.area===area))&&(!onlyOn||(b.sk[s.id]||0)>0));
+  if(!list.length)ne.innerHTML='<div class="empty">Aucune compétence ne correspond. Videz la recherche ou décochez « Prises seulement ».</div>';
+  list.forEach(s=>{const v=b.sk[s.id]||0,tn=TOPO.byId[s.id],lk=lockOf(b,tn,imp),lock=!v&&!canBuy(b,tn,RR),d=document.createElement('div');d.className='node'+(v?' on':'')+(lock?' lock':'')+(v>lk?' add':'');
+    d.style.setProperty('--ac',areaColor(s.area));
+    d.innerHTML=`<div class="nn">${esc(s.fr)}<span class="en">${esc(s.en)}</span>${s.nw?'<span class="new">1.0</span>':''}${lk?'<span class="imp">imposé</span>':v?'<span class="lk">ajouté</span>':''}${lock?'<span class="lk">verrouillé</span>':''}</div>
+      <div class="nd">${esc(s.d)}${lock?` <button class="btn sm pathb">Acheter le chemin (${DJ.dist.has(tn)?pts(DJ.dist.get(tn)):'—'})</button>`:''}</div>
+      <div class="step"><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?'/rang':''}</span><button aria-label="Retirer un rang à ${esc(s.fr)}" ${v>lk?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button aria-label="Ajouter un rang à ${esc(s.fr)}" ${v<s.max&&!lock?'':'disabled'}>+</button></div>`;
+    const bs=d.querySelectorAll('.step button');bs[0].onclick=()=>{if(remRank(b,s.id))renderAll()};bs[1].onclick=()=>{if(addRank(b,s.id))renderAll()};
+    const pb=d.querySelector('.pathb');if(pb)pb.onclick=()=>buyTo(b,tn);ne.appendChild(d)})}
+
+/* ---- A contre B ---- */
+function renderCmp(){$('#p-cmp').hidden=!compare;if(!compare)return;const [a,b]=builds,oa=compute(a),ob=compute(b);
+  const row=(l,va,vb,num)=>{const df=num?vb-va:null;return `<tr><th>${l}</th><td>${esc(num?fmt(va):va)}</td><td>${esc(num?fmt(vb):vb)}</td><td class="${df===null?'d-0':df>0?'d-up':df<0?'d-dn':'d-0'}">${df===null||df===0?'=':(df>0?'+':'')+fmt(df)}</td></tr>`};
+  const gem=x=>['w1','w2'].map(s=>GEMI[(x.gem||{})[s]]).filter(Boolean).map(g=>g.fr).join(', ')||'aucune';
+  const own=(x,y)=>SK.filter(s=>(x.sk[s.id]||0)>0&&!((y.sk[s.id]||0)>0)).map(s=>s.fr).join(', ')||'aucune';
+  let t=`<table class="st cmp"><thead><tr><th></th><th style="color:var(--ember)">A · ${esc(a.name)}</th><th style="color:var(--shroud)">B · ${esc(b.name)}</th><th>B − A</th></tr></thead><tbody>`;
+  t+=row('Objectifs',goalsTxt(a),goalsTxt(b))+row('Points dépensés',spentPoints(a),spentPoints(b),1)+row('Budget',budget(a),budget(b),1)+row('Flamme',a.flame,b.flame,1);
+  for(const [k,n] of PIPS)t+=row(n,oa.attr[k],ob.attr[k],1);
+  t+=row('Santé',oa.hp,ob.hp,1)+row('Mana',oa.mana,ob.mana,1)+row('Vigueur',oa.sta,ob.sta,1)+row('Critique baguettes, bâtons (%)',oa.crit.wand,ob.crit.wand,1)+row('Critique sorts (%)',oa.crit.spell,ob.crit.spell,1)+row('Dégâts critiques (%)',oa.crit.dmg,ob.crit.dmg,1)+row('Gemmes',gem(a),gem(b));
+  t+=`<tr><th>Compétences propres</th><td class="txt">${esc(own(a,b))}</td><td class="txt">${esc(own(b,a))}</td><td></td></tr></tbody></table>`;
+  $('#cmpBody').innerHTML=t}
+
+function renderSaved(){const s=lsGet();$('#saved').innerHTML='<option value="">Mes builds…</option>'+s.map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join('')}
+function renderAll(){renderTabs();renderPoints();renderGoals();renderWhy();renderGems();renderTree();renderCmp()}
+
+/* ---- Événements ---- */
+$('#goal1').innerHTML=goalOpts('Aucun (arbre libre)');$('#goal2').innerHTML=goalOpts('Aucun');$('#goal3').innerHTML=supOpts();
+$('#goal1').onchange=e=>pickGoal(0,e.target.value);$('#goal2').onchange=e=>pickGoal(1,e.target.value);$('#goal3').onchange=e=>pickGoal(2,e.target.value);
+$('#buildName').oninput=e=>{B().name=e.target.value||'Sans nom';renderTabs();$('#buildName').focus();renderCmp()};
+$('#cmp').onchange=e=>{compare=e.target.checked;renderCmp();if(compare)$('#p-cmp').scrollIntoView({block:'nearest'})};
+$('#copyAB').onclick=()=>{builds[1-cur]=JSON.parse(JSON.stringify(B()));renderAll();toast('Copié vers '+'AB'[1-cur])};
+$('#reset').onclick=()=>{builds[cur]=blankBuild('Build '+'AB'[cur]);renderAll();toast('Build '+'AB'[cur]+' vidé : arbre libre')};
+/* Fil des étapes : descend au panneau et y met le focus (jamais de hash : il est réservé au code de partage) */
+function goStep(id){const p=$('#'+id);if(!p)return false;const h=p.querySelector('h2'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  p.scrollIntoView({behavior:calm?'auto':'smooth',block:'start'});if(h){h.tabIndex=-1;h.focus({preventScroll:true})}return true}
+document.querySelectorAll('.steps [data-go]').forEach(b=>{b.onclick=()=>goStep(b.dataset.go)});
+/* Réglages : le combo imposé est recalculé, les ajouts encore reliés sont gardés */
+function setting(k,v){const b=B(),c0=imposed(b);b[k]=v;if(withGoal(b))goneMsg(regen(b,false,c0));renderAll()}
+[['#lvl','lvl',1,50],['#exp','exp',0,114],['#flame','flame',1,11]].forEach(([s,k,mn,mx])=>{$(s).onchange=e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=mn;setting(k,Math.max(mn,Math.min(mx,v)))}});
+function stepFlame(d){setting('flame',Math.max(1,Math.min(11,B().flame+d)));const bt=$(d<0?'#flameDn':'#flameUp');if(bt.disabled)$('#flame').focus()} // à la borne : focus sur le champ
+$('#flameDn').onclick=()=>stepFlame(-1);$('#flameUp').onclick=()=>stepFlame(1);
+$('#q').oninput=e=>{query=e.target.value.trim();renderTree()};
+$('#onlyOn').onchange=e=>{onlyOn=e.target.checked;renderTree()};
+$('#vGraph').onclick=()=>{view='graph';renderTree();if(window.G)G.resize()};
+$('#vList').onclick=()=>{view='list';renderTree()};
+function saveCur(){const s=lsGet();const b=JSON.parse(JSON.stringify(B()));const i=s.findIndex(x=>x.name===b.name);if(i>=0)s[i]=b;else s.push(b);
+  if(lsSet(s)){renderSaved();toast('« '+b.name+' » enregistré dans ce navigateur')}else toast('Enregistrement impossible ici : utilisez « Partager »')}
+$('#save').onclick=saveCur;
+/* Build enregistré : ceux d'avant le tracé réel (1.8 et avant) sont migrés ; objectifs vérifiés (fitGoals) */
+function loadSaved(s){const b=Object.assign(blankBuild(),JSON.parse(JSON.stringify(s)));b.upg=Math.max(0,Math.min(5,Math.round(+b.upg)||0));if(!b.gem||typeof b.gem!=='object')b.gem={};
+  if(!s||typeof s!=='object'||!('ad' in s))delete b.ad; // build d'avant la 2.3.0 : ajouts déduits de l'arbre (fitGoals)
+  if(s&&s.tv)normalize(b);else{delete b.pn;b.tv=1;migrate(b,'saved')}return fitGoals(b)}
+$('#saved').onchange=e=>{if(e.target.value==='')return;const s=lsGet()[+e.target.value];if(s){builds[cur]=loadSaved(s);renderAll();if(!notices(builds[cur]))toast('Chargé dans '+'AB'[cur])}};
+$('#delSaved').onclick=()=>{const v=$('#saved').value;if(v===''){toast('Choisissez d\'abord un build dans « Mes builds »');return}const s=lsGet();const n=s[+v].name;s.splice(+v,1);lsSet(s);renderSaved();toast('« '+n+' » supprimé')};
+/* Lien ou build ancien : ce qui a été ajouté pour le relier, objectif retiré ; true si un message a été montré */
+function notices(b){const lost=b&&b._objLost,rc=b&&b._recalc;if(lost)toast((b.obj||[])[0]?'Objectif secondaire ou de soutien retiré : inconnu de cette version du site':'Objectif retiré : il a changé depuis ce lien ou est inconnu de cette version. L\'arbre est gardé tel quel, en arbre libre');
+  if(rc){const d=rc.wpts[1]-rc.wpts[0],m=[];if(rc.links[0]!==rc.links[1])m.push(`liaisons ${pts(rc.links[0])} → ${pts(rc.links[1])}`);if(d)m.push(`${d>0?'+':'−'}${pts(Math.abs(d))} sur les étapes`);
+    toast(`Lien ou build d'avant la 2.3.0 : combo recalculé avec vos ajouts, comptés comme déjà acquis${m.length?' ('+m.join(' · ')+')':''}`)}
+  return migNotice(b)||!!lost||!!rc}
+function migNotice(b){const g=b&&b._mig;if(!g||!(g.pts>0||g.gone>0))return false;
+  const names=[...g.addSk.map(id=>SKI[id].fr),...Object.entries(g.addPip).map(([a,n])=>PIPS.find(p=>p[0]===a)[1]+' +'+n)];const over=spentPoints(b)-budget(b);
+  const m=modal(`<h2>${g.from==='b3'?'Lien fait sur un tracé antérieur':(g.from==='saved'?'Build enregistré':'Lien')+" d'avant le tracé réel"}</h2><p class="sub">${g.from==='b3'?"Ce lien a été créé avant la dernière mise à jour du tracé de l'arbre (patch du jeu).":(g.from==='saved'?'Ce build a été enregistré':'Ce code '+esc(g.from)+'- a été créé')+" avant la version 1.9.0, qui reprend le vrai tracé de l'arbre du jeu."} Vos choix sont conservés${g.gone?`, sauf ${g.gone} nœud${g.gone>1?'s':''} qui n'existe${g.gone>1?'nt':''} plus`:''} (compétences et rangs, attributs, gemmes).${names.length?` Pour les relier à un point de départ, ces nœuds ont été ajoutés (+${pts(g.pts)}) :`:''}</p>
+${names.length?`<div>${esc(names.join(', '))}.</div>`:''}${over>0?`<p class="over-msg">Budget dépassé de ${pts(over)} : retirez des nœuds ou montez de niveau.</p>`:''}<div class="row"><button class="btn primary" id="mok">Compris</button></div>`);
+  m.querySelector('#mok').onclick=()=>m.remove();return true}
+function copy(text,ta){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast('Copié'),()=>{ta.select();toast('Sélectionné : copiez avec Ctrl+C')})}else{ta.select();toast('Sélectionné : copiez avec Ctrl+C')}}
+$('#share').onclick=()=>{const code=encode(B());try{history.replaceState(null,'','#'+code)}catch(e){location.hash=code}
+  const m=modal(`<h2>Partager « ${esc(B().name)} »</h2><p class="sub">Ce code contient l'arbre, les objectifs, les gemmes et les réglages. Il est aussi placé à la fin du lien de la page : un lien copié depuis la barre d'adresse ouvre directement ce build.</p>
+  <textarea id="shareCode" readonly>${code}</textarea><div class="row"><button class="btn primary" id="cpy">Copier le code</button><button class="btn" id="cls">Fermer</button></div>`);
+  m.querySelector('#cpy').onclick=()=>copy(code,m.querySelector('#shareCode'));m.querySelector('#cls').onclick=()=>m.remove()};
+$('#import').onclick=()=>{const m=modal(`<h2>Importer un build</h2><p class="sub">Collez un code commençant par <code>b3-</code> ; les anciens <code>b2-</code> et <code>b1-</code> marchent aussi (adaptés au tracé réel de l'arbre). L'équipement que portent les codes est ignoré. Il sera chargé dans l'emplacement ${'AB'[cur]}.</p><textarea id="impCode" placeholder="b3-…"></textarea><p class="over-msg" id="impErr" hidden>Code non reconnu : vérifiez qu'il est complet et commence par b3-, b2- ou b1-.</p><div class="row"><button class="btn primary" id="go">Importer</button><button class="btn" id="cls">Annuler</button></div>`);
+  m.querySelector('#go').onclick=()=>{const b=decode(m.querySelector('#impCode').value);if(!b){m.querySelector('#impErr').hidden=false;return}builds[cur]=b;m.remove();renderAll();if(!notices(b))toast('Build importé dans '+'AB'[cur])};m.querySelector('#cls').onclick=()=>m.remove()};
+function fromHash(){const h=location.hash.slice(1);if(/^b[123]-/i.test(h)){const b=decode(h);if(b){builds[0]=b;cur=0;compare=false;
+  if(b._mig||b._recalc){try{history.replaceState(null,'','#'+encode(b))}catch(e){}}setTimeout(()=>notices(b),0);return true}
+  setTimeout(()=>toast('Lien de partage illisible (incomplet ou abîmé) : builds par défaut affichés'),0)}return false}
+window.addEventListener('hashchange',()=>{if(fromHash())renderAll()});
+</script>
+<script>
+
+/* =========================== GRAPHE (style Obsidian) =========================== */
+/* Tracé réel du jeu 1.0 : positions et liaisons des fichiers du jeu (relevé PinDrop, voir 01-tree-data.js).
+   Chaque nœud est ancré à sa position réelle : on peut le tirer (effet élastique), il revient toujours à sa place.
+   La Flamme (nœud logique reliant les 12 départs) n'est jamais dessinée : un vrai nœud occupe le centre. */
+
+
+const G=(()=>{
+  const cv=$('#gcv'),wrap=$('#gwrap'),card=$('#gcard');const ctx=cv.getContext('2d');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+  const {N,E}=TOPO;const V=N.filter(n=>n.kind!=='hub');let W=0,H=0,dpr=1,curR=new Set();
+  const cam={x:0,y:0,k:.8};let alpha=0,dirty=true,hover=null,sel=null,imp=null,drag=null,fitted=false,hoverTarget=null,hoverAmt=0,leaveT=0;
+  const glowCache={};
+  function glow(col){if(!glowCache[col]){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=.6;x.fillStyle=gr;x.fillRect(0,0,64,64);glowCache[col]=c}return glowCache[col]}
+  /* Libellés des trois zones, au bord extérieur de leurs nœuds (comme le planificateur PinDrop) */
+  const zones=AREAS.filter(a=>a[0]!=='core').map(([k,l])=>{const ns=V.filter(n=>n.area===k);const ang=Math.atan2(ns.reduce((a,n)=>a+n.ay,0),ns.reduce((a,n)=>a+n.ax,0));
+    const R=Math.max(...ns.map(n=>Math.hypot(n.ax,n.ay)))+30;return {k,l,x:Math.cos(ang)*R,y:Math.sin(ang)*R}});
+
+  /* Ressorts à la longueur réelle + rappel constant vers la position réelle : au repos, le tracé est exactement celui du jeu */
+  function home(){for(const p of V){p.x=p.ax;p.y=p.ay;p.vx=p.vy=0}alpha=0;dirty=true}
+  function tick(){
+    const a=alpha;
+    for(const [p,q,L] of E){let dx=q.x-p.x,dy=q.y-p.y,d=Math.sqrt(dx*dx+dy*dy)||1;const f=(d-L)*.06*a;dx/=d;dy/=d;p.vx+=dx*f;p.vy+=dy*f;q.vx-=dx*f;q.vy-=dy*f}
+    let mv=0;for(const p of V){p.vx+=(p.ax-p.x)*.1;p.vy+=(p.ay-p.y)*.1;
+      if(p===drag){p.vx=p.vy=0;continue}p.vx*=.78;p.vy*=.78;p.x+=p.vx;p.y+=p.vy;mv=Math.max(mv,Math.abs(p.x-p.ax)+Math.abs(p.y-p.ay))}
+    alpha=Math.max(0,alpha*.985-.0004);if(!drag&&(alpha<=.002||mv<.05))home(); // revenu en place : on s'arrête
+  }
+  function release(){if(reduce.matches)home();else alpha=Math.max(alpha,.3)}
+  reduce.addEventListener('change',()=>{if(reduce.matches)home()});
+
+  /* État du build */
+  const b=()=>B();
+  function isOn(n){return n.kind==='start'?curR.has(n):owned(b(),n)}
+  function avail(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;if(owned(b(),n))return false;for(const m of n.nb)if(curR.has(m))return true;return false}
+  /* Ajouté par l'utilisateur : acquis au-delà du rang imposé par l'objectif (anneau pointillé) */
+  function isAdd(n){if(n.kind!=='skill'&&n.kind!=='pip')return false;const bb=b(),imp=imposed(bb);return n.kind==='skill'?(bb.sk[n.id]||0)>lockOf(bb,n,imp):!!bb.pn[n.id]&&!lockOf(bb,n,imp)}
+  let colors={};
+  function readColors(){const cs=getComputedStyle(document.documentElement);const g=v=>cs.getPropertyValue(v).trim();
+    colors={bg:g('--g-bg'),node:g('--g-node'),edge:g('--g-edge'),label:g('--g-label'),ring:g('--g-ring'),shroud:g('--shroud'),core:g('--core'),war:g('--war'),rng:g('--rng'),mag:g('--mag'),ember:g('--ember')};for(const k in glowCache)delete glowCache[k];dirty=true}
+  readColors();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
+  new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
+  const areaCol=a=>colors[a]||colors.ember;
+
+  function matchSet(){const q=fold(query);if(!q&&!onlyOn)return null;const s=new Set();const bb=b();
+    for(const n of N){if(n.kind!=='skill')continue;const okQ=!q||fold(n.sk.fr+' '+n.sk.en).includes(q);const okO=!onlyOn||(bb.sk[n.id]||0)>0;if(okQ&&okO)s.add(n)}return s}
+
+  /* Graphe caché (vue Liste) : W = 0, plus rien n'est dessiné ; à son retour, l'observateur de taille le recale (canvas vidé seulement si la taille change) */
+  function resize(){const r=wrap.getBoundingClientRect();if(!r.width){W=0;return}const d=Math.min(2,window.devicePixelRatio||1);
+    if(r.width!==W||r.height!==H||d!==dpr){dpr=d;W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;dirty=true}if(!fitted)fit(area)}
+  new ResizeObserver(resize).observe(wrap); // #gwrap : vue Liste ↔ Graphe, largeur de la fenêtre
+  const toS=(x,y)=>[(x-cam.x)*cam.k+W/2,(y-cam.y)*cam.k+H/2];
+  const toW=(sx,sy)=>[(sx-W/2)/cam.k+cam.x,(sy-H/2)/cam.k+cam.y];
+
+  function draw(){
+    dirty=false;curR=reach(b());imp=imposed(b());ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=colors.bg;ctx.fillRect(0,0,W,H);
+    const ms=matchSet();const hl=hover&&hoverAmt>0?new Set([hover,...hover.nb]):null;
+    const fa=n=>{let a=1;if(ms&&!ms.has(n)&&!(hl&&hl.has(n)))a=.22;if(hl&&!hl.has(n))a=Math.min(a,1-hoverAmt*.6);return a};
+    ctx.setTransform(dpr*cam.k,0,0,dpr*cam.k,dpr*(W/2-cam.x*cam.k),dpr*(H/2-cam.y*cam.k));
+    // liens
+    for(const [p,q] of E){const on=isOn(p)&&isOn(q);const fq=Math.min(fa(p),fa(q));
+      ctx.globalAlpha=(on?.85:.9)*fq;ctx.strokeStyle=on?areaCol(p.area==='core'?q.area:p.area):colors.edge;ctx.lineWidth=(on?1.8:1)/Math.max(.6,cam.k);
+      if(hl&&(p===hover||q===hover)){ctx.globalAlpha=.9+.1*hoverAmt;if(!on&&hoverAmt>.5)ctx.strokeStyle=colors.label;ctx.lineWidth=(1+.6*hoverAmt)/Math.max(.6,cam.k)}
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
+    // nœuds
+    for(const n of V){const on=isOn(n);const col=areaCol(n.area);ctx.globalAlpha=fa(n);
+      const r=n.r*(n===hover?1+.12*hoverAmt:1);
+      if(n.kind==='start'){ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=colors.bg;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=on?col:colors.node;
+        if(on){const R=r*2.4;ctx.drawImage(glow(col),n.x-R,n.y-R,2*R,2*R)}ctx.stroke();
+        ctx.beginPath();ctx.arc(n.x,n.y,r*.45,0,7);ctx.fillStyle=colors.ember;ctx.fill();
+        if(n===sel){ctx.beginPath();ctx.arc(n.x,n.y,r+5,0,7);ctx.lineWidth=1.5/cam.k;ctx.strokeStyle=colors.ring;ctx.stroke()}continue}
+      if(on){const R=r*(n.kind==='pip'?2.6:2.9);ctx.drawImage(glow(col),n.x-R,n.y-R,2*R,2*R)}
+      const av=!on&&avail(n);if(!on&&!av)ctx.globalAlpha*=.55;
+      ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.fillStyle=on?col:colors.node;ctx.fill();
+      if(av){ctx.beginPath();ctx.arc(n.x,n.y,r+1.6,0,7);ctx.lineWidth=1.3;ctx.strokeStyle=col;ctx.stroke()}
+      ctx.globalAlpha=fa(n);
+      if(n.kind==='skill'){const s=n.sk,rk=b().sk[n.id]||0;
+        if(s.max>1){for(let i=0;i<s.max;i++){const a0=-Math.PI/2+i*(2*Math.PI/s.max)+.22,a1=a0+2*Math.PI/s.max-.44;
+          ctx.beginPath();ctx.arc(n.x,n.y,r+3,a0,a1);ctx.lineWidth=1.8;ctx.strokeStyle=i<rk?col:colors.edge;ctx.stroke()}}
+        if(s.nw){ctx.beginPath();ctx.arc(n.x+r*.75,n.y-r*.75,1.8,0,7);ctx.fillStyle=colors.ember;ctx.fill()}}
+      if(on&&isAdd(n)){ctx.setLineDash([2.5,2]);ctx.beginPath();ctx.arc(n.x,n.y,r+(n.kind==='skill'&&n.sk.max>1?6.5:3.5),0,7);ctx.lineWidth=1.4;ctx.strokeStyle=colors.ember;ctx.stroke();ctx.setLineDash([])} // ajouté par vous
+      if(n===sel){ctx.beginPath();ctx.arc(n.x,n.y,r+(n.kind==='skill'?9:5),0,7);ctx.lineWidth=1.5/cam.k;ctx.strokeStyle=colors.ring;ctx.stroke()}
+    }
+    ctx.globalAlpha=1;
+    // libellés en coordonnées écran (nets à tous les zooms)
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='top';
+    const fade=Math.max(0,Math.min(1,(cam.k-.75)/.45));
+    // zones, gardées dans le cadre ; puis les noms par priorité (sélection, survol, recherche, acquis), sans chevauchement
+    const placed=[],free=x=>!placed.some(q=>x[0]<q[2]&&x[2]>q[0]&&x[1]<q[3]&&x[3]>q[1]);
+    for(const z of zones){const zs={px:13,a:.85};ctx.font=`700 ${zs.px}px "Alegreya SC", Georgia, serif`;
+      const t=z.l.toUpperCase(),w=ctx.measureText(t).width;let [sx,sy]=toS(z.x,z.y);if(sx<0||sx>W||sy<0||sy>H)continue;sx=Math.max(w/2+8,Math.min(W-w/2-8,sx));sy=Math.max(4,Math.min(H-20,sy-7));
+      placed.push([sx-w/2-4,sy,sx+w/2+4,sy+zs.px+3]);ctx.globalAlpha=zs.a;ctx.fillStyle=areaCol(z.k);ctx.fillText(t,sx,sy)}
+    const lab=[];
+    for(const n of V){let a=0,txt='',pr=0;
+      if(n.kind==='start'){if(n===hover||n===sel){a=n===sel?1:hoverAmt;txt='Étincelle';pr=3}}
+      else if(n.kind==='skill'){txt=n.sk.fr;a=fade;if(n===sel||(ms&&ms.has(n))){a=1;pr=n===sel?4:2}else if(n===hover){a=Math.max(a,hoverAmt);pr=3}else if(isOn(n)){a=Math.max(a,Math.min(1,fade+.35));pr=1}}
+      else if(n===hover){a=hoverAmt;txt=PIPS.find(p=>p[0]===n.attr)[1]+' +1';pr=3}
+      if(!a||!txt)continue;a*=fa(n);
+      const [sx,sy]=toS(n.x,n.y);if(sx<-80||sx>W+80||sy<-30||sy>H+30)continue;lab.push({n,a,txt,pr,sx,sy})}
+    lab.sort((p,q)=>q.pr-p.pr);
+    for(const L of lab){const bold=L.n===hover||L.n===sel;ctx.font=(bold?'700 ':'500 ')+'12px "Alegreya Sans", system-ui, sans-serif';
+      const w=ctx.measureText(L.txt).width,y=L.sy+(L.n.r+5)*cam.k+3,box=[L.sx-w/2-2,y,L.sx+w/2+2,y+14];
+      if(L.pr<3&&!free(box))continue;placed.push(box);ctx.globalAlpha=L.a;ctx.fillStyle=colors.label;ctx.fillText(L.txt,L.sx,y)}
+    ctx.globalAlpha=1;
+  }
+
+  /* Boucle */
+  function stepHover(now){
+    if(hoverTarget!==hover){
+      if(hoverTarget&&hover){hover=hoverTarget;dirty=true}
+      else if(hoverTarget){hover=hoverTarget;hoverAmt=0}
+      else{if(now-leaveT>140){hoverAmt=reduce.matches?0:Math.max(0,hoverAmt-.1);dirty=true;if(hoverAmt<=0){hover=null;hoverAmt=0}}return}
+    }
+    if(hover&&hoverAmt<1){hoverAmt=reduce.matches?1:Math.min(1,hoverAmt+.12);dirty=true}
+  }
+  function loop(now){if(!document.hidden){stepHover(now||performance.now());if(alpha>0.002&&!reduce.matches){tick();dirty=true}if(dirty&&W)draw()}requestAnimationFrame(loop)}
+  requestAnimationFrame(loop);
+
+  /* Caméra */
+  function fit(filter){const ns=V.filter(n=>!filter||filter==='all'||n.area===filter);if(!ns.length||!W)return;
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const n of ns){x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y)}
+    cam.x=(x0+x1)/2;cam.y=(y0+y1)/2;cam.k=Math.min(2.4,Math.max(.25,Math.min((W-60)/Math.max(60,x1-x0),(H-80)/Math.max(60,y1-y0))));fitted=true;dirty=true}
+
+  /* Pointeur */
+  const ptrs=new Map();let pan=null,moved=0,pinch=null;
+  function hit(sx,sy){const [x,y]=toW(sx,sy);let best=null,bd=Infinity;for(const n of V){const d=Math.hypot(n.x-x,n.y-y);const lim=n.r+(n.kind==='pip'?4:6)/Math.min(1,cam.k);if(d<lim&&d<bd){bd=d;best=n}}return best}
+  const pos=e=>{const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
+  cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);const p=pos(e);ptrs.set(e.pointerId,p);moved=0;
+    if(ptrs.size===2){const [a,c]=[...ptrs.values()];pinch={d:Math.hypot(a[0]-c[0],a[1]-c[1]),k:cam.k};if(drag)release();drag=null;pan=null;return}
+    if(e.button===2)return;const n=hit(...p);if(n){drag=n;cv.classList.add('grabbing')}else{pan={sx:p[0],sy:p[1],cx:cam.x,cy:cam.y};cv.classList.add('grabbing')}});
+  cv.addEventListener('pointermove',e=>{const p=pos(e);
+    if(ptrs.has(e.pointerId)){const old=ptrs.get(e.pointerId);moved+=Math.hypot(p[0]-old[0],p[1]-old[1]);ptrs.set(e.pointerId,p)}
+    if(pinch&&ptrs.size===2){const [a,c]=[...ptrs.values()];const d=Math.hypot(a[0]-c[0],a[1]-c[1]);cam.k=Math.min(4,Math.max(.2,pinch.k*d/pinch.d));dirty=true;return}
+    if(drag&&moved>3){const [x,y]=toW(...p);drag.x=x;drag.y=y;alpha=Math.max(alpha,.25);dirty=true;return}
+    if(pan){cam.x=pan.cx-(p[0]-pan.sx)/cam.k;cam.y=pan.cy-(p[1]-pan.sy)/cam.k;dirty=true;return}
+    let h=hit(...p);
+    if(!h&&hoverTarget){const [x,y]=toW(...p);if(Math.hypot(hoverTarget.x-x,hoverTarget.y-y)<hoverTarget.r+14/Math.min(1,cam.k))h=hoverTarget}
+    if(h!==hoverTarget){if(!h)leaveT=performance.now();hoverTarget=h;cv.classList.toggle('pointer',!!h)}});
+  function end(e){const p=pos(e);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;cv.classList.remove('grabbing');
+    if(moved<5&&e.button!==2){const n=hit(...p);if(n){if(e.shiftKey)change(n,-1);select(n)}else{sel=null;showCard()}}
+    if(drag)release();drag=null;pan=null;dirty=true}
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;if(drag)release();drag=null;pan=null});
+  cv.addEventListener('pointerleave',()=>{if(hoverTarget){hoverTarget=null;leaveT=performance.now()}});
+  cv.addEventListener('dblclick',e=>{const n=hit(...pos(e));if(n){change(n,+1);select(n)}});
+  cv.addEventListener('contextmenu',e=>{e.preventDefault();const n=hit(...pos(e));if(n){change(n,-1);select(n)}});
+  cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);const [wx,wy]=toW(...p);const k=Math.min(4,Math.max(.2,cam.k*Math.exp(-e.deltaY*.0015)));
+    cam.k=k;cam.x=wx-(p[0]-W/2)/k;cam.y=wy-(p[1]-H/2)/k;dirty=true},{passive:false});
+
+  function change(n,d){const bb=b();let ok=false;if(n.kind==='skill')ok=d>0?addRank(bb,n.id):remRank(bb,n.id);else if(n.kind==='pip')ok=d>0?addPipNode(bb,n):remPipNode(bb,n);else return;if(ok)renderAll();else showCard()}
+  /* Origine d'un nœud acquis : étape de l'objectif qui l'impose, liaison du combo, ou ajout */
+  /* Un ajout qui porte une partie du combo : sans lui, des nœuds imposés ne seraient plus reliés (2.3.0) */
+  function carries(bb,n,c){const t={sk:{...bb.sk},pn:{...bb.pn}};if(n.kind==='skill')delete t.sk[n.id];else delete t.pn[n.id];const R=reach(t);
+    return Object.keys(c.sk).some(id=>t.sk[id]>0&&!R.has(TOPO.byId[id]))||Object.keys(c.pn).some(id=>!R.has(TOPO.byId[id]))}
+  function origin(bb,n){if(!owned(bb,n)||n.kind==='start')return '';const c=imposed(bb),lk=c&&lockOf(bb,n,c);
+    const w=c&&c.by[n.kind==='pip'?'@'+n.attr:n.id],at=w?` · compte pour « ${esc(goalName(c.rep[w[0]].id))} » · étape ${w[1]+1}`:'';
+    if(!lk)return `<div class="m">Ajouté par vous${c&&n.kind==='skill'&&c.claim[n.id]?at:''}${c&&carries(bb,n,c)?' · le combo passe par ce nœud, sans le payer':''}</div>`;
+    if(c.conn.includes(n.id))return '<div class="org">Imposé : liaison vers un de vos ajouts</div>';
+    if(w&&(n.kind==='pip'||c.want.sk[n.id])){const r=c.rep[w[0]],t=`« ${esc(goalName(r.id))} » · étape ${w[1]+1} : ${esc(r.steps[w[1]].t)}`;
+      // attribut : au-delà du nombre visé, certains nœuds imposés ne servent que de liaison (on ne sait pas lesquels)
+      if(n.kind==='pip'&&TOPO.pips.filter(p=>p.attr===n.attr&&c.pn[p.id]).length>(c.want.pip[n.attr]||0))return `<div class="org">Imposé par ${t}, ou liaison du combo</div>`;
+      return `<div class="org">Imposé par ${t}</div>`}
+    return '<div class="org">Imposé : liaison du combo (chemin vers une compétence de l\'objectif)</div>'}
+  function select(n){sel=n;showCard();dirty=true}
+  function lockHtml(bb,n,lock){if(!lock)return '';const pth=pathTo(bb,n);if(!pth)return '<div class="m">Aucun chemin vers ce nœud.</div>';
+    const steps=pth.slice(0,-1).filter(x=>!owned(bb,x));const names=steps.map(x=>x.kind==='skill'?x.sk.fr:PIPS.find(p=>p[0]===x.attr)[1]+' +1');
+    return `<div class="lockbox"><b>Verrouillé.</b> Il faut d'abord acquérir un nœud relié.${names.length?` Chemin le plus court : ${esc(names.join(' → '))}.`:''}<button class="btn sm pathb">Acheter le chemin (${pathCost(bb,pth)} pts)</button></div>`}
+  function showCard(){
+    if(!sel||sel.kind==='hub'){card.hidden=true;return}
+    const bb=b();card.hidden=false;card.style.setProperty('--ac',areaColor(sel.area));
+    if(sel.kind==='start'){const nb=[...sel.nb].filter(n=>n.kind!=='hub').map(n=>n.kind==='skill'?n.sk.fr:PIPS.find(p=>p[0]===n.attr)[1]+' +1');
+      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Point de départ · gratuit</div><h3>Étincelle</h3><div class="en">Spark</div><div class="d">Permet de réapparaître à l'autel de la Flamme. Ses voisins s'achètent sans autre prérequis.</div><div class="m">Relié à : ${esc(nb.join(', '))}</div>`}
+    else if(sel.kind==='pip'){const P=PIPS.find(p=>p[0]===sel.attr);const v=bb.pip[sel.attr]||0;const own=!!bb.pn[sel.id];const lock=!own&&!canBuy(bb,sel);
+      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">Nœud d'attribut · 1 point</div><h3>${P[1]} +1</h3><div class="d">${{str:'+5 % de dégâts de mêlée par point.',con:'+50 de santé par point.',end:'+10 de vigueur par point.',dex:'+5 % de dégâts à l\'arc et aux dagues par point.',int:'+5 % de dégâts magiques par point.',spi:'+20 de mana par point.'}[sel.attr]}</div>
+       ${origin(bb,sel)}<div class="step"><button data-d="-1" aria-label="Retirer ce nœud" ${own&&!lockOf(bb,sel)?'':'disabled'}>−</button><span class="rk">${own?'acquis':lock?'verrouillé':'disponible'}</span><button data-d="1" aria-label="Acquérir ce nœud" ${own||lock?'disabled':''}>+</button></div><div class="m">${P[1]} : ${v}/${P[4]} nœuds acquis</div>${lockHtml(bb,sel,lock)}`}
+    else{const s=sel.sk,v=bb.sk[s.id]||0,lk=lockOf(bb,sel);const lock=!v&&!canBuy(bb,sel);
+      card.innerHTML=`<button class="x" aria-label="Fermer">×</button><div class="lbl">${AREAS.find(a=>a[0]===s.area)[1]}${s.nw?' · nouveau en 1.0':''}</div><h3>${esc(s.fr)}</h3><div class="en">${esc(s.en)}</div><div class="d">${esc(s.d)}</div>
+       ${origin(bb,sel)}<div class="step"><button data-d="-1" aria-label="Retirer un rang" ${v>lk?'':'disabled'}>−</button><span class="rk">${v}/${s.max}</span><button data-d="1" aria-label="Ajouter un rang" ${v<s.max&&!lock?'':'disabled'}>+</button><span class="ct">${s.cost} pt${s.cost>1?'s':''}${s.max>1?' / rang':''}</span></div>
+       ${lk?`<div class="m">Rang imposé : ${lk}/${s.max}</div>`:''}${lockHtml(bb,sel,lock)}`}
+    card.querySelector('.x').onclick=()=>{sel=null;card.hidden=true;dirty=true};
+    card.querySelectorAll('[data-d]').forEach(bt=>bt.onclick=()=>change(sel,+bt.dataset.d));
+    const pb=card.querySelector('.pathb');if(pb)pb.onclick=()=>buyTo(bb,sel);
+  }
+  $('#gFit').onclick=()=>{area='all';fit();renderTree()};
+  resize();fit();
+  return {isAdd,origin,refresh(){showCard();dirty=true},focus(a){fit(a)},resize(){resize();fit(area)},screen(n){return toS(n.x,n.y)},nodes:N,edges:E};
+})();
+window.G=G;
+</script>
+<script>
+/* Démarrage : lecture d'un éventuel code de build dans l'URL, puis premier rendu */
+fromHash();renderSaved();renderAll();
+</script>
+</body>
+</html>
