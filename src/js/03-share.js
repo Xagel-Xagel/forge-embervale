@@ -5,7 +5,7 @@
    b2 : attribut de chacun des 59 nœuds de l'ancien tracé thématique (c CON, s FOR, d DEX, e END, i INT, p ESP) ·
    at, nd : identifiants de jeu (base 36) des nœuds d'attribut et des compétences du tracé réel (b3) ·
    slots : emplacements d'équipement (2.0.0 : l'équipement n'est plus pris en compte, mais celui d'un ancien lien est relu et réécrit tel quel) ·
-   goals : objectifs (06-objectifs.js), segment -o du b3 (2.0.0) ; objectifs de soutien SUPS ajoutés en fin (2.1.0) ; hybrides, Exploration et Récolte en fin (2.4.0). */
+   goals : objectifs (06-objectifs.js), segment -o du b3 (2.0.0) ; objectifs de soutien SUPS ajoutés en fin (2.1.0) ; hybrides, Exploration et Récolte en fin (2.4.0) ; Vol de vie en fin (2.6.0). */
 const FZ={
  items:`
   emb_h emb_c emb_g emb_l emb_f cre_h cre_c cre_g cre_l cre_f ash_h ash_c ash_g ash_l ash_f sky_h sky_c sky_g sky_l sky_f fla_h fla_c fla_g fla_l fla_f
@@ -32,7 +32,7 @@ const FZ={
   fireResistance iceResistance shockResistance righteousFire divineSurge sharedMisery boneToAsh sleight manaCurrents spellslinger wandMastery wandSpec
   wandEvasion aerialWand totemMastery advNecro blastCast`.trim().split(/\s+/),
  slots:'head chest hands legs feet w1 w2 r1 r2'.split(' '),
- goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana battlemage elemArcher swordBow explore harvest'.split(' '),
+ goals:'tank sword barb archer assassin mageCrit fire ice storm necro healer paladin survie vigueur resist mana battlemage elemArcher swordBow explore harvest lifesteal'.split(' '),
  b1:[['str',11],['con',11],['end',8],['dex',7],['int',11],['spi',11]],
  b2:'ccccccssssssssssscccccdddddddeeeeeeeeiiiiiiiiiiippppppppppp',
  at:`

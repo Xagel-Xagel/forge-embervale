@@ -140,6 +140,15 @@ const GOALS=[
   ['Plus de ressources',"Mineur (10 % de chance d'obtenir une ressource en plus) et Outils de qualité (20 % de chance de regagner 1 de durabilité).",{miner:1,qualityGear:1}],
   ['Outils spéciaux',"Spécialisations pioche et hache d'abattage : elles débloquent la capacité spéciale de ces outils (ajoutées par le simulateur).",{pickSpec:1,fellSpec:1}],
   ['Pêche, repos et Shroud',"Ténacité du pêcheur (+5 d'endurance de pêche par rang), Bien reposé (+2 min de buff Reposé par rang) et Feux intérieurs (+60 s de temps dans le Shroud par rang).",{fisherman:3,wellRested:3,innerFires:3}]]},
+ // ---- 2.6.0 : vol de vie en mêlée (demande du 2026-11-14 ; ordre des éléments : scripts/optimiser-objectifs.mjs) ----
+ {id:'lifesteal',n:'Vol de vie (mêlée)',grp:'war',area:'war',gem:{w1:'g_blust'},opt:1,
+  sim:"Contenu composé d'après les descriptions des compétences : l'arbre n'a pas de vol de vie à proprement parler, seulement des soins sur un critique ou un kill de mêlée (le vol de vie des bagues et des armes, l'équipement, n'est pas pris en compte). Gemme de soif de sang ajoutée par le simulateur.",steps:[
+  ['Critiques qui soignent',"Soin de bataille : un critique de mêlée soigne 1 % de la santé max par rang ; Vétéran : +2 % de critique avec les armes de mêlée et les dagues par rang.",{veteran:3,battleHeal:3}],
+  ['Plus de critiques',"Implacable (critique à deux mains : +8 % de critique au coup suivant) et Précision fatale (+1 % de critique et +5 % de dégâts critiques par rang).",{relentless:1,fatalPrecision:3}],
+  ['Santé max',"Soin de bataille rend un pourcentage de la santé max : Constitution (+50 de santé par point) et Athlète (+3 × Force de santé max par rang).",{con:11,athlete:3}],
+  ['Orbes de santé',"Attaque impitoyable (500 % de dégâts contre un ennemi déséquilibré) ; Guerrier de sang : un kill furtif ou impitoyable lâche un orbe de santé ; Bon métabolisme : orbes à 30 %, potions +20 %.",{merciless:1,bloodWarrior:1,goodMetab:1}],
+  ['Dégâts à deux mains',"Voie du barbare (+5 % aux haches, masses et marteaux à deux mains par rang) et Force (+5 % de dégâts de mêlée par point).",{barbariansPath:3,str:10}],
+  ['Flamme et confort',"Barbare et Peau épaisse : +1 Force et +1 Constitution tous les 2 niveaux de Flamme ; Double saut.",{barbarian:1,doubleJump:1,thickSkin:1}]]},
 ];
 /* Objectifs de soutien (2.1.0) : 3e objectif, passé en dernier sur les points restants. COMPÉTENCES SEULES (ni attribut ni gemme), choisies par le joueur.
    Contenu, ordre des étapes et raisons : CHOIX DU SIMULATEUR (hypothèse) ; les effets cités viennent des descriptions de SK. Place figée : fin de FZ.goals. */

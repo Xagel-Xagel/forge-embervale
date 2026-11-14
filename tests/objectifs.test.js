@@ -16,6 +16,7 @@ test('chaque objectif, budgets 0 à 212, Flammes 1, 4 et 11 : relié, dans le bu
 test('coût du combo complet à 212 points, Flamme 11 (mesuré le 2026-11-07) ; toutes les étapes complètes', () => {
   const COST = {tank: 142, sword: 110, barb: 105, archer: 104, assassin: 91, mageCrit: 98, fire: 104, ice: 109, storm: 102, necro: 110, healer: 108, paladin: 111};
   Object.assign(COST, {battlemage: 57, elemArcher: 83, swordBow: 90, explore: 82, harvest: 25}); // 2.4.0 : objectifs optimisés, mesurés le 2026-11-08 (scripts/optimiser-objectifs.mjs)
+  COST.lifesteal = 82; // 2.6.0 : Vol de vie, mesuré le 2026-11-14
   for (const g of GOALS) { const c = combo(g.id, null, 50, 114, 11);
     assert.equal(c.spent, COST[g.id], g.id); assert.ok(c.rep[0].steps.every(s => s.st === 'ok'), g.id + ' : étape incomplète');
     for (const [, , items] of g.steps) for (const [k, v] of Object.entries(items)) assert.equal(isAttr(k) ? c.want.pip[k] : c.want.sk[k], v, g.id + ' : ' + k);
@@ -283,8 +284,8 @@ const optRun = (g, steps, B) => { GOALI.__t = {...g, id: '__t', steps}; try { re
 const optArea = (g, steps) => { let a = 0; for (let B = 0; B <= 212; B += 4) a += optRun(g, steps, B).wpts; return a; };
 
 test('2.4.0 · 5 objectifs optimisés : ids en fin de FZ.goals, groupes, source marquée, aucune gemme ; chaque hybride sur ses deux zones', () => {
-  assert.deepEqual(OPT().map(g => g.id), ['battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest']);
-  for (const g of OPT()) { assert.ok(FZ.goals.indexOf(g.id) >= 16, g.id + ' : à ajouter en fin de FZ.goals'); assert.deepEqual(g.gem, {}, g.id + ' : gemme sans source');
+  assert.deepEqual(OPT().map(g => g.id), ['battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest', 'lifesteal']);
+  for (const g of OPT().filter(x => x.id !== 'lifesteal')) { assert.ok(FZ.goals.indexOf(g.id) >= 16, g.id + ' : à ajouter en fin de FZ.goals'); assert.deepEqual(g.gem, {}, g.id + ' : gemme sans source');
     for (const [, why] of g.steps) assert.ok(why.length > 20, g.id + ' : raison'); }
   for (const [id, zs] of Object.entries({battlemage: ['war', 'mag'], elemArcher: ['rng', 'mag'], swordBow: ['war', 'rng']})) { const z = zoneShare(GOALI[id]);
     assert.equal(GOALI[id].grp, 'hyb', id); for (const a of zs) assert.ok(z[a] >= 0.15, `${id} : ${a} à ${Math.round(100 * (z[a] || 0))} %`); }
@@ -296,7 +297,7 @@ test('2.4.0 · 5 objectifs optimisés : ids en fin de FZ.goals, groupes, source 
   assert.match(GOALI.elemArcher.sim, /n'est pas vérifié/, 'Archer élémentaire : effet des multiplicateurs du Mage sur les arcs non vérifié, à dire');
 });
 test('2.4.0 · aire d\'avancée figée (Σ des points d\'étapes aux budgets 0, 4 … 212, Flamme 11 ; mesurée le 2026-11-08 par scripts/optimiser-objectifs.mjs)', () => {
-  const AREA = {battlemage: 2572, elemArcher: 2816, swordBow: 3077, explore: 2887, harvest: 1259};
+  const AREA = {battlemage: 2572, elemArcher: 2816, swordBow: 3077, explore: 2887, harvest: 1259, lifesteal: 2771}; // lifesteal : 2.6.0, mesurée le 2026-11-14
   for (const g of OPT()) { assert.equal(optArea(g, g.steps), AREA[g.id], g.id); assert.equal(optRun(g, g.steps, 212).spent, combo(g.id, null, 50, 114, 11).spent, g.id + ' : moteur'); }
 });
 test('2.4.0 · ordre optimisé : aucun échange de deux éléments voisins d\'une étape ne fait mieux (coût à 212 points, puis aire)', () => {
@@ -314,4 +315,11 @@ test('2.4.0 · un principal sans gemme garde les gemmes en place ; un principal 
   setGoals(b, 'harvest', 'archer'); assert.deepEqual(b.obj, ['harvest', 'archer']); assert.deepEqual(b.gem, GOALI.tank.gem, 'gemmes en place perdues');
   assert.ok(b.sk.lumberjack === 3 && b.sk.marksman === 3, 'Récolte puis Archer en secondaire');
   setGoals(b, 'archer', null); assert.deepEqual(b.gem, GOALI.archer.gem); assert.deepEqual(goalBuild('explore').gem, {}, 'build neuf : aucune gemme');
+});
+test('2.6.0 · Vol de vie (mêlée) : en fin de FZ.goals, Guerrier, soins de mêlée d\'abord, gemme et absence de vol de vie dans l\'arbre dites', () => {
+  const g = GOALI.lifesteal; assert.equal(FZ.goals[FZ.goals.length - 1], 'lifesteal'); assert.equal(g.grp, 'war'); assert.ok(zoneShare(g).war > 0.5, 'surtout Guerrier');
+  assert.deepEqual(g.gem, {w1: 'g_blust'}); assert.match(g.sim, /soif de sang/i); assert.match(g.sim, /n'est pas pris en compte/); assert.equal(g.src, undefined, 'composé par le simulateur');
+  assert.ok('battleHeal' in g.steps[0][2] && 'veteran' in g.steps[0][2], 'Soin de bataille et Vétéran en première étape');
+  for (const k of ['battleHeal', 'bloodWarrior', 'goodMetab', 'athlete']) assert.ok(g.steps.some(([, , it]) => k in it), k);
+  const b = blankBuild(); setGoals(b, 'lifesteal', null); assert.equal(b.gem.w1, 'g_blust', 'la gemme est posée avec le combo');
 });

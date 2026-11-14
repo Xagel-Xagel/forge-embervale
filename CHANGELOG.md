@@ -2,6 +2,11 @@
 
 Numéros = versions de l'Artifact publié sur claude.ai (les premières étapes ont pu être publiées plusieurs fois).
 
+## 2.6.0 — 2026-11-14 · Vol de vie
+- **Nouvel objectif « Vol de vie (mêlée) »** (groupe Guerrier) : critiques qui soignent (Soin de bataille, Vétéran), plus de critiques (Implacable, Précision fatale), santé max (Constitution, Athlète : Soin de bataille rend un pourcentage de la santé max), orbes de santé (Attaque impitoyable, Guerrier de sang, Bon métabolisme), dégâts à deux mains, Flamme et confort. Combo complet : 82 pts.
+- Étiquette « hypothèse » : l'arbre n'a pas de vol de vie à proprement parler (seulement des soins sur un critique ou un kill de mêlée), et celui de l'équipement n'est pas pris en compte. Gemme de soif de sang posée avec le combo (choix du simulateur).
+- Ordre des éléments calculé par `npm run optimiser`. Liens : identifiant en fin de table figée, aucun lien existant ne change.
+
 ## 2.5.1 — 2026-11-10 · Précision fatale corrigée
 - **Précision fatale** : **+1 %** de chance de critique et +5 % de dégâts critiques par rang (infobulle en jeu relue ; la 2.5.0 disait +5 % / +5 %). Le critique magique suit : baguettes et bâtons = 2 % × Sorcier + 1 % × Précision fatale, sorts = 1 % × Précision fatale. Raisons des objectifs mises à jour. Aucun lien ne change.
 
