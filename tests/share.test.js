@@ -260,11 +260,12 @@ test('segment -a : forme canonique seulement (masque sans zéro en tête, rang d
 // 2.4.0 : objectifs optimisés (hybrides, Exploration, Récolte), ids en fin de FZ.goals ; aucun code existant ne change
 test('2.4.0 · lien avec un objectif optimisé (principal, secondaire, avec soutien) : segment -o en fin de table, aller-retour exact', () => {
   const at = x => x ? FZ.goals.indexOf(x).toString(36).padStart(2, '0') : 'zz';
-  for (const [p, s, t] of [['harvest', 'archer', null], ['battlemage', null, 'mana'], ['tank', 'explore', null], ['swordBow', 'elemArcher', 'survie']]) {
+  for (const [p, s, t] of [['harvest', 'archer', null], ['battlemage', null, 'mana'], ['tank', 'explore', null], ['swordBow', 'elemArcher', 'survie'], ['lifesteal', 'healer', 'survie'], ['sword', 'lifesteal', null]]) {
     const b = goalBuild(p, s, 'x', t), code = encode(b), d = decode(code), lbl = [p, s, t].join(' + ');
     assert.ok(code.includes('-o' + at(p) + at(s) + (t ? at(t) : '') + '-'), lbl + ' : ' + code);
     assert.ok(d && !d._objLost && !d._mig && !d._recalc, lbl); assert.deepEqual(d.obj, b.obj, lbl); assert.deepEqual([d.sk, d.pn, d.gem], [b.sk, b.pn, b.gem], lbl); }
   assert.deepEqual(FZ.goals.slice(12, 21), ['survie', 'vigueur', 'resist', 'mana', 'battlemage', 'elemArcher', 'swordBow', 'explore', 'harvest'], 'places figées des soutiens (2.1.0) et des objectifs optimisés (2.4.0)');
+  assert.equal(FZ.goals.indexOf('lifesteal'), 21, 'Vol de vie (2.6.0) : place figée');
 });
 // relecture QA 2.4.0 : un lien d'une version plus récente (objectif inconnu) sans segment -a passait par le recalcul « d'avant la 2.3.0 »
 test('2.4.0 · lien d\'une version plus récente (secondaire inconnu, sans segment -a) : arbre gardé tel quel, jamais recalculé', () => {
